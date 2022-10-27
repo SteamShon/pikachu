@@ -1,0 +1,5 @@
+rootProject.name = 'be'
+
+include 'common'
+include 'dashboard'
+include 'prediction'

@@ -1,49 +1,77 @@
+
 use actix_web::{
-    post, HttpResponse, Responder, web::{self, Json}, HttpRequest,
+    post, HttpResponse, Responder, web, 
 };
 use jsonschema::{JSONSchema, Draft};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
  #[derive(Debug, Serialize, Deserialize)]
-struct MyRequest {
+pub struct MyRequest {
     schema: String,
-    req_body: String
+    events: Vec<String>,
+    skip_publish: bool,
 }
 
-#[post("/publish/validate")]
-pub async fn validate(request: web::Json<MyRequest>) -> impl Responder  {
-    // println!("model: {:?}", &request);
+impl Default for MyRequest {
+    fn default() -> Self {
+        MyRequest {
+            schema: r#"{
+                "type": "object",
+                "title": "",
+                "properties": {}
+            }"#.to_string(),
+            events: vec![],
+            skip_publish: false,
+        }
+    }
+}
+
+fn validate_each(compiled_schema: &JSONSchema, event: &str) -> Result<bool, serde_json::Error> {
+    let value: Result<Value, serde_json::Error> = serde_json::from_str(event);
+    
+    value.map(|v| {
+            /* 
+            println!("{:?}", v);
+            println!("{:?}", compiled_schema);
+            println!("{:?}", compiled_schema.is_valid(&v));
+            
+            let result = compiled_schema.validate(&v);
+            if let Err(errors) = result {
+                for error in errors {
+                    println!("Validation error: {}", error);
+                    println!("Instance path: {}", error.instance_path);
+                }
+            }
+            */
+
+            compiled_schema.is_valid(&v)
+        }
+    )
+}
+
+#[post("/publish")]
+pub async fn publish(request: web::Json<MyRequest>) -> impl Responder  {
+    // let req_body = std::str::from_utf8(&request[..]);
+    // println!("request: {:?}", &req_body);
+    
     match serde_json::from_str(&request.schema) {
         Ok(json_schema) => 
             match JSONSchema::options().with_draft(Draft::Draft7).compile(&json_schema) {
-                Ok(compiled) => 
-                    match serde_json::from_str(&request.req_body) {
-                        Ok(data) => {
-                            let result = compiled.validate(&data);
-                            if let Err(errors) = result {
-                                for error in errors {
-                                    println!("Validation error: {}", error);
-                                    println!("Instance path: {}", error.instance_path);
-                                }
-                            }
-                            
-                            let is_valid = JSONSchema::is_valid(&compiled, &data);
-                            println!("schema: {:?}", &compiled);
-                            println!("data: {:?}", &data);
-                            println!("is_valid: {:?}", &is_valid);
+                Ok(compiled_schema) => 
+                    {
+                        let validations: Vec<bool> = request
+                        .events
+                        .iter()
+                        .map(|event| validate_each(&compiled_schema, &event).map_or(false, |r| r) )
+                        .collect();
 
-                            HttpResponse::Ok().body(is_valid.to_string())
-                        }
-                        Err(error) => 
-                            HttpResponse::BadRequest().body(error.to_string())
+                        HttpResponse::Ok().json(validations)
                     }
-                
                 Err(error) => 
                     HttpResponse::BadRequest().body(error.to_string())
             }
         Err(error) => 
             HttpResponse::BadRequest().body(error.to_string())
     }
-    
 }

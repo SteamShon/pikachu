@@ -1,7 +1,8 @@
-POST http://localhost:8000/schema/validate HTTP/1.1
+POST http://localhost:8000/publish HTTP/1.1
 content-type: application/json
 
 {
     "schema": "{\r\n  \"$id\": \"https://example.com/person.schema.json\",\r\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r\n  \"title\": \"Person\",\r\n  \"type\": \"object\",\r\n  \"properties\": {\r\n    \"firstName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's first name.\"\r\n    },\r\n    \"lastName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's last name.\"\r\n    },\r\n    \"age\": {\r\n      \"description\": \"Age in years which must be equal to or greater than zero.\",\r\n      \"type\": \"integer\",\r\n      \"minimum\": 0\r\n    }\r\n  }\r\n}",
-    "req_body": "{\r\n  \"firstName\": \"John\",\r\n  \"lastName\": \"Doe\",\r\n  \"age\": 21\r\n}"
+    "events": ["{\r\n  \"firstName\": \"John\",\r\n  \"lastName\": \"Doe\",\r\n  \"age\": 21\r\n}","{\r\n  \"firstName\": 10,\r\n  \"lastName\": \"Doe\",\r\n  \"age\": 21\r\n}"],
+    "skip_publish": true
 }

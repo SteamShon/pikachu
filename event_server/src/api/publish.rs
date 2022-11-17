@@ -4,12 +4,14 @@ use actix_web::{
 use jsonschema::{JSONSchema, Draft};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
  #[derive(Debug, Serialize, Deserialize)]
 struct MyRequest {
     schema: String,
     req_body: String
 }
-#[post("/schema/validate")]
+
+#[post("/publish/validate")]
 pub async fn validate(request: web::Json<MyRequest>) -> impl Responder  {
     // println!("model: {:?}", &request);
     match serde_json::from_str(&request.schema) {

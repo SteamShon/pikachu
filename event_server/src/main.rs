@@ -1,5 +1,5 @@
 mod api;
-use api::schema::{validate};
+use api::publish::{validate};
 use api::dataset::{get_dataset};
 use actix_web::{HttpServer, App, middleware::Logger};
 

@@ -63,7 +63,7 @@ pub async fn publish(request: web::Json<MyRequest>) -> impl Responder  {
                         let validations: Vec<bool> = request
                         .events
                         .iter()
-                        .map(|event| validate_each(&compiled_schema, &event).map_or(false, |r| r) )
+                        .map(|event| validate_each(&compiled_schema, &event).unwrap_or(false) )
                         .collect();
 
                         HttpResponse::Ok().json(validations)

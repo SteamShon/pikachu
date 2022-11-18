@@ -4,8 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = [".", "entity", "migration"]
 
 [dependencies]
+entity = { path = "entity" }
+migration = { path = "migration" }
 actix-web = "^4"
 uuid = { version = "1.2.1", features = ["v4"] }
 serde = { version = "^1", features = ["derive"] }

@@ -58,20 +58,17 @@ pub async fn publish(request: web::Json<MyRequest>) -> impl Responder  {
     match serde_json::from_str(&request.schema) {
         Ok(json_schema) => 
             match JSONSchema::options().with_draft(Draft::Draft7).compile(&json_schema) {
-                Ok(compiled_schema) => 
-                    {
-                        let validations: Vec<bool> = request
-                        .events
-                        .iter()
-                        .map(|event| validate_each(&compiled_schema, &event).unwrap_or(false) )
-                        .collect();
+                Ok(compiled_schema) => {
+                    let validations: Vec<bool> = request
+                    .events
+                    .iter()
+                    .map(|event| validate_each(&compiled_schema, &event).unwrap_or(false) )
+                    .collect();
 
-                        HttpResponse::Ok().json(validations)
-                    }
-                Err(error) => 
-                    HttpResponse::BadRequest().body(error.to_string())
+                    HttpResponse::Ok().json(validations)
+                }
+                Err(error) => HttpResponse::BadRequest().body(error.to_string())
             }
-        Err(error) => 
-            HttpResponse::BadRequest().body(error.to_string())
+        Err(error) => HttpResponse::BadRequest().body(error.to_string())
     }
 }

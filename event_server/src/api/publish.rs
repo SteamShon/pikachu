@@ -10,7 +10,7 @@ use serde_json::Value;
 pub struct MyRequest {
     schema: String,
     events: Vec<String>,
-    skip_publish: bool,
+    skip_publish: Option<bool>,
 }
 
 impl Default for MyRequest {
@@ -22,7 +22,7 @@ impl Default for MyRequest {
                 "properties": {}
             }"#.to_string(),
             events: vec![],
-            skip_publish: false,
+            skip_publish: None,
         }
     }
 }

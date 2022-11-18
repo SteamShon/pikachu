@@ -20,10 +20,17 @@ pub async fn create(data: web::Data<AppState>, request: web::Json<Model>) -> Jso
         ..Default::default()
     }
     .save(&data.conn)
-    .await
-    .map(|_m| true).unwrap_or(false);
+    .await;
 
-    return Json(result)
+    let ret = match result {
+        Ok(_m) => true,
+        Err(error) => {
+            print!("Error: {:?}", error);
+            false
+        }
+    };
+
+    return Json(ret)
 }
 
 #[get("/dataset/list")]

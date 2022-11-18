@@ -2,7 +2,7 @@ mod api;
 
 use actix_web::web;
 use api::publish::{publish};
-use api::dataset::{list};
+use api::dataset::{list, create};
 use actix_web::{HttpServer, App, middleware::Logger};
 use migration::sea_orm::Database;
 
@@ -25,7 +25,10 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(api::dataset::AppState { conn: conn.to_owned() }))    
             .wrap(logger)
+            // dataset
             .service(list)
+            .service(create)
+            // publish
             .service(publish)
     })
     .bind(("127.0.0.1", 8000))?

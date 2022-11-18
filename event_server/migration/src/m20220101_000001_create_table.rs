@@ -8,7 +8,7 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         let sql = r#"
         CREATE TABLE `datasets` (
-            `id` int NOT NULL PRIMARY KEY,
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT,
             `name` varchar(255) NOT NULL
         )"#;
         let stmt = Statement::from_string(manager.get_database_backend(), sql.to_owned());

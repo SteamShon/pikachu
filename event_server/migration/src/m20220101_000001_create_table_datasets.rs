@@ -1,4 +1,4 @@
-use sea_orm_migration::{prelude::*, sea_orm::{Statement, ConnectionTrait}};
+use sea_orm_migration::{prelude::*, sea_orm::{Statement, ConnectionTrait}, seaql_migrations::Column};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -7,8 +7,14 @@ enum Dataset {
     Table,
     Id,
     Name,
+    Arn,
+    DataFormat,
+    Compatibility,
+    Status,
+    Schema,
+    CreatedAt,
+    UpdatedAt,
 }
-
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
@@ -32,6 +38,11 @@ impl MigrationTrait for Migration {
                         .primary_key()
                 )
                 .col(ColumnDef::new(Dataset::Name).string().not_null().unique_key())
+                .col(ColumnDef::new(Dataset::Arn).string().not_null())
+                .col(ColumnDef::new(Dataset::DataFormat).string().not_null())
+                .col(ColumnDef::new(Dataset::Compatibility).string().not_null())
+                .col(ColumnDef::new(Dataset::Status).string().not_null())
+                .col(ColumnDef::new(Dataset::Schema).string().not_null())
                 .to_owned()
             )
             .await

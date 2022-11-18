@@ -5,6 +5,7 @@ use api::publish::{publish};
 use api::dataset::{list, create};
 use actix_web::{HttpServer, App, middleware::Logger};
 use migration::sea_orm::Database;
+use migration::{Migrator, MigratorTrait};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -15,7 +16,7 @@ async fn main() -> std::io::Result<()> {
     // env::var("DATABASE_URL").expect("DATABASE_URL is not set in .env file");
     println!("DATABASE_URL: #{:?}", db_url);
     let conn = Database::connect(db_url).await.unwrap();
-    
+    Migrator::up(&conn, None).await.unwrap();
     //let config = aws_config::load_from_env().await;
     
     HttpServer::new(move || {

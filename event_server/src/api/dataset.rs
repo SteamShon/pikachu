@@ -7,11 +7,7 @@ use migration::{sea_orm::{self, EntityTrait, Set, ActiveModelTrait}, DbErr};
 use entity::dataset::{Entity as Dataset, ActiveModel};
 use entity::dataset::Model;
 use entity::dataset;
-
-#[derive(Debug)]
-pub struct AppState {
-    pub conn: sea_orm::DatabaseConnection,
-}
+use crate::AppState;
 
 #[post("/dataset")]
 pub async fn create(data: web::Data<AppState>, request: web::Json<Model>) -> HttpResponse {

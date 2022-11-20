@@ -1,4 +1,5 @@
-
+use std::error;
+use std::fmt;
 use std::time::Duration;
 
 use actix_web::{
@@ -7,8 +8,23 @@ use actix_web::{
 use jsonschema::{JSONSchema, Draft};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use rdkafka::{producer::{FutureProducer, FutureRecord, future_producer::OwnedDeliveryResult}, ClientConfig, message::{OwnedHeaders, OwnedMessage}, error::KafkaError};
+use crate::AppState;
+use rdkafka::{producer::{FutureProducer, FutureRecord}};
 use futures::future::join_all;
+
+#[derive(Debug, Serialize)]
+enum PublishError {
+    SchemaNotMatched
+}
+impl error::Error for PublishError {}
+
+impl fmt::Display for PublishError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            SchemaNotMatched => write!(f, "SchemaNotMatched"),
+        }
+    }
+}
 
  #[derive(Debug, Serialize, Deserialize)]
 pub struct MyRequest {
@@ -54,37 +70,8 @@ fn validate_each(compiled_schema: &JSONSchema, event: &str) -> Result<bool, serd
     )
 }
 
-
-async fn produce(brokers: &str, topic_name: &str, events: Vec<Value>) -> Vec<Result<(i32, i64), (KafkaError, OwnedMessage)>> {
-    let producer: &FutureProducer = &ClientConfig::new()
-        .set("bootstrap.servers", brokers)
-        .set("message.timeout.ms", "5000")
-        .create()
-        .expect("Producer creation error");
-
-    let futures = events
-        .iter()
-        .map(|event| async move {
-            let record = 
-                FutureRecord::to(topic_name)
-                .key("")
-                .payload("abc");
-
-            producer
-                .send(
-                    record,
-                    Duration::from_secs(0),
-                )
-                .await
-        })
-        .collect::<Vec<_>>();
-
-    join_all(futures).await
-}
-
-
 #[post("/publish")]
-pub async fn publish(request: web::Json<MyRequest>) -> impl Responder  {
+pub async fn publish(request: web::Json<MyRequest>, data: web::Data<AppState>) -> impl Responder  {
     // let req_body = std::str::from_utf8(&request[..]);
     // println!("request: {:?}", &req_body);
     
@@ -92,16 +79,63 @@ pub async fn publish(request: web::Json<MyRequest>) -> impl Responder  {
         Ok(json_schema) => 
             match JSONSchema::options().with_draft(Draft::Draft7).compile(&json_schema) {
                 Ok(compiled_schema) => {
-                    let validations: Vec<bool> = request
+                    let valid_events: Vec<Result<&String, serde_json::Error>> = request
                     .events
                     .iter()
-                    .map(|event| validate_each(&compiled_schema, &event).unwrap_or(false) )
+                    .map(|event| match validate_each(&compiled_schema, &event) {
+                        Ok(is_valid) => {
+                            if is_valid {
+                                Ok(event)
+                            } else {
+                                Err(serde::de::Error::invalid_length(
+                                    0,
+                                    &"fewer elements in array",
+                                ))
+                            }
+                        },
+                        Err(error) => Err(error)
+                    } )
                     .collect();
 
-                    HttpResponse::Ok().json(validations)
+                    let delivered = produce(&data.producer, "test", valid_events).await;
+                    
+                    HttpResponse::Ok().json(delivered)
                 }
                 Err(error) => HttpResponse::BadRequest().body(error.to_string())
             }
         Err(error) => HttpResponse::BadRequest().body(error.to_string())
     }
+}
+
+
+async fn produce(
+    producer: &FutureProducer, 
+    topic_name: &str, 
+    valid_events: Vec<Result<&String, serde_json::Error>>
+) -> Vec<bool> {
+    
+    let futures = valid_events
+        .iter()
+        .map(|valid_event| async move {
+            match valid_event {
+                Ok(event) => {
+                    let record = FutureRecord::to(topic_name)
+                        .key("")
+                        .payload(event.as_str());
+
+                    producer
+                        .send(
+                            record,
+                            Duration::from_secs(0),
+                        )
+                    .await
+                    .map(|_delivery_result| true)
+                    .unwrap_or(false)
+                },
+                Err(_error) => false
+            }
+        })
+        .collect::<Vec<_>>();
+
+    join_all(futures).await
 }

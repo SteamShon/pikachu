@@ -7,6 +7,7 @@ use actix_web::{
 };
 use jsonschema::{JSONSchema, Draft};
 use serde::{Deserialize, Serialize};
+use serde_json::Error;
 use serde_json::Value;
 use uuid::Uuid;
 use crate::AppState;
@@ -68,57 +69,6 @@ fn validate_each(compiled_schema: &JSONSchema, event: &str) -> Result<bool, serd
     )
 }
 
-#[post("/publish")]
-pub async fn publish(request: web::Json<MyRequest>, data: web::Data<AppState>) -> impl Responder  {
-    // let req_body = std::str::from_utf8(&request[..]);
-    // println!("request: {:?}", &req_body);
-    let fetched_dataset = dataset_find_by_uuid(&data.conn, &data.cache, request.schemaId).await;
-    match fetched_dataset {
-        Ok(dataset_option) => 
-            match dataset_option {
-                Some(dataset) => 
-                    match serde_json::from_str(&dataset.schema) {
-                        Ok(json_schema) => 
-                            match JSONSchema::options().with_draft(Draft::Draft7).compile(&json_schema) {
-                                Ok(compiled_schema) => {
-                                    let valid_events: Vec<Result<&String, serde_json::Error>> = request
-                                    .events
-                                    .iter()
-                                    .map(|event| match validate_each(&compiled_schema, &event) {
-                                        Ok(is_valid) => {
-                                            if is_valid {
-                                                Ok(event)
-                                            } else {
-                                                //TODO: data is not matched to schema. so SchemaNotMatched Error should be returned.
-                                                Err(serde::de::Error::invalid_length(
-                                                    0,
-                                                    &"fewer elements in array",
-                                                ))
-                                            }
-                                        },
-                                        Err(error) => Err(error)
-                                    } )
-                                    .collect();
-
-                                    let delivered = produce(&data.producer, "quickstart-events", valid_events).await;
-                                    
-                                    HttpResponse::Ok().json(delivered)
-                                }
-                                Err(error) => HttpResponse::BadRequest().body(error.to_string())
-                            }
-                        Err(error) => HttpResponse::BadRequest().body(error.to_string())
-                    },
-                None => 
-                    HttpResponse::NotFound().body("")
-            }
-        ,
-        Err(db_error) => HttpResponse::InternalServerError().body(db_error.to_string())
-    }
-
-    
-}
-
-
 async fn produce(
     producer: &FutureProducer, 
     topic_name: &str, 
@@ -150,3 +100,59 @@ async fn produce(
 
     join_all(futures).await
 }
+
+#[post("/publish")]
+pub async fn publish(request: web::Json<MyRequest>, data: web::Data<AppState>) -> impl Responder  {
+    // let req_body = std::str::from_utf8(&request[..]);
+    // println!("request: {:?}", &req_body);
+    let fetched_dataset_result = dataset_find_by_uuid(&data.conn, &data.cache, request.schemaId).await;
+    if let Err(error) = fetched_dataset_result {
+        return HttpResponse::InternalServerError().body(error.to_string())
+    }
+
+    let dataset_option = fetched_dataset_result.unwrap();
+
+    if let None = dataset_option {
+        return HttpResponse::NotFound().body("")
+    }
+
+    let dataset = dataset_option.unwrap();
+    let json_schema_result: Result<Value, Error> = serde_json::from_str(&dataset.schema);
+
+    if let Err(error) = json_schema_result {
+        return HttpResponse::BadRequest().body(error.to_string())
+    }
+
+    let json_schema = json_schema_result.unwrap();
+    let compiled_schema_result = JSONSchema::options().with_draft(Draft::Draft7).compile(&json_schema);
+    
+    if let Err(error) = compiled_schema_result {
+        return HttpResponse::BadRequest().body(error.to_string())
+    }
+
+    let compiled_schema = compiled_schema_result.unwrap();
+
+    let valid_events: Vec<Result<&String, serde_json::Error>> = request
+        .events
+        .iter()
+        .map(|event| match validate_each(&compiled_schema, &event) {
+            Ok(is_valid) => {
+                if is_valid {
+                    Ok(event)
+                } else {
+                    //TODO: data is not matched to schema. so SchemaNotMatched Error should be returned.
+                    Err(serde::de::Error::invalid_length(
+                        0,
+                        &"fewer elements in array",
+                    ))
+                }
+            },
+            Err(error) => Err(error)
+        } )
+        .collect();
+
+    let delivered = produce(&data.producer, "quickstart-events", valid_events).await;
+        
+    HttpResponse::Ok().json(delivered)
+}
+

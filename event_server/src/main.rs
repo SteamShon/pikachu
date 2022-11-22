@@ -11,7 +11,6 @@ use migration::sea_orm::{Database, self};
 use migration::{Migrator, MigratorTrait};
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::FutureProducer;
-use mini_moka::sync::Cache;
 use uuid::Uuid;
 
 use crate::api::dataset::find_by_uuid;
@@ -19,7 +18,6 @@ use crate::api::dataset::find_by_uuid;
 pub struct AppState {
     pub conn: sea_orm::DatabaseConnection,
     pub producer: FutureProducer,
-    pub cache: Cache<Uuid, Option<dataset::Model>>,
 }
 
 #[actix_web::main]
@@ -39,13 +37,6 @@ async fn main() -> std::io::Result<()> {
         .create()
         .expect("Producer creation error");
 
-    let cache: Cache<Uuid, Option<dataset::Model>> = Cache::builder()
-        // Time to live (TTL): 30 minutes
-        .time_to_live(Duration::from_secs(30 * 60))
-        // Time to idle (TTI):  5 minutes
-        .time_to_idle(Duration::from_secs( 5 * 60))
-        // Create the cache.
-        .build();
     HttpServer::new(move || {
         
         let logger = Logger::default();
@@ -54,7 +45,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(AppState { 
                 conn: conn.to_owned(), 
                 producer: producer.to_owned(),
-                cache: cache.to_owned(),
+                
             }))    
             .wrap(logger)
             // dataset

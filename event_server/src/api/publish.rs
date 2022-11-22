@@ -72,7 +72,7 @@ fn validate_each(compiled_schema: &JSONSchema, event: &str) -> Result<bool, serd
 pub async fn publish(request: web::Json<MyRequest>, data: web::Data<AppState>) -> impl Responder  {
     // let req_body = std::str::from_utf8(&request[..]);
     // println!("request: {:?}", &req_body);
-    let fetched_dataset = dataset_find_by_uuid(&data.conn, &data.cache, request.schemaId).await;
+    let fetched_dataset = dataset_find_by_uuid(&data.conn, request.schemaId).await;
     match fetched_dataset {
         Ok(dataset_option) => 
             match dataset_option {

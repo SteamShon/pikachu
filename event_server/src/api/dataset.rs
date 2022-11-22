@@ -3,19 +3,22 @@ use actix_web::{
     post,
     web::{Json, self}, HttpResponse, error::InternalError, 
 };
-use mini_moka::sync::Cache;
+
 use uuid::Uuid;
 use migration::{sea_orm::{self, EntityTrait, Set, ActiveModelTrait, QueryFilter, ColumnTrait, QueryTrait}, DbErr};
 use entity::dataset::{Entity as Dataset, ActiveModel};
 use entity::dataset::Model;
 use entity::dataset;
 use crate::AppState;
+use cached::proc_macro::once;
 
+#[once(result = true, time = 1)]
 pub async fn dataset_find_by_uuid(
-    db: &sea_orm::DatabaseConnection, 
-    cache: &Cache<Uuid, Option<dataset::Model>>, 
+    db: &sea_orm::DatabaseConnection,  
     uuid: Uuid) -> Result<Option<Model>, DbErr> {
-    if cache.contains_key(&uuid) {
+    Dataset::find().filter(dataset::Column::Uuid.eq(uuid)).one(db).await
+    /*
+        if cache.contains_key(&uuid) {
         Ok(cache.get(&uuid).unwrap())
     } else {
         let dataset = Dataset::find().filter(dataset::Column::Uuid.eq(uuid)).one(db).await;
@@ -28,6 +31,7 @@ pub async fn dataset_find_by_uuid(
             dataset
         }
     }
+     */   
 }
 
 #[post("/dataset")]
@@ -67,7 +71,7 @@ pub async fn list(data: web::Data<AppState>) -> HttpResponse {
 #[get("dataset/{uuid}")]
 pub async fn find_by_uuid(path: web::Path<Uuid>, data: web::Data<AppState>) -> HttpResponse {
     let uuid = path.into_inner();
-    let fetched = dataset_find_by_uuid(&data.conn, &data.cache, uuid).await;
+    let fetched = dataset_find_by_uuid(&data.conn, uuid).await;
     match fetched {
         Ok(dataset_option) => 
             dataset_option.map(|ds| HttpResponse::Ok().json(Json(ds)))

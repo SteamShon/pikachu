@@ -1,12 +1,15 @@
+use std::collections::HashMap;
+
 use actix_web::{
     get, post,
     web,
-    HttpResponse,
+    HttpResponse, patch,
 };
+use migration::sea_orm::{IntoActiveModel, ActiveValue};
 
 use crate::AppState;
 use cached::proc_macro::once;
-use entity::dataset;
+use entity::dataset::{self, ActiveModel};
 use entity::dataset::Model;
 use entity::dataset::{Entity as Dataset};
 use jsonschema::{Draft, JSONSchema};
@@ -17,8 +20,9 @@ use migration::{
     },
     DbErr,
 };
-use serde_json::Value;
+use serde_json::{Value, json};
 use uuid::Uuid;
+use json_value_merge::Merge;
 
 pub fn compile_into_json_schema(schema: &str) -> Option<JSONSchema> {
     let json_schema_result: Result<Value, serde_json::Error> = serde_json::from_str(schema);
@@ -74,6 +78,51 @@ pub async fn create(data: web::Data<AppState>, request: web::Json<Model>) -> Htt
 
     let created = result.unwrap().try_into_model().unwrap();
     HttpResponse::Ok().json(created)
+}
+
+#[patch("/dataset/{uuid}")]
+pub async fn update(data: web::Data<AppState>, path: web::Path<Uuid>, request: String) -> HttpResponse {    
+    let uuid = path.into_inner();
+    let fetched = dataset_find_by_uuid(&data.conn, uuid).await;
+    
+    let request_json_result = serde_json::from_str(&request);
+    if let Err(error) = request_json_result {
+        return HttpResponse::BadRequest().body(error.to_string())
+    }
+    let request_json: Value = request_json_result.unwrap();
+
+    // TODO: need to some way to merge request with already existing model then call update on it.
+    if let Err(error) = fetched {
+        return HttpResponse::InternalServerError().body(format!("dataset find failed: {:?}", error.to_string()))
+    }
+
+    let dataset_option = fetched.unwrap();
+
+    if let None = dataset_option {
+        return HttpResponse::NotFound().body(format!("dataset is not found: uuid=[{:?}]", uuid))
+    }
+
+    let model = dataset_option.unwrap();
+
+    let mut dataset_json = json!(model);
+    dataset_json.merge(request_json);
+    
+    let merged = dataset_json.clone();
+
+    let mut dataset = model.into_active_model();
+    
+    if let Err(error) = dataset.set_from_json(merged) {
+        return HttpResponse::InternalServerError().body(format!("set_from_json is failed: {:?}", error))
+    }
+    
+    dataset.uuid = ActiveValue::unchanged(dataset.uuid.unwrap());
+    
+    let mutated = dataset.update(&data.conn).await;
+
+    if let Err(error) = mutated {
+        return HttpResponse::InternalServerError().body(format!("mutation failed: {:?}", error.to_string()))
+    }
+    HttpResponse::Ok().json(mutated.unwrap())
 }
 
 #[get("/dataset/list")]

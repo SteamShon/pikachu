@@ -1,19 +1,15 @@
 mod api;
 
-use std::time::Duration;
-
 use actix_web::web;
 use actix_web::{middleware::Logger, App, HttpServer};
 use api::dataset::{create, list};
 use api::publish::publish;
-use entity::dataset;
 use migration::sea_orm::{self, Database};
 use migration::{Migrator, MigratorTrait};
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::FutureProducer;
-use uuid::Uuid;
 
-use crate::api::dataset::find_by_uuid;
+use crate::api::dataset::{find_by_uuid, update};
 
 pub struct AppState {
     pub conn: sea_orm::DatabaseConnection,
@@ -49,6 +45,7 @@ async fn main() -> std::io::Result<()> {
             .service(list)
             .service(create)
             .service(find_by_uuid)
+            .service(update)
             // publish
             .service(publish)
     })

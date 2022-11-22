@@ -12,6 +12,7 @@ enum Dataset {
     Compatibility,
     Status,
     Schema,
+    Uuid,
     CreatedAt,
     UpdatedAt,
 }
@@ -43,6 +44,7 @@ impl MigrationTrait for Migration {
                 .col(ColumnDef::new(Dataset::Compatibility).string().not_null())
                 .col(ColumnDef::new(Dataset::Status).string().not_null())
                 .col(ColumnDef::new(Dataset::Schema).string().not_null())
+                .col(ColumnDef::new(Dataset::Uuid).uuid().not_null().unique_key())
                 .to_owned()
             )
             .await

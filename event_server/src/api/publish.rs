@@ -8,7 +8,9 @@ use actix_web::{
 use jsonschema::{JSONSchema, Draft};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use uuid::Uuid;
 use crate::AppState;
+use crate::api::dataset::dataset_find_by_uuid;
 use rdkafka::{producer::{FutureProducer, FutureRecord}};
 use futures::future::join_all;
 
@@ -28,7 +30,7 @@ impl fmt::Display for PublishError {
 
  #[derive(Debug, Serialize, Deserialize)]
 pub struct MyRequest {
-    schema: String,
+    schemaId: Uuid,
     events: Vec<String>,
     skip_publish: Option<bool>,
 }
@@ -36,11 +38,7 @@ pub struct MyRequest {
 impl Default for MyRequest {
     fn default() -> Self {
         MyRequest {
-            schema: r#"{
-                "type": "object",
-                "title": "",
-                "properties": {}
-            }"#.to_string(),
+            schemaId: Uuid::new_v4(),
             events: vec![],
             skip_publish: None,
         }
@@ -74,37 +72,50 @@ fn validate_each(compiled_schema: &JSONSchema, event: &str) -> Result<bool, serd
 pub async fn publish(request: web::Json<MyRequest>, data: web::Data<AppState>) -> impl Responder  {
     // let req_body = std::str::from_utf8(&request[..]);
     // println!("request: {:?}", &req_body);
-    
-    match serde_json::from_str(&request.schema) {
-        Ok(json_schema) => 
-            match JSONSchema::options().with_draft(Draft::Draft7).compile(&json_schema) {
-                Ok(compiled_schema) => {
-                    let valid_events: Vec<Result<&String, serde_json::Error>> = request
-                    .events
-                    .iter()
-                    .map(|event| match validate_each(&compiled_schema, &event) {
-                        Ok(is_valid) => {
-                            if is_valid {
-                                Ok(event)
-                            } else {
-                                Err(serde::de::Error::invalid_length(
-                                    0,
-                                    &"fewer elements in array",
-                                ))
-                            }
-                        },
-                        Err(error) => Err(error)
-                    } )
-                    .collect();
+    let fetched_dataset = dataset_find_by_uuid(&data.conn, &data.cache, request.schemaId).await;
+    match fetched_dataset {
+        Ok(dataset_option) => 
+            match dataset_option {
+                Some(dataset) => 
+                    match serde_json::from_str(&dataset.schema) {
+                        Ok(json_schema) => 
+                            match JSONSchema::options().with_draft(Draft::Draft7).compile(&json_schema) {
+                                Ok(compiled_schema) => {
+                                    let valid_events: Vec<Result<&String, serde_json::Error>> = request
+                                    .events
+                                    .iter()
+                                    .map(|event| match validate_each(&compiled_schema, &event) {
+                                        Ok(is_valid) => {
+                                            if is_valid {
+                                                Ok(event)
+                                            } else {
+                                                //TODO: data is not matched to schema. so SchemaNotMatched Error should be returned.
+                                                Err(serde::de::Error::invalid_length(
+                                                    0,
+                                                    &"fewer elements in array",
+                                                ))
+                                            }
+                                        },
+                                        Err(error) => Err(error)
+                                    } )
+                                    .collect();
 
-                    let delivered = produce(&data.producer, "test", valid_events).await;
-                    
-                    HttpResponse::Ok().json(delivered)
-                }
-                Err(error) => HttpResponse::BadRequest().body(error.to_string())
+                                    let delivered = produce(&data.producer, "quickstart-events", valid_events).await;
+                                    
+                                    HttpResponse::Ok().json(delivered)
+                                }
+                                Err(error) => HttpResponse::BadRequest().body(error.to_string())
+                            }
+                        Err(error) => HttpResponse::BadRequest().body(error.to_string())
+                    },
+                None => 
+                    HttpResponse::NotFound().body("")
             }
-        Err(error) => HttpResponse::BadRequest().body(error.to_string())
+        ,
+        Err(db_error) => HttpResponse::InternalServerError().body(db_error.to_string())
     }
+
+    
 }
 
 

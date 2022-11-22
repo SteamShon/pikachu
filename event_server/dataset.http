@@ -13,3 +13,17 @@ content-type: application/json
 ### 
 GET http://localhost:8000/dataset/list HTTP/1.1
 content-type: application/json
+
+### 
+GET http://localhost:8000/dataset/37a0172b-1a53-4069-8235-c410f2937d61 HTTP/1.1
+content-type: application/json
+
+###
+POST http://localhost:8000/publish HTTP/1.1
+content-type: application/json
+
+{
+    "schemaId": "37a0172b-1a53-4069-8235-c410f2937d61", 
+    "events": ["{\r\n  \"firstName\": \"John\",\r\n  \"lastName\": \"Doe\",\r\n  \"age\": 21\r\n}","{\r\n  \"firstName\": 10,\r\n  \"lastName\": \"Doe\",\r\n  \"age\": 21\r\n}"]
+    //, "skip_publish": true
+}

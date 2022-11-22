@@ -82,6 +82,7 @@ pub async fn create(data: web::Data<AppState>, request: web::Json<Model>) -> Htt
 
 #[patch("/dataset/{uuid}")]
 pub async fn update(data: web::Data<AppState>, path: web::Path<Uuid>, request: String) -> HttpResponse {    
+    //TODO: add fn (new_schema: JSONSchema, prev_schemas: Vec<JsonSchema>, compatibility: String) -> bool
     let uuid = path.into_inner();
     let fetched = dataset_find_by_uuid(&data.conn, uuid).await;
     

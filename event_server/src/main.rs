@@ -9,7 +9,7 @@ use migration::{Migrator, MigratorTrait};
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::FutureProducer;
 
-use crate::api::dataset::{find_by_uuid, update};
+use crate::api::dataset::{find_by_uuid, update, schema_validate};
 
 pub struct AppState {
     pub conn: sea_orm::DatabaseConnection,
@@ -46,6 +46,7 @@ async fn main() -> std::io::Result<()> {
             .service(create)
             .service(find_by_uuid)
             .service(update)
+            .service(schema_validate)
             // publish
             .service(publish)
     })

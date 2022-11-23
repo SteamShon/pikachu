@@ -28,6 +28,16 @@ content-type: application/json
     "status": "DELETED"
 }
 
+
+###
+POST http://localhost:8000/dataset/schema_validate HTTP/1.1
+content-type: application/json
+
+{
+    "old_schema": "{\r\n  \"$id\": \"https://example.com/person.schema.json\",\r\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r\n  \"title\": \"Person\",\r\n  \"type\": \"object\",\r\n  \"properties\": {\r\n    \"firstName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's first name.\"\r\n    },\r\n    \"lastName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's last name.\"\r\n    },\r\n    \"age\": {\r\n      \"description\": \"Age in years which must be equal to or greater than zero.\",\r\n      \"type\": \"integer\",\r\n      \"minimum\": 0\r\n    }\r\n  }\r\n}",
+    "new_schema": "{\r\n  \"$id\": \"https://example.com/person.schema.json\",\r\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r\n  \"title\": \"Person\",\r\n  \"type\": \"object\",\r\n  \"properties\": {\r\n    \"firstName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's first name.\"\r\n    },\r\n    \"lastName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's last name.\"\r\n    },\r\n    \"age\": {\r\n      \"description\": \"Age in years which must be equal to or greater than zero.\",\r\n      \"type\": \"integer\",\r\n      \"minimum\": 10\r\n    }\r\n  }\r\n}"
+}
+
 ###
 POST http://localhost:8000/publish/94d2c894-9937-4fad-a69a-64ee1251f25a/true HTTP/1.1
 content-type: application/json

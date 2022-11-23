@@ -152,3 +152,70 @@ pub async fn find_by_uuid(path: web::Path<Uuid>, data: web::Data<AppState>) -> H
         .map(|ds| HttpResponse::Ok().json(ds))
         .unwrap_or(HttpResponse::NotFound().body(uuid.to_string()))
 }
+
+
+#[post("/dataset/schema_validate")]
+pub async fn schema_validate(old_schema: String, new_schema: String) -> HttpResponse {
+    let old: Value = json!({
+  "$id": "https://example.com/person.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Person",
+  "type": "object",
+  "properties": {
+    "firstName": {
+      "type": "string",
+      "description": "The person's first name."
+    },
+    "lastName": {
+      "type": "string",
+      "description": "The person's last name."
+    },
+    "age": {
+      "description": "Age in years which must be equal to or greater than zero.",
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+});
+    let new: Value = json!({
+  "$id": "https://example.com/person.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Person",
+  "type": "object",
+  "properties": {
+    "firstName": {
+      "type": "string",
+      "description": "The person's first name."
+    },
+    "lastName": {
+      "type": "string",
+      "description": "The person's last name."
+    },
+    "age": {
+      "description": "Age in years which must be equal to or greater than zero.",
+      "type": "string"
+    }
+  }
+});
+
+    use treediff::diff;
+    use treediff::tools::Recorder;
+    use treediff::tools::ChangeType;
+    let mut d = Recorder::default();
+    diff(&old, &new, &mut d);
+    for diff in d.calls {
+        match diff {
+            ChangeType::Modified(_,  _, _) => 
+                println!("Modified {:?} will print!", diff),
+            ChangeType::Removed(_, _) => 
+                println!("Removed {:?} will print!", diff),
+            ChangeType::Added(_, _) => 
+                println!("Added {:?} will print!", diff),    
+            ChangeType::Unchanged(_, _) => 
+                println!("Unchanged {:?} will print!", diff),    
+        }
+        // println!("Now {:?} will print!", diff);
+    }
+
+    HttpResponse::Ok().body("")
+}

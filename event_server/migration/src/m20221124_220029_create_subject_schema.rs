@@ -9,46 +9,34 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Schema::Table)
+                    .table(SubjectSchema::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Schema::Id)
+                        ColumnDef::new(SubjectSchema::Id)
                             .integer()
                             .not_null()
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Schema::Name).string().not_null().unique_key())
-                    .col(ColumnDef::new(Schema::Version).string().not_null())
-                    .col(ColumnDef::new(Schema::Schema).string().not_null())
-                    .col(ColumnDef::new(Schema::SubjectId).integer().not_null())
+                    .col(ColumnDef::new(SubjectSchema::SubjectId).integer().not_null())
+                    .col(ColumnDef::new(SubjectSchema::SchemaId).integer().not_null())
                     .to_owned(),
             )
-            .await;
-
-        manager.create_index(Index::create()
-            .if_not_exists()
-            .name("unique-index-schema")
-            .table(Schema::Table)
-            .col(Schema::SubjectId)
-            .col(Schema::Version)
-            .to_owned()).await
+            .await
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Schema::Table).to_owned())
+            .drop_table(Table::drop().table(SubjectSchema::Table).to_owned())
             .await
     }
 }
 
 /// Learn more at https://docs.rs/sea-query#iden
 #[derive(Iden)]
-enum Schema {
+enum SubjectSchema {
     Table,
     Id,
-    Name,
-    Version,
-    Schema,
     SubjectId,
+    SchemaId,
 }

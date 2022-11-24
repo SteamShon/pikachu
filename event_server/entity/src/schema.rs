@@ -1,0 +1,33 @@
+use sea_orm::entity::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Deserialize, Serialize)]
+#[sea_orm(table_name = "schema")]
+pub struct Model {
+    #[sea_orm(primary_key)]
+    #[serde(skip_deserializing)]
+    pub id: i32,
+    pub version: String,
+
+    #[sea_orm(column_type = "Text")]
+    pub schema: String,
+
+}
+
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {
+    #[sea_orm(has_many = "super::subject::Entity")]
+    Subject,
+}
+
+impl Related<super::subject::Entity> for Entity {
+    fn to() -> RelationDef {
+        super::subject_schema::Relation::Subject.def()
+    }
+
+    fn via() -> Option<RelationDef> {
+        Some(super::subject_schema::Relation::Schema.def().rev())
+    }
+}
+
+impl ActiveModelBehavior for ActiveModel {}

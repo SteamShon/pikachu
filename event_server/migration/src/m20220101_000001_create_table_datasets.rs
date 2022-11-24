@@ -1,7 +1,5 @@
 use sea_orm_migration::{
     prelude::*,
-    sea_orm::{ConnectionTrait, Statement},
-    seaql_migrations::Column,
 };
 
 #[derive(DeriveMigrationName)]

@@ -35,6 +35,7 @@ pub fn compile_into_json_schema(schema: &str) -> Option<JSONSchema> {
     let compiled_schema_result = JSONSchema::options()
         .with_draft(Draft::Draft7)
         .compile(&json_schema);
+    
     compiled_schema_result.ok()
 }
 

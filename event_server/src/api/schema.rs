@@ -23,7 +23,7 @@ pub async fn list(data: web::Data<AppState>, path: Path<String>) -> HttpResponse
 pub async fn create(data: web::Data<AppState>, path: Path<String>, request: web::Json<Schema>) -> HttpResponse {
     let subject_name = path.as_str();
     let model: Schema = request.into_inner();
-    let created = repo::schema::add_schema(&data.conn, subject_name, model).await;
+    let created = repo::schema::create_with_validation(&data.conn, subject_name, model).await;
 
     match created {
         Ok(active_model) => 
@@ -35,12 +35,25 @@ pub async fn create(data: web::Data<AppState>, path: Path<String>, request: web:
     }
 }
 
-
-/*
 #[patch("/subject/{subject_name}/schema/{schema_name}/{version}")]
-pub async fn update(data: web::Data<AppState>, path: Path<String>, request: web::Json<Schema>) -> HttpResponse {
-    let subject_name = path.as_str();
-    let model: Schema = request.into_inner();
-    
+pub async fn update(data: web::Data<AppState>, path: Path<(String, String, String)>, request: String) -> HttpResponse {
+    let (subject_name, schema_name, version) = path.into_inner();
+
+    let request_json = serde_json::from_str(&request);
+    if let Err(error) = request_json {
+        return HttpResponse::BadRequest().json(json!({
+            "message": error.to_string(),
+        }))
+    }
+
+    let result = 
+        repo::schema::update(&data.conn, &subject_name, &schema_name, &version, request_json.unwrap()).await;
+
+    if let Err(error) = result {
+        return HttpResponse::InternalServerError().json(json!({
+            "message": error.to_string(),
+        }))
+    }
+
+    HttpResponse::Ok().json(result.unwrap())
 }
-*/

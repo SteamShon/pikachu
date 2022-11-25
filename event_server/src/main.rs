@@ -52,8 +52,11 @@ async fn main() -> std::io::Result<()> {
             // subject 
             .service(api::subject::list)
             .service(api::subject::create)
+            .service(api::subject::update)
+            // schema
             .service(api::schema::list)
             .service(api::schema::create)
+            .service(api::schema::update)
             // publish
             .service(publish)
     })

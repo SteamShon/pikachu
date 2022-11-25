@@ -2,7 +2,7 @@ use entity::subject::{Entity as Subject, self};
 use entity::schema::{Entity as Schema, self};
 
 use json_value_merge::Merge;
-use migration::sea_orm::{ColumnTrait, EntityTrait, QueryFilter, ActiveModelTrait, Set, DatabaseConnection};
+use migration::sea_orm::{ColumnTrait, EntityTrait, QueryFilter, ActiveModelTrait, Set, DatabaseConnection, IntoActiveModel};
 use migration::{sea_orm, DbErr};
 use serde_json::json;
 use uuid::Uuid;
@@ -72,11 +72,14 @@ pub async fn update(
     let subject = 
         find_by_name(db, subject_name).await?.ok_or_else(|| 
             DbErr::RecordNotFound(format!("subject_name={:?}", subject_name))
-        );
+        )?;
 
-    let mut subject_json: serde_json::Value = json!(subject?);
+    let mut subject_json: serde_json::Value = json!(subject);
     subject_json.merge(form_data);
     let merged: serde_json::Value = subject_json.clone();
 
-    subject::ActiveModel::from_json(merged)?.update(db).await
+    let mut active_model = subject.into_active_model();
+    active_model.set_from_json(merged)?;
+    
+    active_model.update(db).await
 }

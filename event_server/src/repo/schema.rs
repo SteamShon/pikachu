@@ -33,7 +33,10 @@ pub async fn add_schema(
                 DbErr::RecordNotFound(format!("subject_name={:?}", subject_name)
             )
         );
-
+    //1. first fetch subject.
+    //2. find all related schemas.
+    //3. run schema validate(new_schema, old_schemas)
+    //4. only when validate succes, create new schema under this subject.
 //    let (subjects, schemas): (Vec<_>, Vec<_>) =
 //        super::subject::find_by_name_eager(db, subject_name).await?.into_iter().unzip();
     

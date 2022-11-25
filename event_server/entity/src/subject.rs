@@ -15,7 +15,9 @@ pub struct Model {
     pub data_format: String,
     #[sea_orm(default_value="BACKWARD")]
     pub compatibility: String,
+    
     #[sea_orm(default_value="CREATED")]
+    #[serde(skip_deserializing)]
     pub status: String,
 
     #[sea_orm(unique)]
@@ -37,11 +39,7 @@ pub enum Relation {
 
 impl Related<super::schema::Entity> for Entity {
     fn to() -> RelationDef {
-        super::subject_schema::Relation::Schema.def()
-    }
-    
-    fn via() -> Option<RelationDef> {
-        Some(super::subject_schema::Relation::Subject.def().rev())
+        Relation::Schema.def()
     }
 }
 

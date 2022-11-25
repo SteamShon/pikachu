@@ -20,11 +20,12 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Schema::Name).string().not_null().unique_key())
                     .col(ColumnDef::new(Schema::Version).string().not_null())
+                    .col(ColumnDef::new(Schema::SchemaType).string().not_null())
                     .col(ColumnDef::new(Schema::Schema).string().not_null())
                     .col(ColumnDef::new(Schema::SubjectId).integer().not_null())
                     .to_owned(),
             )
-            .await;
+            .await?;
 
         manager.create_index(Index::create()
             .if_not_exists()
@@ -49,6 +50,7 @@ enum Schema {
     Id,
     Name,
     Version,
+    SchemaType,
     Schema,
     SubjectId,
 }

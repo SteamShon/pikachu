@@ -1,0 +1,48 @@
+### get all subjects
+GET http://localhost:8000/subject HTTP/1.1
+content-type: application/json
+
+### create subject
+POST http://localhost:8000/subject HTTP/1.1
+content-type: application/json
+
+{
+    "name": "test_subject", 
+    "data_format": "JSON",
+    "compatibility": "NONE"
+}
+
+### update subject
+PATCH  http://localhost:8000/subject HTTP/1.1
+content-type: application/json
+
+{
+    "name": "test_subject", 
+    "data_format": "JSON",
+    "compatibility": "NONE"
+}
+
+
+### get all schemas under subject
+GET http://localhost:8000/subject/test_subject HTTP/1.1
+content-type: application/json
+
+### create schema under subject
+POST http://localhost:8000/subject/test_subject/schema HTTP/1.1
+content-type: application/json
+
+{
+    "name": "test_json_schema_2",
+    "schema_type": "JSON",
+    "schema": "{\r\n  \"$id\": \"https://example.com/person.schema.json\",\r\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r\n  \"title\": \"Person\",\r\n  \"type\": \"object\",\r\n  \"properties\": {\r\n    \"firstName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's first name.\"\r\n    },\r\n    \"lastName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's last name.\"\r\n    },\r\n    \"age\": {\r\n      \"description\": \"Age in years which must be equal to or greater than zero.\",\r\n      \"type\": \"integer\",\r\n      \"minimum\": 0\r\n    }\r\n  }\r\n}"
+}
+
+
+### update specific version of schema 
+POST http://localhost:8000/subject/test_subject/schema/test_json_schema/version HTTP/1.1
+content-type: application/json
+
+{
+    "schema_type": "JSON",
+    "schema": "{\r\n  \"$id\": \"https://example.com/person.schema.json\",\r\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r\n  \"title\": \"Person\",\r\n  \"type\": \"object\",\r\n  \"properties\": {\r\n    \"firstName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's first name.\"\r\n    },\r\n    \"lastName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's last name.\"\r\n    },\r\n    \"age\": {\r\n      \"description\": \"Age in years which must be equal to or greater than zero.\",\r\n      \"type\": \"integer\",\r\n      \"minimum\": 0\r\n    }\r\n  }\r\n}"
+}

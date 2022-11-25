@@ -1,4 +1,5 @@
 mod api;
+mod repo;
 
 use actix_web::web;
 use actix_web::{middleware::Logger, App, HttpServer};
@@ -10,6 +11,7 @@ use rdkafka::config::ClientConfig;
 use rdkafka::producer::FutureProducer;
 
 use crate::api::dataset::{find_by_uuid, update, schema_validate};
+
 
 pub struct AppState {
     pub conn: sea_orm::DatabaseConnection,
@@ -47,6 +49,11 @@ async fn main() -> std::io::Result<()> {
             .service(find_by_uuid)
             .service(update)
             .service(schema_validate)
+            // subject 
+            .service(api::subject::list)
+            .service(api::subject::create)
+            .service(api::schema::list)
+            .service(api::schema::create)
             // publish
             .service(publish)
     })

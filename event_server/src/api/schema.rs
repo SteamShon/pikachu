@@ -8,10 +8,22 @@ use crate::{AppState, repo};
 
 
 #[get("/subject/{subject_name}")]
-pub async fn list(data: web::Data<AppState>, path: Path<String>) -> HttpResponse {
+pub async fn list_all(data: web::Data<AppState>, path: Path<String>) -> HttpResponse {
     let subject_name = path.as_str();
     
-    match repo::subject::find_by_name_eager(&data.conn, subject_name).await {
+    match repo::subject::find_by_subject_name_eager(&data.conn, subject_name).await {
+        Ok(schemas) => HttpResponse::Ok().json(json!(schemas)),
+        Err(error) => HttpResponse::InternalServerError().json(json!({
+            "message": error.to_string(),
+        }))
+    }
+}
+
+#[get("/subject/{subject_name}/schema/{schema_name}")]
+pub async fn list(data: web::Data<AppState>, path: Path<(String, String)>) -> HttpResponse {
+    let (subject_name, schema_name) = path.into_inner();
+
+    match repo::subject::find_by_schema_name_eager(&data.conn, &subject_name, &schema_name).await {
         Ok(schemas) => HttpResponse::Ok().json(json!(schemas)),
         Err(error) => HttpResponse::InternalServerError().json(json!({
             "message": error.to_string(),

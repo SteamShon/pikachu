@@ -26,12 +26,17 @@ content-type: application/json
 GET http://localhost:8000/subject/test_subject HTTP/1.1
 content-type: application/json
 
+### get all schemas under subject with schema_name
+GET http://localhost:8000/subject/test_subject/test_json_schema_3 HTTP/1.1
+content-type: application/json
+
+
 ### create schema under subject
-POST http://localhost:8000/subject/test_subject/schema HTTP/1.1
+POST http://localhost:8000/subject/test_subject HTTP/1.1
 content-type: application/json
 
 {
-    "name": "test_json_schema_3",
+    "schema_name": "test_json_schema_3",
     "schema_type": "JSON",
     "schema": "{\r\n  \"$id\": \"https://example.com/person.schema.json\",\r\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r\n  \"title\": \"Person\",\r\n  \"type\": \"object\",\r\n  \"properties\": {\r\n    \"firstName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's first name.\"\r\n    },\r\n    \"lastName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's last name.\"\r\n    },\r\n    \"age\": {\r\n      \"description\": \"Age in years which must be equal to or greater than zero.\",\r\n      \"type\": \"integer\",\r\n      \"minimum\": 0\r\n    }\r\n  }\r\n}"
 }

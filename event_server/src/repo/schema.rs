@@ -39,7 +39,7 @@ pub async fn create_with_validation(
     //3. run schema validate(new_schema, old_schemas)
     //4. only when validate succes, create new schema under this subject.
     let subject_with_schemas = 
-        super::subject::find_by_name_eager(db, subject_name)
+        super::subject::find_by_subject_name_eager(db, subject_name)
         .await?;
 
     let (subject, schemas) = subject_with_schemas

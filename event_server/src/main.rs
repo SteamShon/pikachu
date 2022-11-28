@@ -3,15 +3,11 @@ mod repo;
 
 use actix_web::web;
 use actix_web::{middleware::Logger, App, HttpServer};
-use api::dataset::{create, list};
 use api::publish::publish;
 use migration::sea_orm::{self, Database};
 use migration::{Migrator, MigratorTrait};
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::FutureProducer;
-
-use crate::api::dataset::{find_by_uuid, update, schema_validate};
-
 
 pub struct AppState {
     pub conn: sea_orm::DatabaseConnection,
@@ -43,18 +39,11 @@ async fn main() -> std::io::Result<()> {
                 producer: producer.to_owned(),
             }))
             .wrap(logger)
-            // dataset
-            .service(list)
-            .service(create)
-            .service(find_by_uuid)
-            .service(update)
-            .service(schema_validate)
             // subject 
             .service(api::subject::list)
             .service(api::subject::create)
             .service(api::subject::update)
             // schema
-            .service(api::schema::list_all)
             .service(api::schema::list)
             .service(api::schema::create)
             .service(api::schema::update)

@@ -1,7 +1,6 @@
 use std::time::Duration;
 
-use crate::api::dataset::dataset_find_by_uuid;
-use crate::AppState;
+use crate::{AppState, repo};
 use actix_web::web::Path;
 use actix_web::{post, web, HttpResponse, Responder};
 use futures::future::join_all;
@@ -9,21 +8,11 @@ use jsonschema::{Draft, JSONSchema};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MyRequest {
-    schema_id: Uuid,
-    skip_publish: Option<bool>,
-}
-
-impl Default for MyRequest {
-    fn default() -> Self {
-        MyRequest {
-            schema_id: Uuid::new_v4(),
-            skip_publish: None,
-        }
-    }
+    subject_name: String,
+    version: Option<String>,
 }
 
 fn validate_each(compiled_schema: &JSONSchema, event: &str) -> Result<bool, serde_json::Error> {
@@ -58,26 +47,37 @@ async fn produce(
     join_all(futures).await
 }
 
-#[post("/publish/{schema_id}/{skip_publish}")]
+#[post("/publish/{schema_name}/{version}")]
 pub async fn publish(
     path: Path<MyRequest>,
     events: web::Json<Vec<String>>,
     data: web::Data<AppState>,
 ) -> impl Responder {
-    let fetched_dataset_result = dataset_find_by_uuid(&data.conn, path.schema_id).await;
-    if let Err(error) = fetched_dataset_result {
+    let subject_with_schema = match &path.version {
+        Some(version) => repo::schema::find_by_version(&data.conn, &path.subject_name, &version).await,
+        None => repo::schema::find_by_latest_version(&data.conn, &path.subject_name).await,
+    };
+    
+    if let Err(error) = subject_with_schema {
         return HttpResponse::InternalServerError().body(error.to_string());
     }
 
-    let dataset_option = fetched_dataset_result.unwrap();
-    if let None = dataset_option {
-        return HttpResponse::NotFound()
-            .body(format!("dataset is not found: uuid=[#{}]", path.schema_id));
-    }
+    let (subject_option, schema_option) = subject_with_schema.unwrap();
 
-    let dataset = dataset_option.unwrap();
+    if let None = subject_option {
+        return HttpResponse::NotFound()
+            .body(format!("subject=[{}] has now valid schema.", path.subject_name))
+    };
+
+    if let None = schema_option {
+         return HttpResponse::NotFound()
+            .body(format!("subject=[{}] found, but schema not found.", path.subject_name))
+    };
+    
+    let (_, schema) = (subject_option.unwrap(), schema_option.unwrap());
+
     let json_schema_result: Result<Value, serde_json::Error> =
-        serde_json::from_str(&dataset.schema);
+        serde_json::from_str(&schema.schema);
     if let Err(error) = json_schema_result {
         return HttpResponse::BadRequest().body(error.to_string());
     }

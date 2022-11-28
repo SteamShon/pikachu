@@ -10,8 +10,6 @@ pub struct Model {
 
     #[serde(skip_deserializing)]
     pub subject_id: i32,
-    
-    pub name: String,
 
     #[serde(skip_deserializing)]
     pub version: String,

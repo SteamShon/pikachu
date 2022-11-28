@@ -8,22 +8,10 @@ use crate::{AppState, repo};
 
 
 #[get("/subject/{subject_name}")]
-pub async fn list_all(data: web::Data<AppState>, path: Path<String>) -> HttpResponse {
+pub async fn list(data: web::Data<AppState>, path: Path<String>) -> HttpResponse {
     let subject_name = path.as_str();
     
     match repo::subject::find_by_subject_name_eager(&data.conn, subject_name).await {
-        Ok(schemas) => HttpResponse::Ok().json(json!(schemas)),
-        Err(error) => HttpResponse::InternalServerError().json(json!({
-            "message": error.to_string(),
-        }))
-    }
-}
-
-#[get("/subject/{subject_name}/schema/{schema_name}")]
-pub async fn list(data: web::Data<AppState>, path: Path<(String, String)>) -> HttpResponse {
-    let (subject_name, schema_name) = path.into_inner();
-
-    match repo::subject::find_by_schema_name_eager(&data.conn, &subject_name, &schema_name).await {
         Ok(schemas) => HttpResponse::Ok().json(json!(schemas)),
         Err(error) => HttpResponse::InternalServerError().json(json!({
             "message": error.to_string(),
@@ -47,9 +35,9 @@ pub async fn create(data: web::Data<AppState>, path: Path<String>, request: web:
     }
 }
 
-#[patch("/subject/{subject_name}/schema/{schema_name}/{version}")]
-pub async fn update(data: web::Data<AppState>, path: Path<(String, String, String)>, request: String) -> HttpResponse {
-    let (subject_name, schema_name, version) = path.into_inner();
+#[patch("/subject/{subject_name}/schema/{version}")]
+pub async fn update(data: web::Data<AppState>, path: Path<(String, String)>, request: String) -> HttpResponse {
+    let (subject_name, version) = path.into_inner();
 
     let request_json = serde_json::from_str(&request);
     if let Err(error) = request_json {
@@ -59,7 +47,7 @@ pub async fn update(data: web::Data<AppState>, path: Path<(String, String, Strin
     }
 
     let result = 
-        repo::schema::update(&data.conn, &subject_name, &schema_name, &version, request_json.unwrap()).await;
+        repo::schema::update(&data.conn, &subject_name, &version, request_json.unwrap()).await;
 
     if let Err(error) = result {
         return HttpResponse::InternalServerError().json(json!({

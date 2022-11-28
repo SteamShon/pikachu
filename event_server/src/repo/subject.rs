@@ -48,22 +48,6 @@ pub async fn find_by_subject_name_eager(
     subjects
 }
 
-
-pub async fn find_by_schema_name_eager(
-    db: &sea_orm::DatabaseConnection, 
-    subject_name: &str,
-    schema_name: &str,
-) -> Result<Vec<(subject::Model, Vec<schema::Model>)>, DbErr>{
-    let subjects = Subject::find()
-    .filter(subject::Column::Name.eq(subject_name))
-    .find_with_related(Schema)
-    .filter(schema::Column::Name.eq(schema_name))
-    .all(db)
-    .await;
-
-    subjects
-}
-
 pub async fn create(
     db: &sea_orm::DatabaseConnection,
     subject: subject::Model

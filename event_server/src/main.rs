@@ -1,6 +1,8 @@
 mod api;
 mod repo;
 
+use std::env;
+
 use actix_web::web;
 use actix_web::{middleware::Logger, App, HttpServer};
 use api::publish::publish;
@@ -18,18 +20,21 @@ pub struct AppState {
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
 
-    let db_url = "sqlite://data.db";
-    // env::var("DATABASE_URL").expect("DATABASE_URL is not set in .env file");
+    let db_url = 
+        env::var("DATABASE_URL").unwrap_or("sqlite://data.db".to_owned());
+    
     println!("DATABASE_URL: #{:?}", db_url);
     let conn = Database::connect(db_url).await.unwrap();
     Migrator::up(&conn, None).await.unwrap();
     //let config = aws_config::load_from_env().await;
+    let bootstrap_servers = 
+        env::var("BOOTSTRAP_SERVERS").unwrap_or("localhost:9092".to_owned());
 
     let producer: FutureProducer = ClientConfig::new()
-        .set("bootstrap.servers", "localhost:9092")
+        .set("bootstrap.servers", bootstrap_servers)
         .create()
         .expect("Producer creation error");
-
+    
     HttpServer::new(move || {
         let logger = Logger::default();
 

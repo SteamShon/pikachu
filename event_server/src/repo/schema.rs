@@ -1,3 +1,4 @@
+use std::str::FromStr;
 
 use cached::proc_macro::once;
 use entity::subject::{Entity as Subject, self};
@@ -7,6 +8,7 @@ use migration::sea_orm::{ActiveModelTrait, Set, DatabaseConnection, EntityTrait,
 use migration::{sea_orm, DbErr};
 use chrono::prelude::*;
 use serde_json::json;
+use super::types::{Error as MyError, Schema as MySchema};
 
 fn into_subject_schema(fetched: Vec<(subject::Model, Vec<schema::Model>)>) -> 
     (Option<subject::Model>, Option<schema::Model>) {
@@ -25,6 +27,80 @@ fn into_subject_schema(fetched: Vec<(subject::Model, Vec<schema::Model>)>) ->
     
     (subject, schema.flatten())
 }
+//TODO: Cache MySchema
+fn into_parsed_schema(
+    schema: &entity::schema::Model
+) -> Result<MySchema, MyError> {
+    if schema.schema_type.to_uppercase() == "AVRO" {
+        avrow::Schema::from_str(&schema.schema)
+            .map(|schema| MySchema::Avro(schema))
+            .map_err(|_error| MyError::AvroError )
+    } else {
+        match serde_json::from_str(&schema.schema) {
+            Ok(json_schema) => {
+                match jsonschema::JSONSchema::options()
+                    .with_draft(jsonschema::Draft::Draft7)
+                    .compile(&json_schema) {
+                        Ok(compiled_schema) => Ok(MySchema::Json(compiled_schema)),
+                        Err(_error1) => Err(MyError::SchemaNotMatchedError)
+                    }
+            },
+            Err(_error) => Err(MyError::SerdeJsonError)
+        }
+    }
+}
+
+fn to_bytes(
+    parsed_schema: &MySchema, 
+    event: &str,
+) -> Result<Vec<u8>, MyError> {
+    let json_event_result = serde_json::from_str(event);
+    if let Err(_error) = json_event_result {
+        return Err(MyError::SerdeJsonError)
+    }
+
+    let json_event: serde_json::Value = json_event_result.unwrap();
+
+    match parsed_schema {
+        MySchema::Avro(schema) => {
+            let rec = 
+                avrow::Record::from_json(json_event.as_object().unwrap().to_owned(), &schema).unwrap();
+            let mut writer = avrow::Writer::new(&schema, vec![]).unwrap();
+            writer.write(rec).unwrap();
+
+            let avro_data = writer.into_inner().unwrap();
+            println!("avro_data: {:?}", avro_data);
+
+            let reader = avrow::Reader::new(avro_data.as_slice()).unwrap();
+            for val in reader {
+                println!("value: {:?}", val);
+            }
+            
+            Ok(avro_data)
+        }
+        MySchema::Json(schema) => {
+            if schema.is_valid(&json_event) {
+                Ok(event.as_bytes().to_vec())
+            } else {
+                Err(MyError::SchemaNotMatchedError)
+            }
+        }
+    }
+}
+
+pub fn validate_events(
+    schema: &entity::schema::Model, 
+    events: Vec<String>
+) -> Result<Vec<Result<Vec<u8>, MyError>>, MyError> {
+    let parsed_schema = into_parsed_schema(&schema)?;
+
+    let payloads: Vec<Result<Vec<u8>, MyError>> = 
+        events.iter().map(|event| to_bytes(&parsed_schema, &event))
+        .collect();
+
+    Ok(payloads)
+}
+
 
 #[once(result = true, time = 10)]
 pub async fn find_by_latest_version(

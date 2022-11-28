@@ -26,3 +26,5 @@ cached = "0.40.0"
 json_value_merge = "1.1.2"
 chrono = "0.4.23"
 treediff = { version = "4", features= ["with-serde-json"]}
+apache-avro = "0.14.0"
+avrow = "0.2.1"

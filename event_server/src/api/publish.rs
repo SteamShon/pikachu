@@ -1,13 +1,14 @@
 use std::time::Duration;
 
 use crate::{AppState, repo};
+use repo::types::{Schema as MySchema, Error as MyError};
 use actix_web::web::Path;
 use actix_web::{post, web, HttpResponse, Responder};
 use futures::future::join_all;
 use jsonschema::{Draft, JSONSchema};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value, json};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MyRequest {
@@ -21,33 +22,8 @@ fn validate_each(compiled_schema: &JSONSchema, event: &str) -> Result<bool, serd
     value.map(|v| compiled_schema.is_valid(&v))
 }
 
-async fn produce(
-    producer: &FutureProducer,
-    topic_name: &str,
-    valid_events: Vec<Result<&String, serde_json::Error>>,
-) -> Vec<bool> {
-    let futures = valid_events
-        .iter()
-        .map(|valid_event| async move {
-            match valid_event {
-                Ok(event) => {
-                    let record = FutureRecord::to(topic_name).key("").payload(event.as_str());
 
-                    producer
-                        .send(record, Duration::from_secs(0))
-                        .await
-                        .map(|_delivery_result| true)
-                        .unwrap_or(false)
-                }
-                Err(_error) => false,
-            }
-        })
-        .collect::<Vec<_>>();
-
-    join_all(futures).await
-}
-
-#[post("/publish/{schema_name}/{version}")]
+#[post("/publish/{subject_name}")]
 pub async fn publish(
     path: Path<MyRequest>,
     events: web::Json<Vec<String>>,
@@ -74,43 +50,62 @@ pub async fn publish(
             .body(format!("subject=[{}] found, but schema not found.", path.subject_name))
     };
     
-    let (_, schema) = (subject_option.unwrap(), schema_option.unwrap());
+    let (subject, schema) = (subject_option.unwrap(), schema_option.unwrap());
+    let topic_name = subject.topic_name.unwrap_or(subject.name);
 
-    let json_schema_result: Result<Value, serde_json::Error> =
-        serde_json::from_str(&schema.schema);
-    if let Err(error) = json_schema_result {
-        return HttpResponse::BadRequest().body(error.to_string());
+    let valid_events_result = 
+        repo::schema::validate_events(&schema, events.into_inner());
+
+    if let Err(error) = valid_events_result {
+        return HttpResponse::InternalServerError().json(json!(error))
     }
 
-    let json_schema = json_schema_result.unwrap();
-    let compiled_schema_result = JSONSchema::options()
-        .with_draft(Draft::Draft7)
-        .compile(&json_schema);
-    if let Err(error) = compiled_schema_result {
-        return HttpResponse::BadRequest().body(error.to_string());
+    let valid_events = valid_events_result.unwrap();
+    let produced_result =
+        produce(&data.producer, &topic_name, valid_events).await;
+
+    if let Err(_error) = produced_result {
+        return HttpResponse::InternalServerError().body("error")
     }
+    let ls: Vec<bool> = 
+        produced_result
+            .unwrap()
+            .iter()
+            .map(|r| r.to_owned().unwrap_or(false))
+            .collect();
 
-    let compiled_schema = compiled_schema_result.unwrap();
+    HttpResponse::Ok().json(json!(ls))
+}
 
-    let valid_events: Vec<Result<&String, serde_json::Error>> = events
-        .iter()
-        .map(|event| match validate_each(&compiled_schema, &event) {
-            Ok(is_valid) => {
-                if is_valid {
-                    Ok(event)
-                } else {
-                    //TODO: data is not matched to schema. so SchemaNotMatched Error should be returned.
-                    Err(serde::de::Error::invalid_length(
-                        0,
-                        &"fewer elements in array",
-                    ))
-                }
-            }
-            Err(error) => Err(error),
+pub async fn produce(
+    producer: &FutureProducer, 
+    topic_name: &str, 
+    payloads: Vec<Result<Vec<u8>, MyError>>) -> Result<Vec<Result<bool, MyError>>, MyError> {
+    
+    let futures = payloads
+        .into_iter()
+        .map(|payload_result| async move {
+            payload_result.map(|payload| {
+                /* 
+                    let record = 
+                        FutureRecord::to(topic_name).key("").payload(payload);
+
+                    let produced_result = producer
+                        .send(record, Duration::from_secs(0))
+                        .await;
+
+                    match produced_result {
+                        Ok(produced) => Ok(true),
+                        Err((error, message)) => Err(SchemaParseError::PublishError)
+                    }
+                    */
+                println!("payload: {:?}", payload);
+                true
+            })
         })
-        .collect();
+        .collect::<Vec<_>>();
 
-    let delivered = produce(&data.producer, "quickstart-events", valid_events).await;
+    let result = join_all(futures).await;
 
-    HttpResponse::Ok().json(delivered)
+    Ok(result)
 }

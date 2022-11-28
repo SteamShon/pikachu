@@ -1,6 +1,3 @@
-### get all subjects
-GET http://localhost:8000/subject HTTP/1.1
-content-type: application/json
 
 ### create subject
 POST http://localhost:8000/subject HTTP/1.1
@@ -21,24 +18,32 @@ content-type: application/json
     "compatibility": "NONE"
 }
 
+### get all subjects
+GET http://localhost:8000/subject HTTP/1.1
+content-type: application/json
 
 ### get all schemas under subject
 GET http://localhost:8000/subject/test_subject HTTP/1.1
 content-type: application/json
 
-### get all schemas under subject with schema_name
-GET http://localhost:8000/subject/test_subject/test_json_schema_3 HTTP/1.1
-content-type: application/json
-
-
-### create schema under subject
-POST http://localhost:8000/subject/test_subject HTTP/1.1
+### create json schema under subject
+POST http://localhost:8000/subject/test_subject/schema HTTP/1.1
 content-type: application/json
 
 {
     "schema_name": "test_json_schema_3",
     "schema_type": "JSON",
     "schema": "{\r\n  \"$id\": \"https://example.com/person.schema.json\",\r\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r\n  \"title\": \"Person\",\r\n  \"type\": \"object\",\r\n  \"properties\": {\r\n    \"firstName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's first name.\"\r\n    },\r\n    \"lastName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's last name.\"\r\n    },\r\n    \"age\": {\r\n      \"description\": \"Age in years which must be equal to or greater than zero.\",\r\n      \"type\": \"integer\",\r\n      \"minimum\": 0\r\n    }\r\n  }\r\n}"
+}
+
+### create avro schema under subject
+POST http://localhost:8000/subject/test_subject/schema HTTP/1.1
+content-type: application/json
+
+{
+    "schema_name": "test_avro_schema_3",
+    "schema_type": "AVRO",
+    "schema": "{\r\n    \"type\": \"record\",\r\n    \"name\": \"test\",\r\n    \"fields\": [\r\n        {\"name\": \"a\", \"type\": \"long\", \"default\": 42},\r\n        {\"name\": \"b\", \"type\": \"string\"}\r\n    ]\r\n}"
 }
 
 
@@ -50,3 +55,10 @@ content-type: application/json
     "schema_type": "JSON_2",
     "schema": "{\r\n  \"$id\": \"https://example.com/person.schema.json\",\r\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r\n  \"title\": \"Person\",\r\n  \"type\": \"object\",\r\n  \"properties\": {\r\n    \"firstName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's first name.\"\r\n    },\r\n    \"lastName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's last name.\"\r\n    },\r\n    \"age\": {\r\n      \"description\": \"Age in years which must be equal to or greater than zero.\",\r\n      \"type\": \"integer\",\r\n      \"minimum\": 0\r\n    }\r\n  }\r\n}"
 }
+
+
+### publish json data on avro schema
+POST http://localhost:8000/publish/test_subject HTTP/1.1
+content-type: application/json
+
+["{\r\n    \"a\": 10,\r\n    \"b\": \"b_10\"\r\n}","{\r\n    \"a\": 11,\r\n    \"b\": \"b_11\"\r\n}"]

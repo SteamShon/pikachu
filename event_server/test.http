@@ -61,4 +61,8 @@ content-type: application/json
 POST http://localhost:8000/publish/test_subject HTTP/1.1
 content-type: application/json
 
-["{\r\n    \"a\": 10,\r\n    \"b\": \"b_10\"\r\n}","{\r\n    \"a\": 11,\r\n    \"b\": \"b_11\"\r\n}"]
+[   
+    "{\r\n    \"a\": 10,\r\n    \"b\": \"b_10\"\r\n}",
+    "{\r\n    \"a\": 11,\r\n    \"b\": \"b_11\"\r\n}",
+    "{\r\n    \"a\": \"12\",\r\n    \"b\": \"b_12\"\r\n}"
+]

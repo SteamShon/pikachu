@@ -7,10 +7,12 @@ pub enum Error {
     AvroError,
     SchemaNotMatchedError,
     InvalidJsonEvent,
+    SchemaIsInvalid,
+    EventDataNotObject,
     PublishError
 }
 
 pub enum Schema {
     Json(jsonschema::JSONSchema),
-    Avro(avrow::Schema)
+    Avro(apache_avro::Schema)
 }

@@ -34,7 +34,7 @@ fn into_parsed_schema(
     schema: &entity::schema::Model
 ) -> Result<MySchema, MyError> {
     if schema.schema_type.to_uppercase() == "AVRO" {
-        avrow::Schema::from_str(&schema.schema)
+        apache_avro::Schema::parse_str(&schema.schema)
             .map(|schema| MySchema::Avro(schema))
             .map_err(|_error| MyError::AvroError )
     } else {
@@ -65,6 +65,7 @@ fn to_bytes(
 
     match parsed_schema {
         MySchema::Avro(schema) => {
+            /* 
             let rec = 
                 avrow::Record::from_json(json_event.as_object().unwrap().to_owned(), &schema).unwrap();
             let mut writer = avrow::Writer::new(&schema, vec![]).unwrap();
@@ -77,8 +78,44 @@ fn to_bytes(
             for val in reader {
                 println!("value: {:?}", val);
             }
+            */
+            let mut writer = apache_avro::Writer::new(&schema, Vec::new());
+            let record_option = apache_avro::types::Record::new(&schema);
+            if let None = record_option {
+                return Err(MyError::SchemaIsInvalid)
+            }
             
-            Ok(avro_data)
+            let mut record = record_option.unwrap();
+            let kvs_option = json_event.as_object();
+            if let None = kvs_option {
+                return Err(MyError::EventDataNotObject)
+            }
+            let kvs = kvs_option.unwrap();
+
+            for (k, v) in kvs {
+                record.put(&k, v.to_owned());
+            }
+            //let avro_value = apache_avro::types::Value::from(json_event);
+           
+            match writer.append(record) {
+                Err(_error) => Err(MyError::SchemaNotMatchedError),
+                Ok(_encoded) => {
+                    match writer.into_inner() {
+                        Err(_error) => Err(MyError::SchemaNotMatchedError),
+                        Ok(bytes) => {
+                            println!("serialized: {:?}", event);
+
+                            let reader = 
+                                apache_avro::Reader::new(&bytes[..]).unwrap();
+                            for value in reader {
+                                println!("deserialized: {:?}", value.unwrap());
+                            }
+
+                            Ok(bytes)
+                        }
+                    }
+                }
+            }
         }
         MySchema::Json(schema) => {
             if schema.is_valid(&json_event) {

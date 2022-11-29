@@ -14,8 +14,6 @@ pub struct Model {
     #[serde(skip_deserializing)]
     pub version: String,
 
-    pub schema_type: String,
-    
     #[sea_orm(column_type = "Text")]
     pub schema: String,
 

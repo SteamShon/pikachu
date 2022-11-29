@@ -16,19 +16,13 @@ pub struct MyRequest {
     version: Option<String>,
 }
 
-fn validate_each(compiled_schema: &JSONSchema, event: &str) -> Result<bool, serde_json::Error> {
-    let value: Result<Value, serde_json::Error> = serde_json::from_str(event);
-
-    value.map(|v| compiled_schema.is_valid(&v))
-}
-
-
 #[post("/publish/{subject_name}")]
 pub async fn publish(
     path: Path<MyRequest>,
     events: web::Json<Vec<String>>,
     data: web::Data<AppState>,
 ) -> impl Responder {
+    let skip_publish = true;
     let subject_with_schema = match &path.version {
         Some(version) => repo::schema::find_by_version(&data.conn, &path.subject_name, &version).await,
         None => repo::schema::find_by_latest_version(&data.conn, &path.subject_name).await,
@@ -51,10 +45,11 @@ pub async fn publish(
     };
     
     let (subject, schema) = (subject_option.unwrap(), schema_option.unwrap());
-    let topic_name = subject.topic_name.unwrap_or(subject.name);
-
+    
     let valid_events_result = 
-        repo::schema::validate_events(&schema, events.into_inner());
+        repo::schema::validate_events(&subject, &schema, events.into_inner());
+
+    let topic_name = subject.topic_name.unwrap_or(subject.name);
 
     if let Err(error) = valid_events_result {
         return HttpResponse::InternalServerError().json(json!(error))
@@ -62,7 +57,7 @@ pub async fn publish(
 
     let valid_events = valid_events_result.unwrap();
     let produced_result =
-        produce(&data.producer, &topic_name, valid_events).await;
+        produce(&data.producer, &topic_name, valid_events, skip_publish).await;
 
     if let Err(_error) = produced_result {
         return HttpResponse::InternalServerError().body("error")
@@ -80,28 +75,28 @@ pub async fn publish(
 pub async fn produce(
     producer: &FutureProducer, 
     topic_name: &str, 
-    payloads: Vec<Result<Vec<u8>, MyError>>) -> Result<Vec<Result<bool, MyError>>, MyError> {
+    payloads: Vec<Result<Vec<u8>, MyError>>, 
+    skip_publish: bool
+) -> Result<Vec<Result<bool, MyError>>, MyError> {
     
     let futures = payloads
         .into_iter()
         .map(|payload_result| async move {
-            payload_result.map(|payload| {
-                /* 
-                    let record = 
-                        FutureRecord::to(topic_name).key("").payload(payload);
+            if skip_publish {
+                Ok(payload_result.is_ok())
+            } else {
+                let bytes = payload_result?;
+                let record = 
+                            FutureRecord::to(topic_name).key("").payload(&bytes[..]);
+                let produced_result = producer
+                    .send(record, Duration::from_secs(0))
+                    .await;
 
-                    let produced_result = producer
-                        .send(record, Duration::from_secs(0))
-                        .await;
-
-                    match produced_result {
-                        Ok(produced) => Ok(true),
-                        Err((error, message)) => Err(SchemaParseError::PublishError)
-                    }
-                    */
-                println!("payload: {:?}", payload);
-                true
-            })
+                match produced_result {
+                    Ok(_produced) => Ok(true),
+                    Err((_error, message)) => Err(MyError::PublishError)
+                }
+            }
         })
         .collect::<Vec<_>>();
 

@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use cached::proc_macro::once;
 use entity::subject::{Entity as Subject, self};
 use entity::schema::{Entity as Schema, self};
@@ -31,9 +29,10 @@ fn into_subject_schema(fetched: Vec<(subject::Model, Vec<schema::Model>)>) ->
 
 //TODO: Cache MySchema
 fn into_parsed_schema(
+    subject: &entity::subject::Model,
     schema: &entity::schema::Model
 ) -> Result<MySchema, MyError> {
-    if schema.schema_type.to_uppercase() == "AVRO" {
+    if subject.data_format.to_uppercase() == "AVRO" {
         apache_avro::Schema::parse_str(&schema.schema)
             .map(|schema| MySchema::Avro(schema))
             .map_err(|_error| MyError::AvroError )
@@ -65,20 +64,6 @@ fn to_bytes(
 
     match parsed_schema {
         MySchema::Avro(schema) => {
-            /* 
-            let rec = 
-                avrow::Record::from_json(json_event.as_object().unwrap().to_owned(), &schema).unwrap();
-            let mut writer = avrow::Writer::new(&schema, vec![]).unwrap();
-            writer.write(rec).unwrap();
-
-            let avro_data = writer.into_inner().unwrap();
-            println!("avro_data: {:?}", avro_data);
-
-            let reader = avrow::Reader::new(avro_data.as_slice()).unwrap();
-            for val in reader {
-                println!("value: {:?}", val);
-            }
-            */
             let mut writer = apache_avro::Writer::new(&schema, Vec::new());
             let record_option = apache_avro::types::Record::new(&schema);
             if let None = record_option {
@@ -95,7 +80,6 @@ fn to_bytes(
             for (k, v) in kvs {
                 record.put(&k, v.to_owned());
             }
-            //let avro_value = apache_avro::types::Value::from(json_event);
            
             match writer.append(record) {
                 Err(_error) => Err(MyError::SchemaNotMatchedError),
@@ -128,10 +112,11 @@ fn to_bytes(
 }
 
 pub fn validate_events(
+    subject: &entity::subject::Model,
     schema: &entity::schema::Model, 
     events: Vec<String>
 ) -> Result<Vec<Result<Vec<u8>, MyError>>, MyError> {
-    let parsed_schema = into_parsed_schema(&schema)?;
+    let parsed_schema = into_parsed_schema(subject, &schema)?;
 
     let payloads: Vec<Result<Vec<u8>, MyError>> = 
         events.iter().map(|event| to_bytes(&parsed_schema, &event))
@@ -182,7 +167,6 @@ async fn create_inner(
     let active_model: schema::ActiveModel = schema::ActiveModel {
         subject_id: Set(subject.id),
         version: Set(Utc::now().timestamp_micros().to_string()),
-        schema_type: Set(schema.schema_type),
         schema: Set(schema.schema),
         ..Default::default()
     };
@@ -190,8 +174,28 @@ async fn create_inner(
     active_model.save(db).await
 }
 
-pub fn validate_schema(new_schema: &schema::Model, old_schemas: &Vec<schema::Model>) -> bool {
-    true
+pub fn validate_schema(
+    subject: &subject::Model, 
+    new_schema: &schema::Model, 
+    old_schemas: &Vec<schema::Model>
+) -> bool {
+    if subject.compatibility.to_uppercase() == "BACKWARD" {
+        old_schemas.first().map(|old_schema| {
+            if subject.data_format.to_uppercase() == "AVRO" {
+                let old = 
+                    apache_avro::Schema::parse_str(&old_schema.schema).unwrap();
+                let new = 
+                    apache_avro::Schema::parse_str(&new_schema.schema).unwrap();
+
+                apache_avro::schema_compatibility::SchemaCompatibility::can_read(&new, &old)
+            } else {
+                //TODO
+                true
+            }
+        }).unwrap_or(false)
+    } else {
+        true
+    }
 }
 
 pub async fn create_with_validation(
@@ -211,7 +215,7 @@ pub async fn create_with_validation(
         .first()
         .ok_or_else(|| DbErr::RecordNotFound(format!("subject {:?} is not found.", subject_name)))?;
     
-    if validate_schema(&schema, &schemas) {
+    if validate_schema(subject, &schema, &schemas) {
         create_inner(db, &subject, schema).await
     } else {
         Err(DbErr::RecordNotFound("".to_string()))

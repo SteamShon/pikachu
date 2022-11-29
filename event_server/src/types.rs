@@ -1,3 +1,7 @@
+use avrow;
+use jsonschema;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Error {
     SerdeJsonError,
     JsonSchemaError,
@@ -7,6 +11,7 @@ pub enum Error {
     PublishError
 }
 
+#[derive(Clone)]
 pub enum Schema {
     Json(jsonschema::JSONSchema),
     Avro(avrow::Schema)

@@ -27,6 +27,8 @@ fn into_subject_schema(fetched: Vec<(subject::Model, Vec<schema::Model>)>) ->
     
     (subject, schema.flatten())
 }
+
+
 //TODO: Cache MySchema
 fn into_parsed_schema(
     schema: &entity::schema::Model
@@ -42,7 +44,7 @@ fn into_parsed_schema(
                     .with_draft(jsonschema::Draft::Draft7)
                     .compile(&json_schema) {
                         Ok(compiled_schema) => Ok(MySchema::Json(compiled_schema)),
-                        Err(_error1) => Err(MyError::SchemaNotMatchedError)
+                        Err(_error) => Err(MyError::SchemaNotMatchedError)
                     }
             },
             Err(_error) => Err(MyError::SerdeJsonError)

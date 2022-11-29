@@ -1,20 +1,30 @@
 
-### create subject
+### create subject with json_schema and BACKWARD compatibility
 POST http://localhost:8000/subject HTTP/1.1
 content-type: application/json
 
 {
-    "name": "test_subject", 
+    "name": "json_subject", 
     "data_format": "JSON",
-    "compatibility": "NONE"
+    "compatibility": "BACKWARD"
 }
 
-### update subject
-PATCH  http://localhost:8000/subject/test_subject HTTP/1.1
+### create subject with avro schema and BACKWARD compatibility
+POST http://localhost:8000/subject HTTP/1.1
 content-type: application/json
 
 {
-    "data_format": "JSON_2",
+    "name": "avro_subject", 
+    "data_format": "AVRO",
+    "compatibility": "BACKWARD"
+}
+
+### update subject
+PATCH  http://localhost:8000/subject/json_subject HTTP/1.1
+content-type: application/json
+
+{
+    "data_format": "JSON",
     "compatibility": "NONE"
 }
 
@@ -22,43 +32,42 @@ content-type: application/json
 GET http://localhost:8000/subject HTTP/1.1
 content-type: application/json
 
-### get all schemas under subject
-GET http://localhost:8000/subject/test_subject HTTP/1.1
+### get all schemas under avro_subject
+GET http://localhost:8000/subject/avro_subject HTTP/1.1
+content-type: application/json
+
+### get all schemas under json_subject
+GET http://localhost:8000/subject/json_subject HTTP/1.1
 content-type: application/json
 
 ### create json schema under subject
-POST http://localhost:8000/subject/test_subject/schema HTTP/1.1
+POST http://localhost:8000/subject/json_subject/schema HTTP/1.1
 content-type: application/json
 
 {
-    "schema_name": "test_json_schema_3",
-    "schema_type": "JSON",
     "schema": "{\r\n  \"$id\": \"https://example.com/person.schema.json\",\r\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r\n  \"title\": \"Person\",\r\n  \"type\": \"object\",\r\n  \"properties\": {\r\n    \"firstName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's first name.\"\r\n    },\r\n    \"lastName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's last name.\"\r\n    },\r\n    \"age\": {\r\n      \"description\": \"Age in years which must be equal to or greater than zero.\",\r\n      \"type\": \"integer\",\r\n      \"minimum\": 0\r\n    }\r\n  }\r\n}"
 }
 
 ### create avro schema under subject
-POST http://localhost:8000/subject/test_subject/schema HTTP/1.1
+POST http://localhost:8000/subject/avro_subject/schema HTTP/1.1
 content-type: application/json
 
 {
-    "schema_name": "test_avro_schema_3",
-    "schema_type": "AVRO",
     "schema": "{\r\n    \"type\": \"record\",\r\n    \"name\": \"test\",\r\n    \"fields\": [\r\n        {\"name\": \"a\", \"type\": \"long\", \"default\": 42},\r\n        {\"name\": \"b\", \"type\": \"string\"}\r\n    ]\r\n}"
 }
 
 
 ### update specific version of schema 
-PATCH http://localhost:8000/subject/test_subject/schema/test_json_schema_3/1669384508236903 HTTP/1.1
+PATCH http://localhost:8000/subject/json_subject/schema/1669384508236903 HTTP/1.1
 content-type: application/json
 
 {
-    "schema_type": "JSON_2",
     "schema": "{\r\n  \"$id\": \"https://example.com/person.schema.json\",\r\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r\n  \"title\": \"Person\",\r\n  \"type\": \"object\",\r\n  \"properties\": {\r\n    \"firstName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's first name.\"\r\n    },\r\n    \"lastName\": {\r\n      \"type\": \"string\",\r\n      \"description\": \"The person's last name.\"\r\n    },\r\n    \"age\": {\r\n      \"description\": \"Age in years which must be equal to or greater than zero.\",\r\n      \"type\": \"integer\",\r\n      \"minimum\": 0\r\n    }\r\n  }\r\n}"
 }
 
 
-### publish json data on avro schema
-POST http://localhost:8000/publish/test_subject HTTP/1.1
+### publish json data on avro schema with latest schema
+POST http://localhost:8000/publish/avro_subject HTTP/1.1
 content-type: application/json
 
 [   

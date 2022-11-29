@@ -207,18 +207,23 @@ pub async fn create_with_validation(
     //2. find all related schemas.
     //3. run schema validate(new_schema, old_schemas)
     //4. only when validate succes, create new schema under this subject.
-    let subject_with_schemas = 
+    let subject_with_schemas: Vec<(subject::Model, Vec<schema::Model>)> = 
         super::subject::find_by_subject_name_eager(db, subject_name)
         .await?;
 
-    let (subject, schemas) = subject_with_schemas
-        .first()
-        .ok_or_else(|| DbErr::RecordNotFound(format!("subject {:?} is not found.", subject_name)))?;
-    
-    if validate_schema(subject, &schema, &schemas) {
-        create_inner(db, &subject, schema).await
-    } else {
-        Err(DbErr::RecordNotFound("".to_string()))
+    match subject_with_schemas.first() {
+        None => Err(DbErr::RecordNotFound(format!("subject is not found: {:?}", subject_name))),
+        Some((subject, schemas)) => {
+            if schemas.is_empty() {
+                create_inner(db, &subject, schema).await
+            } else {
+                if validate_schema(subject, &schema, &schemas) {
+                    create_inner(db, &subject, schema).await
+                } else {
+                    Err(DbErr::RecordNotFound("".to_string()))
+                }
+            }
+        }
     }
 }
 

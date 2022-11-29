@@ -22,7 +22,7 @@ pub async fn publish(
     events: web::Json<Vec<String>>,
     data: web::Data<AppState>,
 ) -> impl Responder {
-    let skip_publish = true;
+    let skip_publish = false;
     let subject_with_schema = match &path.version {
         Some(version) => repo::schema::find_by_version(&data.conn, &path.subject_name, &version).await,
         None => repo::schema::find_by_latest_version(&data.conn, &path.subject_name).await,

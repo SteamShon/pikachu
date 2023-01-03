@@ -190,6 +190,7 @@ model Customset {
   createdBy       User           @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
   creatorId       String
   info            CustomsetInfo?
+  status          String         @default("CREATED")
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   customsetInfoId String

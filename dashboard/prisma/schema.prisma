@@ -75,6 +75,7 @@ model Service {
   name            String
   description     String?
   placementGroups PlacementGroup[]
+  status          String           @default("CREATED")
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -89,6 +90,7 @@ model PlacementGroup {
   serviceId   String?
 
   placements Placement[]
+  status     String      @default("CREATED")
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
@@ -96,18 +98,18 @@ model PlacementGroup {
 }
 
 model Placement {
-  id               String          @id @default(cuid())
-  name             String
-  description      String?
-  PlacementGroup   PlacementGroup? @relation(fields: [placementGroupId], references: [id])
-  placementGroupId String?
-
-  createdAt               DateTime                  @default(now())
-  updatedAt               DateTime                  @updatedAt
+  id                      String                    @id @default(cuid())
+  name                    String
+  description             String?
+  PlacementGroup          PlacementGroup?           @relation(fields: [placementGroupId], references: [id])
+  placementGroupId        String?
   campaign                Campaign[]
   AdvertisersOnPlacements AdvertisersOnPlacements[]
   ContentType             ContentType               @relation(fields: [contentTypeId], references: [id])
   contentTypeId           String
+  status                  String                    @default("CREATED")
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
 
   @@unique([placementGroupId, name])
 }
@@ -121,8 +123,11 @@ model ContentType {
   creatorId  String
   placements Placement[]
   creatives  Creative[]
+  status     String      @default("CREATED")
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+
+  @@unique([ownerId, name])
 }
 
 model AdvertisersOnPlacements {

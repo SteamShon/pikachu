@@ -58,6 +58,8 @@ model User {
   createdCustomsets       Customset[]               @relation("createdCustomsets")
   advertisersOnPlacements AdvertisersOnPlacements[]
   cubes                   Cube[]
+  ownedContentTypes       ContentType[]             @relation("ownedContentTypes")
+  createdContentTypes     ContentType[]             @relation("createdContentTypes")
 }
 
 model VerificationToken {
@@ -104,8 +106,23 @@ model Placement {
   updatedAt               DateTime                  @updatedAt
   campaign                Campaign[]
   AdvertisersOnPlacements AdvertisersOnPlacements[]
+  ContentType             ContentType               @relation(fields: [contentTypeId], references: [id])
+  contentTypeId           String
 
   @@unique([placementGroupId, name])
+}
+
+model ContentType {
+  id         String      @id @default(cuid())
+  name       String
+  ownedBy    User        @relation("ownedContentTypes", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId    String
+  createdBy  User        @relation("createdContentTypes", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId  String
+  placements Placement[]
+  creatives  Creative[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model AdvertisersOnPlacements {
@@ -155,17 +172,19 @@ model AdGroup {
 }
 
 model Creative {
-  id          String                @id @default(cuid())
-  name        String
-  description String?
-  ownedBy     User                  @relation("ownedCreatives", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId     String
-  createdBy   User                  @relation("createdCreatives", fields: [creatorId], references: [id], onDelete: Cascade)
-  creatorId   String
-  adGroups    CreativesOnAdGroups[]
-  status      String                @default("CREATED")
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  id            String                @id @default(cuid())
+  name          String
+  description   String?
+  ownedBy       User                  @relation("ownedCreatives", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId       String
+  createdBy     User                  @relation("createdCreatives", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId     String
+  adGroups      CreativesOnAdGroups[]
+  status        String                @default("CREATED")
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  ContentType   ContentType           @relation(fields: [contentTypeId], references: [id])
+  contentTypeId String
 
   @@unique([ownerId, name])
 }

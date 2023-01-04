@@ -14,6 +14,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
 // Necessary for Next auth
 model Account {
   id                String  @id @default(cuid())
@@ -42,24 +46,28 @@ model Session {
 }
 
 model User {
-  id                      String                    @id @default(cuid())
-  name                    String?
-  email                   String?                   @unique
-  emailVerified           DateTime?
-  image                   String?
-  role                    String                    @default("ADMIN")
-  accounts                Account[]
-  sessions                Session[]
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("ADMIN")
+  accounts      Account[]
+  sessions      Session[]
+
   ownedCampaigns          Campaign[]                @relation("ownedCampaigns")
   createdCampaigns        Campaign[]                @relation("createdCampaigns")
-  ownedCreatives          Creative[]                @relation("ownedCreatives")
+  createdAdGroups         AdGroup[]                 @relation("createdAdGroups")
   createdCreatives        Creative[]                @relation("createdCreatives")
   ownedCustomsets         Customset[]               @relation("ownedCustomsets")
   createdCustomsets       Customset[]               @relation("createdCustomsets")
   advertisersOnPlacements AdvertisersOnPlacements[]
-  cubes                   Cube[]
-  ownedContentTypes       ContentType[]             @relation("ownedContentTypes")
   createdContentTypes     ContentType[]             @relation("createdContentTypes")
+  cubes                   Cube[]
+  ownedServices           Service[]                 @relation("ownedServices")
+  createdServices         Service[]                 @relation("createdServices")
+  createdPlacementGroups  PlacementGroup[]          @relation("createdPlacementGroups")
+  createdPlacements       Placement[]               @relation("createdPlacements")
 }
 
 model VerificationToken {
@@ -74,25 +82,31 @@ model Service {
   id              String           @id @default(cuid())
   name            String
   description     String?
+  ownedBy         User             @relation("ownedServices", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId         String
+  createdBy       User             @relation("createdServices", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId       String
   placementGroups PlacementGroup[]
+  contentTypes    ContentType[]
   status          String           @default("CREATED")
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
-  @@unique([name])
+  @@unique([ownerId, name])
 }
 
 model PlacementGroup {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
   description String?
-  service     Service? @relation(fields: [serviceId], references: [id])
+  service     Service?    @relation(fields: [serviceId], references: [id])
   serviceId   String?
-
-  placements Placement[]
-  status     String      @default("CREATED")
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  createdBy   User        @relation("createdPlacementGroups", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId   String
+  placements  Placement[]
+  status      String      @default("CREATED")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   @@unique([serviceId, name])
 }
@@ -107,6 +121,8 @@ model Placement {
   AdvertisersOnPlacements AdvertisersOnPlacements[]
   ContentType             ContentType               @relation(fields: [contentTypeId], references: [id])
   contentTypeId           String
+  createdBy               User                      @relation("createdPlacements", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId               String
   status                  String                    @default("CREATED")
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
@@ -115,19 +131,21 @@ model Placement {
 }
 
 model ContentType {
-  id         String      @id @default(cuid())
-  name       String
-  ownedBy    User        @relation("ownedContentTypes", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId    String
+  id   String @id @default(cuid())
+  name String
+
+  service    Service     @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId  String
   createdBy  User        @relation("createdContentTypes", fields: [creatorId], references: [id], onDelete: Cascade)
   creatorId  String
+  schema     String
   placements Placement[]
-  creatives  Creative[]
+  contents   Content[]
   status     String      @default("CREATED")
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
-  @@unique([ownerId, name])
+  @@unique([serviceId, name])
 }
 
 model AdvertisersOnPlacements {
@@ -162,47 +180,50 @@ model Campaign {
 }
 
 model AdGroup {
-  id          String                @id @default(cuid())
+  id          String     @id @default(cuid())
   name        String
   description String?
-  campaign    Campaign              @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign    Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   campaignId  String
   filter      String?
-  creatives   CreativesOnAdGroups[]
-  status      String                @default("CREATED")
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  creatives   Creative[]
+  createdBy   User       @relation("createdAdGroups", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId   String
+  status      String     @default("CREATED")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@unique([campaignId, name])
 }
 
 model Creative {
-  id            String                @id @default(cuid())
-  name          String
-  description   String?
-  ownedBy       User                  @relation("ownedCreatives", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId       String
-  createdBy     User                  @relation("createdCreatives", fields: [creatorId], references: [id], onDelete: Cascade)
-  creatorId     String
-  adGroups      CreativesOnAdGroups[]
-  status        String                @default("CREATED")
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
-  ContentType   ContentType           @relation(fields: [contentTypeId], references: [id])
-  contentTypeId String
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  adGroup     AdGroup  @relation(fields: [adGroupId], references: [id], onDelete: Cascade)
+  adGroupId   String
+  createdBy   User     @relation("createdCreatives", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId   String
+  content     Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  contentId   String
+  status      String   @default("CREATED")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@unique([ownerId, name])
+  @@unique([adGroupId, name])
 }
 
-model CreativesOnAdGroups {
-  adGroup    AdGroup  @relation(fields: [adGroupId], references: [id])
-  adGroupId  String
-  creative   Creative @relation(fields: [creativeId], references: [id])
-  creativeId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@id([adGroupId, creativeId])
+model Content {
+  id            String      @id @default(cuid())
+  name          String
+  description   String?
+  contentType   ContentType @relation(fields: [contentTypeId], references: [id])
+  contentTypeId String
+  data          String
+  creatives     Creative[]
+  status        String      @default("CREATED")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Customset {

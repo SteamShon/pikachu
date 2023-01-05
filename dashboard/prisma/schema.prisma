@@ -63,11 +63,11 @@ model User {
   createdCustomsets       Customset[]               @relation("createdCustomsets")
   advertisersOnPlacements AdvertisersOnPlacements[]
   createdContentTypes     ContentType[]             @relation("createdContentTypes")
-  cubes                   Cube[]
-  ownedServices           Service[]                 @relation("ownedServices")
-  createdServices         Service[]                 @relation("createdServices")
-  createdPlacementGroups  PlacementGroup[]          @relation("createdPlacementGroups")
-  createdPlacements       Placement[]               @relation("createdPlacements")
+
+  ownedServices          Service[]        @relation("ownedServices")
+  createdServices        Service[]        @relation("createdServices")
+  createdPlacementGroups PlacementGroup[] @relation("createdPlacementGroups")
+  createdPlacements      Placement[]      @relation("createdPlacements")
 }
 
 model VerificationToken {
@@ -170,6 +170,7 @@ model Campaign {
   adGroups    AdGroup[]
   placement   Placement @relation(fields: [placementId], references: [id])
   placementId String
+  type        String    @default("DISPLAY")
   startedAt   DateTime
   endAt       DateTime
   status      String    @default("CREATED")
@@ -249,15 +250,4 @@ model CustomsetInfo {
   customsetId String    @unique
   filePath    String
   config      String
-  cube        Cube?     @relation(fields: [cubeId], references: [id])
-  cubeId      String?
-  filter      String?
-}
-
-model Cube {
-  id            String          @id @default(cuid())
-  name          String
-  ownedBy       User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId       String
-  CustomsetInfo CustomsetInfo[]
 }

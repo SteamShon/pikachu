@@ -1,22 +1,26 @@
-import { useFormContext } from "react-hook-form";
+import { Box, TextField, Typography } from "@mui/material";
+import { Controller, useFormContext } from "react-hook-form";
 
 function CustomsetInfo() {
-  const { register } = useFormContext();
+  const { control } = useFormContext();
 
   return (
-    <div className="pl-8">
-      <input {...register("info.customsetId", { value: "1" })} type="hidden" />
-      <label>filePath</label>
-      <input
-        {...register("info.filePath")}
-        className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+    <Box>
+      <Controller
+        name="info.filePath"
+        control={control}
+        render={({ field }) => (
+          <TextField {...field} label="FilePath" fullWidth />
+        )}
       />
-      <label>config</label>
-      <input
-        {...register("info.config")}
-        className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+      <Controller
+        name="info.config"
+        control={control}
+        render={({ field }) => (
+          <TextField {...field} label="Config" fullWidth />
+        )}
       />
-    </div>
+    </Box>
   );
 }
 export default CustomsetInfo;

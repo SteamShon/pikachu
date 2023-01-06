@@ -65,8 +65,8 @@ model User {
     createdCampaigns        Campaign[]                @relation("createdCampaigns")
     createdAdGroups         AdGroup[]                 @relation("createdAdGroups")
     createdCreatives        Creative[]                @relation("createdCreatives")
-    ownedCustomsets         Customset[]               @relation("ownedCustomsets")
-    createdCustomsets       Customset[]               @relation("createdCustomsets")
+    // ownedCustomsets         Customset[]               @relation("ownedCustomsets")
+    // createdCustomsets       Customset[]               @relation("createdCustomsets")
     advertisersOnPlacements AdvertisersOnPlacements[]
     createdContentTypes     ContentType[]             @relation("createdContentTypes")
 
@@ -234,25 +234,26 @@ model Content {
 }
 
 model Customset {
-    id          String         @id @default(cuid())
-    name        String
-    description String?
-    ownedBy     User           @relation("ownedCustomsets", fields: [ownerId], references: [id], onDelete: Cascade)
-    ownerId     String
-    createdBy   User           @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
-    creatorId   String
-    info        CustomsetInfo?
-    status      String         @default("CREATED")
-    createdAt   DateTime       @default(now())
-    updatedAt   DateTime       @updatedAt
+    id              String         @id @default(cuid())
+    name            String
+    description     String?
+    // ownedBy         User           @relation("ownedCustomsets", fields: [ownerId], references: [id], onDelete: Cascade)
+    // ownerId         String
+    // createdBy       User           @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
+    // creatorId       String
+    customsetInfo   CustomsetInfo? @relation(fields: [customsetInfoId], references: [id], onDelete: Cascade)
+    customsetInfoId String?        @unique
+    status          String         @default("CREATED")
+    createdAt       DateTime       @default(now())
+    updatedAt       DateTime       @updatedAt
 
-    @@unique([ownerId, name])
+    // @@unique([ownerId, name])
+    @@unique([name])
 }
 
 model CustomsetInfo {
-    id          String    @id @default(cuid())
-    customset   Customset @relation(fields: [customsetId], references: [id], onDelete: Cascade)
-    customsetId String    @unique
-    filePath    String
-    config      String
+    id        String     @id @default(cuid())
+    customset Customset?
+    filePath  String
+    config    String
 }

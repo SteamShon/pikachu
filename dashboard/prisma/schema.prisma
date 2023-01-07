@@ -57,7 +57,7 @@ model User {
     email         String?   @unique
     emailVerified DateTime?
     image         String?
-    role          String    @default("ADMIN")
+    role          String?
     accounts      Account[]
     sessions      Session[]
 
@@ -66,7 +66,7 @@ model User {
     createdAdGroups         AdGroup[]                 @relation("createdAdGroups")
     createdCreatives        Creative[]                @relation("createdCreatives")
     // ownedCustomsets         Customset[]               @relation("ownedCustomsets")
-    // createdCustomsets       Customset[]               @relation("createdCustomsets")
+    createdCustomsets       Customset[]               @relation("createdCustomsets")
     advertisersOnPlacements AdvertisersOnPlacements[]
     createdContentTypes     ContentType[]             @relation("createdContentTypes")
 
@@ -239,8 +239,8 @@ model Customset {
     description     String?
     // ownedBy         User           @relation("ownedCustomsets", fields: [ownerId], references: [id], onDelete: Cascade)
     // ownerId         String
-    // createdBy       User           @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
-    // creatorId       String
+    createdBy       User           @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
+    creatorId       String
     customsetInfo   CustomsetInfo? @relation(fields: [customsetInfoId], references: [id], onDelete: Cascade)
     customsetInfoId String?        @unique
     status          String         @default("CREATED")

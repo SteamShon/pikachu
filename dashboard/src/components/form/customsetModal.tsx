@@ -6,8 +6,7 @@ import { z } from "zod";
 import { customsetSchema } from "../schema/customset";
 import { api } from "../../utils/api";
 import ErrorSummary from "../common/error";
-import CustomsetInfo from "./customsetInfo";
-import type { Customset } from "@prisma/client";
+import type { Customset, CustomsetInfo } from "@prisma/client";
 import {
   Box,
   Button,
@@ -19,11 +18,19 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import CustomsetInfoForm from "./customsetInfoForm";
+import { useSession } from "next-auth/react";
 
 interface CustomsetModalProps {
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
-  setCustomsets: Dispatch<SetStateAction<Customset[]>>;
+  setCustomsets: Dispatch<
+    SetStateAction<
+      (Customset & {
+        customsetInfo: CustomsetInfo | null;
+      })[]
+    >
+  >;
 }
 
 function CustomsetModal({
@@ -31,6 +38,7 @@ function CustomsetModal({
   setModalOpen,
   setCustomsets,
 }: CustomsetModalProps) {
+  const { data: session } = useSession();
   const { mutate: addCustomset } = api.customset.create.useMutation({
     onSuccess(customset) {
       setCustomsets((prev) => [...prev, customset]);
@@ -48,15 +56,23 @@ function CustomsetModal({
   } = methods;
   const onSubmit = (data: any) => {
     console.log(data);
-    // addCustomset({
-    //   name: data.name,
-    //   description: data.description || undefined,
-    //   ownerId: data.ownerId,
-    //   creatorId: data.creatorId,
-    //   status: data.status || undefined,
-    //   info: data.info,
-    // });
+    if (!session?.user) {
+      console.log("not logged in.");
+      return;
+    }
+    const params = {
+      name: data.name,
+      description: data.description || undefined,
+      ownerId: data.ownerId,
+      creatorId: data.creatorId,
+      status: data.status || undefined,
+      info: data.info,
+    };
+    console.log(params);
+    addCustomset(params);
   };
+
+  if (!session) return <>Not Logged in</>;
 
   return (
     <Dialog onClose={() => setModalOpen(false)} open={modalOpen}>
@@ -78,9 +94,13 @@ function CustomsetModal({
                 <TextField {...field} label="Description" fullWidth />
               )}
             />
+            <input
+              type="hidden"
+              {...register("creatorId", { value: session?.user?.id })}
+            />
             <Typography>Customset Info</Typography>
             <div className="pl-8">
-              <CustomsetInfo />
+              <CustomsetInfoForm />
             </div>
 
             <ErrorSummary errors={errors} />

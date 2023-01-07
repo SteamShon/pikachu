@@ -10,13 +10,19 @@ export const customsetRouter = createTRPCRouter({
       data: {
         name: input.name,
         description: input.description,
-        // ownerId: "1",
-        // creatorId: "1",
+        createdBy: {
+          connect: {
+            id: input.creatorId,
+          },
+        },
         customsetInfo: {
           create: {
             ...input.info,
           },
         },
+      },
+      include: {
+        customsetInfo: true,
       },
     });
 
@@ -26,32 +32,33 @@ export const customsetRouter = createTRPCRouter({
     return prisma.customset.findMany({
       include: {
         customsetInfo: true,
+        createdBy: true,
       },
     });
   }),
-  update: publicProcedure.input(customsetSchema).mutation(async ({ input }) => {
-    const customset = await prisma.customset.update({
-      where: {
-        id: input.id,
-      },
-      data: {
-        name: input.name,
-        description: input.description,
-        // ownerId: "1",
-        // creatorId: "1",
-        customsetInfo: {
-          connectOrCreate: {
-            where: {
-              id: input.customsetInfo.id,
-            },
-            data: {
-              ...input.info,
-            },
-          },
-        },
-      },
-    });
+  // update: publicProcedure.input(customsetSchema).mutation(async ({ input }) => {
+  //   const customset = await prisma.customset.update({
+  //     where: {
+  //       id: input.id,
+  //     },
+  //     data: {
+  //       name: input.name,
+  //       description: input.description,
+  //       // ownerId: "1",
+  //       // creatorId: "1",
+  //       customsetInfo: {
+  //         connectOrCreate: {
+  //           where: {
+  //             id: input.customsetInfo.id,
+  //           },
+  //           data: {
+  //             ...input.info,
+  //           },
+  //         },
+  //       },
+  //     },
+  //   });
 
-    return customset;
-  }),
+  //   return customset;
+  // }),
 });

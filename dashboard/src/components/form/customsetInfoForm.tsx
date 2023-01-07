@@ -1,7 +1,7 @@
 import { Box, TextField, Typography } from "@mui/material";
 import { Controller, useFormContext } from "react-hook-form";
 
-function CustomsetInfo() {
+function CustomsetInfoForm() {
   const { control } = useFormContext();
 
   return (
@@ -23,4 +23,4 @@ function CustomsetInfo() {
     </Box>
   );
 }
-export default CustomsetInfo;
+export default CustomsetInfoForm;

@@ -1,13 +1,16 @@
 import { DataGrid } from "@mui/x-data-grid";
-import type { Customset } from "@prisma/client";
+import type { Customset, CustomsetInfo } from "@prisma/client";
 import { useEffect, useState } from "react";
-import CustomsetModal from "../../components/form/customset";
+import CustomsetModal from "../../components/form/customsetModal";
 import { api } from "../../utils/api";
-// import { api } from "../../utils/api";
 
 function CustomsetList() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [customsets, setCustomsets] = useState<any[]>([]);
+  const [customsets, setCustomsets] = useState<
+    (Customset & {
+      customsetInfo: CustomsetInfo | null;
+    })[]
+  >([]);
   const { data: fetchedCustomsets, isLoading } =
     api.customset.getAll.useQuery();
 
@@ -21,6 +24,14 @@ function CustomsetList() {
   const columns = [
     { field: "id", headerName: "ID" },
     { field: "name", headerName: "Name" },
+    { field: "description", headerName: "Description" },
+    { field: "status", headerName: "Status" },
+    {
+      field: "creator",
+      valueGetter: (params) => {
+        return params.row.createdBy.name;
+      },
+    },
   ];
 
   const rows = (customsets || []).map((customset) => {

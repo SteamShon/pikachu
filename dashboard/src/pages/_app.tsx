@@ -5,6 +5,7 @@ import { SessionProvider } from "next-auth/react";
 import { api } from "../utils/api";
 
 import "../styles/globals.css";
+import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,

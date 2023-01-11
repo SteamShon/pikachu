@@ -7,14 +7,14 @@ function CustomsetInfoForm() {
   return (
     <Box>
       <Controller
-        name="info.filePath"
+        name="customsetInfo.filePath"
         control={control}
         render={({ field }) => (
           <TextField {...field} label="FilePath" fullWidth />
         )}
       />
       <Controller
-        name="info.config"
+        name="customsetInfo.config"
         control={control}
         render={({ field }) => (
           <TextField {...field} label="Config" fullWidth />

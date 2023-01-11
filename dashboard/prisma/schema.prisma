@@ -70,10 +70,9 @@ model User {
     advertisersOnPlacements AdvertisersOnPlacements[]
     createdContentTypes     ContentType[]             @relation("createdContentTypes")
 
-    ownedServices          Service[]        @relation("ownedServices")
-    createdServices        Service[]        @relation("createdServices")
-    createdPlacementGroups PlacementGroup[] @relation("createdPlacementGroups")
-    createdPlacements      Placement[]      @relation("createdPlacements")
+    createdPlacementGroups PlacementGroup[]  @relation("createdPlacementGroups")
+    createdPlacements      Placement[]       @relation("createdPlacements")
+    services               UsersOnServices[]
 }
 
 model VerificationToken {
@@ -85,20 +84,28 @@ model VerificationToken {
 }
 
 model Service {
-    id              String           @id @default(cuid())
+    id              String            @id @default(cuid())
     name            String
     description     String?
-    ownedBy         User             @relation("ownedServices", fields: [ownerId], references: [id], onDelete: Cascade)
-    ownerId         String
-    createdBy       User             @relation("createdServices", fields: [creatorId], references: [id], onDelete: Cascade)
-    creatorId       String
     placementGroups PlacementGroup[]
     contentTypes    ContentType[]
-    status          String           @default("CREATED")
-    createdAt       DateTime         @default(now())
-    updatedAt       DateTime         @updatedAt
+    users           UsersOnServices[]
+    status          String            @default("CREATED")
+    createdAt       DateTime          @default(now())
+    updatedAt       DateTime          @updatedAt
 
-    @@unique([ownerId, name])
+    @@unique([name])
+}
+
+model UsersOnServices {
+    service    Service  @relation(fields: [serviceId], references: [id])
+    serviceId  String
+    user       User     @relation(fields: [userId], references: [id])
+    userId     String
+    role       String
+    assignedAt DateTime @default(now())
+
+    @@id([serviceId, userId, role])
 }
 
 model PlacementGroup {
@@ -234,18 +241,18 @@ model Content {
 }
 
 model Customset {
-    id              String         @id @default(cuid())
+    id              String        @id @default(cuid())
     name            String
     description     String?
     // ownedBy         User           @relation("ownedCustomsets", fields: [ownerId], references: [id], onDelete: Cascade)
     // ownerId         String
-    createdBy       User           @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
+    createdBy       User          @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
     creatorId       String
-    customsetInfo   CustomsetInfo? @relation(fields: [customsetInfoId], references: [id], onDelete: Cascade)
-    customsetInfoId String?        @unique
-    status          String         @default("CREATED")
-    createdAt       DateTime       @default(now())
-    updatedAt       DateTime       @updatedAt
+    customsetInfo   CustomsetInfo @relation(fields: [customsetInfoId], references: [id], onDelete: Cascade)
+    customsetInfoId String        @unique
+    status          String        @default("CREATED")
+    createdAt       DateTime      @default(now())
+    updatedAt       DateTime      @updatedAt
 
     // @@unique([ownerId, name])
     @@unique([name])

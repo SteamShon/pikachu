@@ -9,6 +9,7 @@ function ErrorSummary({ errors }: ErrorSummaryProps) {
   if (Object.keys(errors).length === 0) {
     return null;
   }
+
   return (
     <div className="error-summary">
       {Object.keys(errors).map((fieldName) => (

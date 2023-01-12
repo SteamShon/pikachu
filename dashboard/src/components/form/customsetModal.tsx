@@ -1,11 +1,11 @@
 import type { Dispatch, SetStateAction } from "react";
 // import { api } from "../../utils/api";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
-import type { Customset, CustomsetInfo } from "@prisma/client";
+import { Dialog, DialogContent } from "@mui/material";
+import type { Customset, CustomsetInfo, User } from "@prisma/client";
 import { useSession } from "next-auth/react";
-import CustomsetForm from "./customsetForm";
 import { api } from "../../utils/api";
 import type { CustomsetSchemaType } from "../schema/customset";
+import CustomsetForm from "./customsetForm";
 
 interface CustomsetModalProps {
   modalOpen: boolean;
@@ -48,10 +48,17 @@ function CustomsetModal({
   if (!session) return <>Not Logged in</>;
 
   return (
-    <Dialog onClose={() => setModalOpen(false)} open={modalOpen}>
-      <DialogTitle>Customset</DialogTitle>
+    <Dialog
+      onClose={() => setModalOpen(false)}
+      open={modalOpen}
+      fullWidth
+      maxWidth="lg"
+    >
       <DialogContent>
-        <CustomsetForm onSubmit={onSubmit} />
+        <CustomsetForm
+          onSubmit={onSubmit}
+          onClose={() => setModalOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );

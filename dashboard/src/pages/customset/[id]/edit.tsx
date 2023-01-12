@@ -1,4 +1,3 @@
-import type { Customset, CustomsetInfo, User } from "@prisma/client";
 import { useRouter } from "next/router";
 import CustomsetForm from "../../../components/form/customsetForm";
 import { api } from "../../../utils/api";
@@ -9,7 +8,7 @@ function CustomsetEdit() {
   const { data: customset } = api.customset.get.useQuery({ id: id as string });
 
   const { mutate: updateCustomset } = api.customset.update.useMutation({
-    onSuccess(customset) {
+    onSuccess() {
       router.push("/customset/list");
     },
   });
@@ -18,6 +17,7 @@ function CustomsetEdit() {
     <>
       <CustomsetForm
         onSubmit={updateCustomset}
+        onClose={() => router.push("/customset/list")}
         initialData={customset || undefined}
       />
     </>

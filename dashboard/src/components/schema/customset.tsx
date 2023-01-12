@@ -3,7 +3,7 @@ import { customsetInfoSchema } from "./customsetInfo";
 
 export const customsetSchema = z.object({
   id: z.string().optional(),
-  name: z.string(),
+  name: z.string().min(1),
   description: z.string().optional().nullable().default(null),
   status: z.string().optional().default("CREATED"),
   customsetInfo: customsetInfoSchema,

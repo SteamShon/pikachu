@@ -1,12 +1,10 @@
-import { Button } from "@mui/material";
-import type { GridRowModel, GridSelectionModel } from "@mui/x-data-grid";
+import EditIcon from "@mui/icons-material/Edit";
 import { DataGrid } from "@mui/x-data-grid";
 import type { Customset, CustomsetInfo, User } from "@prisma/client";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import CustomsetModal from "../../components/form/customsetModal";
 import { api } from "../../utils/api";
-import EditIcon from "@mui/icons-material/Edit";
 
 function CustomsetList() {
   const [modalOpen, setModalOpen] = useState(false);

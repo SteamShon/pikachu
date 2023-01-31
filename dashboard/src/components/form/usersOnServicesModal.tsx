@@ -1,6 +1,5 @@
 import { Dialog, DialogContent } from "@mui/material";
 import type { Service, User, UsersOnServices } from "@prisma/client";
-import { useSession } from "next-auth/react";
 import type { Dispatch, SetStateAction } from "react";
 import { api } from "../../utils/api";
 

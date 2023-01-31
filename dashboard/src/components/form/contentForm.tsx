@@ -8,7 +8,6 @@ import type { Content, ContentType } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { LivePreview, LiveProvider } from "react-live";
-import { z } from "zod";
 import { jsonParseWithFallback } from "../../utils/json";
 import { replacePropsInFunction } from "../common/CodeTemplate";
 import type {
@@ -16,7 +15,6 @@ import type {
   ContentWithContentTypeSchemaType,
 } from "../schema/content";
 import { contentWithContentTypeSchema } from "../schema/content";
-import { contentSchema } from "../schema/content";
 
 function ContentForm({
   contentTypes,
@@ -161,7 +159,7 @@ function ContentForm({
                         data={defaultValues}
                         renderers={materialRenderers}
                         cells={materialCells}
-                        onChange={({ data, errors }) => {
+                        onChange={({ data }) => {
                           setValue("values", data);
                           setDefaultValues(data);
                         }}

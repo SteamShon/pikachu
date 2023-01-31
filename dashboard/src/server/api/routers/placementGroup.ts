@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  placementSchema,
-  placementWithPlacementGroupSchema,
-} from "../../../components/schema/placement";
+import { placementWithPlacementGroupSchema } from "../../../components/schema/placement";
 import { placementGroupSchema } from "../../../components/schema/placementGroup";
 
 import { prisma } from "../../db";
@@ -11,7 +8,7 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 export const placementGroupRouter = createTRPCRouter({
   create: protectedProcedure
     .input(placementGroupSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const placementGroup = await prisma.placementGroup.create({
         data: input,
         include: {
@@ -23,7 +20,7 @@ export const placementGroupRouter = createTRPCRouter({
     }),
   update: protectedProcedure
     .input(placementGroupSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { ...placementGroupInput } = input;
       const placementGroup = await prisma.placementGroup.update({
         where: {
@@ -64,7 +61,7 @@ export const placementGroupRouter = createTRPCRouter({
         id: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const placementGroup = await prisma.placementGroup.delete({
         where: {
           id: input.id,
@@ -75,7 +72,7 @@ export const placementGroupRouter = createTRPCRouter({
     }),
   addPlacement: protectedProcedure
     .input(placementWithPlacementGroupSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { placementGroupId, ...placementInput } = input;
 
       const placementGroup = await prisma.placementGroup.update({
@@ -125,7 +122,7 @@ export const placementGroupRouter = createTRPCRouter({
     }),
   updatePlacement: protectedProcedure
     .input(placementWithPlacementGroupSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { placementGroupId, ...placementInput } = input;
 
       const placementGroup = await prisma.placementGroup.update({
@@ -177,7 +174,7 @@ export const placementGroupRouter = createTRPCRouter({
         name: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { placementGroupId, name } = input;
       const placementGroup = await prisma.placementGroup.update({
         where: {

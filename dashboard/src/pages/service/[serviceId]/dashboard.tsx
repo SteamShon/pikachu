@@ -50,11 +50,7 @@ function Dashboard() {
       description: `placements`,
       table: () =>
         service ? (
-          <PlacementTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
+          <PlacementTable setServiceTree={setTree} serviceTree={tree} />
         ) : null,
     },
     {

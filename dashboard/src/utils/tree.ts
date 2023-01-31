@@ -16,7 +16,7 @@ type Item = {
   [k: string]: unknown;
 };
 
-function arrayToRecord<Item>(array?: Item[]): Record<string, unknown> {
+function arrayToRecord(array?: Item[]): Record<string, unknown> {
   return (array || []).reduce((prev, current) => {
     prev[current.id] = current;
     return prev;

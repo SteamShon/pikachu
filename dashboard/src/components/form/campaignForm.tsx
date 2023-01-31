@@ -5,6 +5,7 @@ import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import type { Campaign } from "@prisma/client";
+import moment from "moment";
 import { useEffect } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import type { buildPlacementTree } from "../../utils/tree";
@@ -145,7 +146,9 @@ function CampaignForm({
                           renderInput={(params) => <TextField {...params} />}
                           {...field}
                           onChange={(value) => {
-                            field.onChange(value.toDate());
+                            if (value && moment.isMoment(value)) {
+                              field.onChange(moment(value).toDate());
+                            }
                           }}
                         />
                       </LocalizationProvider>
@@ -170,7 +173,9 @@ function CampaignForm({
                           renderInput={(params) => <TextField {...params} />}
                           {...field}
                           onChange={(value) => {
-                            field.onChange(value.toDate());
+                            if (value && moment.isMoment(value)) {
+                              field.onChange(moment(value).toDate());
+                            }
                           }}
                         />
                       </LocalizationProvider>

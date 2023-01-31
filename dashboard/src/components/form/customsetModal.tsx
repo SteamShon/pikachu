@@ -6,10 +6,7 @@ import type { serviceRouter } from "../../server/api/routers/service";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
 import { buildCustomsetsTree } from "../../utils/tree";
-import type {
-  CustomsetSchemaType,
-  CustomsetWithServiceSchemaType,
-} from "../schema/customset";
+import type { CustomsetWithServiceSchemaType } from "../schema/customset";
 import CustomsetForm from "./customsetForm";
 
 function CustomsetModal({

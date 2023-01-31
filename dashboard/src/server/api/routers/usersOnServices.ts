@@ -16,7 +16,7 @@ export const usersOnServicesRouter = createTRPCRouter({
   }),
   create: protectedProcedure
     .input(usersOnServicesSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const usersOnServices = await prisma.user.update({
         where: {
           id: input.userId,
@@ -51,7 +51,7 @@ export const usersOnServicesRouter = createTRPCRouter({
     }),
   update: protectedProcedure
     .input(usersOnServicesSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const usersOnServices = await prisma.user.update({
         where: {
           id: input.userId,
@@ -83,7 +83,7 @@ export const usersOnServicesRouter = createTRPCRouter({
     }),
   delete: protectedProcedure
     .input(z.object({ serviceId: z.string(), userId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { serviceId, userId } = input;
       const usersOnServices = await prisma.usersOnServices.delete({
         where: {

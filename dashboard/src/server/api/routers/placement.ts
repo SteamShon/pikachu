@@ -1,17 +1,14 @@
 import { z } from "zod";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { prisma } from "../../db";
-import {
-  campaignSchema,
-  campaignWithPlacementSchema,
-} from "../../../components/schema/campaign";
+import { campaignWithPlacementSchema } from "../../../components/schema/campaign";
 import { placementSchema } from "../../../components/schema/placement";
+import { prisma } from "../../db";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const placementRouter = createTRPCRouter({
   update: protectedProcedure
     .input(placementSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const placement = await prisma.placement.update({
         where: {
           id: input.id || "",
@@ -42,7 +39,7 @@ export const placementRouter = createTRPCRouter({
     }),
   addCampaign: protectedProcedure
     .input(campaignWithPlacementSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { placementId, ...campaignInput } = input;
 
       const placement = await prisma.placement.update({
@@ -92,7 +89,7 @@ export const placementRouter = createTRPCRouter({
     }),
   updateCampaign: protectedProcedure
     .input(campaignWithPlacementSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { placementId, ...campaignInput } = input;
 
       const placement = await prisma.placement.update({
@@ -144,7 +141,7 @@ export const placementRouter = createTRPCRouter({
         name: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { placementId, name } = input;
 
       const placement = await prisma.placement.update({

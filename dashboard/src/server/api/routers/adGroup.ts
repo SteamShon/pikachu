@@ -12,7 +12,7 @@ export const adGroupRouter = createTRPCRouter({
         contentId: z.string().min(1),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { adGroupId, contentId, ...creativeInput } = input;
       const adGroup = await prisma.adGroup.update({
         where: {
@@ -70,7 +70,7 @@ export const adGroupRouter = createTRPCRouter({
         contentId: z.string().min(1),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { adGroupId, contentId, ...creativeInput } = input;
       const adGroup = await prisma.adGroup.update({
         where: {
@@ -120,7 +120,7 @@ export const adGroupRouter = createTRPCRouter({
     }),
   removeCreative: protectedProcedure
     .input(z.object({ adGroupId: z.string(), name: z.string() }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { adGroupId, name } = input;
       const adGroup = await prisma.adGroup.update({
         where: {

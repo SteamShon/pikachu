@@ -4,6 +4,7 @@ import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import type { Placement, Service } from "@prisma/client";
+import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
@@ -14,11 +15,9 @@ import type { buildServiceTree } from "../../../utils/tree";
 import { buildPlacementGroupTree } from "../../../utils/tree";
 
 function PlacementTable({
-  service,
   serviceTree,
   setServiceTree,
 }: {
-  service: Service;
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -101,11 +100,15 @@ function PlacementTable({
       field: "createdAt",
       headerName: "CreatedAt",
       flex: 1,
+      valueFormatter: (params) =>
+        moment(params?.value).format("YYYY/MM/DD hh:mm A"),
     },
     {
       field: "updatedAt",
       headerName: "UpdatedAt",
       flex: 1,
+      valueFormatter: (params) =>
+        moment(params?.value).format("YYYY/MM/DD hh:mm A"),
     },
     {
       field: "actions",

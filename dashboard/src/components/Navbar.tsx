@@ -1,11 +1,3 @@
-import {
-  Box,
-  AppBar,
-  Toolbar,
-  IconButton,
-  Typography,
-  Button,
-} from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { api } from "../utils/api";

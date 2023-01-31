@@ -1,15 +1,14 @@
-import { Grid, Button, Menu, MenuItem } from "@mui/material";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import { Button, Grid } from "@mui/material";
 import type { GridSelectionModel } from "@mui/x-data-grid";
-import { GridToolbarQuickFilter } from "@mui/x-data-grid";
 import {
   GridToolbarColumnsButton,
   GridToolbarContainer,
   GridToolbarDensitySelector,
   GridToolbarExport,
   GridToolbarFilterButton,
+  GridToolbarQuickFilter,
 } from "@mui/x-data-grid";
-import { useState } from "react";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 
 type Props = {
   selectionModel: GridSelectionModel;
@@ -23,7 +22,7 @@ function GridCustomToolbar({
   onClick: () => void;
 }) {
   // eslint-disable-next-line react/display-name
-  return ({ selectionModel }: Props) => {
+  return ({}: Props) => {
     // const [anchorElMenu, setAnchorElMenu] = useState<null | HTMLButtonElement>(
     //   null
     // );

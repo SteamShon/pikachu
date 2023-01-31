@@ -6,10 +6,7 @@ import type { placementGroupRouter } from "../../server/api/routers/placementGro
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
 import { buildPlacementGroupTree } from "../../utils/tree";
-import type {
-  PlacementSchemaType,
-  PlacementWithPlacementGroupSchemaType,
-} from "../schema/placement";
+import type { PlacementWithPlacementGroupSchemaType } from "../schema/placement";
 import PlacementForm from "./placementForm";
 
 function PlacementModal({

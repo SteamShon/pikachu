@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useSession } from "next-auth/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { api } from "../../utils/api";
 import type { UsersOnServicesSchemaType } from "../schema/usersOnServices";

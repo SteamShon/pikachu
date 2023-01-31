@@ -1,18 +1,15 @@
 import { z } from "zod";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { prisma } from "../../db";
+import { adGroupWithCampaignSchema } from "../../../components/schema/adGroup";
 import { campaignSchema } from "../../../components/schema/campaign";
-import {
-  adGroupSchema,
-  adGroupWithCampaignSchema,
-} from "../../../components/schema/adGroup";
+import { prisma } from "../../db";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const campaignRouter = createTRPCRouter({
   //deprecated
   update: protectedProcedure
     .input(campaignSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const campaign = await prisma.campaign.update({
         where: {
           id: input.id || "",
@@ -40,7 +37,7 @@ export const campaignRouter = createTRPCRouter({
     }),
   addAdGroup: protectedProcedure
     .input(adGroupWithCampaignSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { campaignId, ...adGroupInput } = input;
 
       const campaign = await prisma.campaign.update({
@@ -95,7 +92,7 @@ export const campaignRouter = createTRPCRouter({
         name: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { campaignId, name } = input;
 
       const campaign = await prisma.campaign.update({
@@ -142,7 +139,7 @@ export const campaignRouter = createTRPCRouter({
     }),
   updateAdGroup: protectedProcedure
     .input(adGroupWithCampaignSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { campaignId, ...adGroupInput } = input;
 
       const campaign = await prisma.campaign.update({

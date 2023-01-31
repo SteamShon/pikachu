@@ -16,9 +16,9 @@ function UsersOnServicesList() {
   const [usersOnServices, setUsersOnServices] = useState<
     (UsersOnServices & { user: User; service: Service })[]
   >([]);
-  const [usersOnService, setUsersOnService] = useState<
-    UsersOnServices | undefined
-  >(undefined);
+  const [, setUsersOnService] = useState<UsersOnServices | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     if (usersOnServicesList) setUsersOnServices(usersOnServicesList);

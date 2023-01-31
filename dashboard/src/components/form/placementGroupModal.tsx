@@ -5,10 +5,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { serviceRouter } from "../../server/api/routers/service";
 import { api } from "../../utils/api";
 import { buildServiceTree } from "../../utils/tree";
-import type {
-  PlacementGroupSchemaType,
-  PlacementGroupWithServiceSchemaType,
-} from "../schema/placementGroup";
+import type { PlacementGroupWithServiceSchemaType } from "../schema/placementGroup";
 import PlacementGroupForm from "./placementGroupForm";
 
 function PlacementGroupModal({

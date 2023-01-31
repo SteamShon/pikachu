@@ -6,10 +6,7 @@ import type { contentTypeRouter } from "../../server/api/routers/contentType";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
 import { buildContentTypeTree } from "../../utils/tree";
-import type {
-  ContentSchemaType,
-  ContentWithContentTypeSchemaType,
-} from "../schema/content";
+import type { ContentWithContentTypeSchemaType } from "../schema/content";
 import ContentForm from "./contentForm";
 
 function ContentModal({

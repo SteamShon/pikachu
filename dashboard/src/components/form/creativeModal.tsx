@@ -6,10 +6,7 @@ import type { adGroupRouter } from "../../server/api/routers/adGroup";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
 import { buildAdGroupTree } from "../../utils/tree";
-import type {
-  CreativeSchemaType,
-  CreativeWithAdGroupIdAndContentIdType,
-} from "../schema/creative";
+import type { CreativeWithAdGroupIdAndContentIdType } from "../schema/creative";
 import CreativeForm from "./creativeForm";
 
 function CreativeModal({

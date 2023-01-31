@@ -6,10 +6,7 @@ import type { placementRouter } from "../../server/api/routers/placement";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
 import { buildPlacementTree } from "../../utils/tree";
-import type {
-  CampaignSchemaType,
-  CampaignWithPlacementSchemaType,
-} from "../schema/campaign";
+import type { CampaignWithPlacementSchemaType } from "../schema/campaign";
 import CampaignForm from "./campaignForm";
 
 function CampaignModal({

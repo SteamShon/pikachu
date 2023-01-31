@@ -128,7 +128,7 @@ function ContentTypeForm({
                 data={defaultValues}
                 renderers={materialRenderers}
                 cells={materialCells}
-                onChange={({ data, errors }) => {
+                onChange={({ data }) => {
                   if (Object.keys(data).length === 0) return;
 
                   // setDefaultValues(data);
@@ -172,7 +172,7 @@ function ContentTypeForm({
                 <div className="inline-flex justify-end">
                   <button
                     type="button"
-                    onClick={(e) => applyCode()}
+                    onClick={() => applyCode()}
                     className="w-full rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
                   >
                     Compile & Run Preview

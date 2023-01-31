@@ -87,7 +87,7 @@ export const customsetRouter = createTRPCRouter({
     }),
   deleteMany: protectedProcedure
     .input(z.array(z.string()))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       //TODO: prisma deleteMany do not return delete rows.
       //Once https://github.com/prisma/prisma/issues/8131 has been resolved, then
       //we can change this into deleteMany

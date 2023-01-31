@@ -2,14 +2,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { ContentType, Placement } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { z } from "zod";
 import type { buildPlacementGroupTree } from "../../utils/tree";
 import type { PlacementWithPlacementGroupSchemaType } from "../schema/placement";
-import {
-  PlacementSchemaType,
-  placementWithPlacementGroupSchema,
-} from "../schema/placement";
-import { placementSchema } from "../schema/placement";
+import { placementWithPlacementGroupSchema } from "../schema/placement";
 
 function PlacementForm({
   placementGroups,

@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { contentTypeSchema } from "../../../components/schema/contentType";
-import {
-  customsetSchema,
-  customsetWithServiceSchema,
-} from "../../../components/schema/customset";
+import { customsetWithServiceSchema } from "../../../components/schema/customset";
 import { placementGroupWithServiceSchema } from "../../../components/schema/placementGroup";
 
 import { serviceSchema } from "../../../components/schema/service";
@@ -13,7 +10,7 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 export const serviceRouter = createTRPCRouter({
   create: protectedProcedure
     .input(serviceSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const service = await prisma.service.create({
         data: {
           name: input.name,
@@ -40,7 +37,7 @@ export const serviceRouter = createTRPCRouter({
     }),
   update: protectedProcedure
     .input(serviceSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const service = await prisma.service.update({
         where: {
           id: input?.id || "",
@@ -51,7 +48,7 @@ export const serviceRouter = createTRPCRouter({
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const service = await prisma.service.delete({
         where: {
           id: input.id,
@@ -71,7 +68,7 @@ export const serviceRouter = createTRPCRouter({
     }),
   deleteMany: protectedProcedure
     .input(z.array(z.string()))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       //TODO: prisma deleteMany do not return delete rows.
       //Once https://github.com/prisma/prisma/issues/8131 has been resolved, then
       //we can change this into deleteMany
@@ -163,7 +160,7 @@ export const serviceRouter = createTRPCRouter({
 
   addPlacementGroup: protectedProcedure
     .input(placementGroupWithServiceSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { serviceId, ...placementGroupInput } = input;
       const service = await prisma.service.update({
         where: {
@@ -224,7 +221,7 @@ export const serviceRouter = createTRPCRouter({
     }),
   updatePlacementGroup: protectedProcedure
     .input(placementGroupWithServiceSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { serviceId, ...placementGroupInput } = input;
       const service = await prisma.service.update({
         where: {
@@ -287,7 +284,7 @@ export const serviceRouter = createTRPCRouter({
         name: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const service = await prisma.service.update({
         where: {
           id: input.serviceId,
@@ -328,7 +325,11 @@ export const serviceRouter = createTRPCRouter({
           },
           contentTypes: {
             include: {
-              contents: true,
+              contents: {
+                include: {
+                  creatives: true,
+                },
+              },
             },
           },
           customsets: {
@@ -345,7 +346,7 @@ export const serviceRouter = createTRPCRouter({
 
   addContentType: protectedProcedure
     .input(contentTypeSchema.extend({ serviceId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { serviceId, ...contentTypeInput } = input;
       const service = await prisma.service.update({
         where: {
@@ -406,7 +407,7 @@ export const serviceRouter = createTRPCRouter({
     }),
   updateContentType: protectedProcedure
     .input(contentTypeSchema.extend({ serviceId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { serviceId, ...contentTypeInput } = input;
       const service = await prisma.service.update({
         where: {
@@ -469,7 +470,7 @@ export const serviceRouter = createTRPCRouter({
         name: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const service = await prisma.service.update({
         where: {
           id: input.serviceId,
@@ -595,7 +596,7 @@ export const serviceRouter = createTRPCRouter({
         name: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { serviceId, name } = input;
       const service = await prisma.service.update({
         where: {

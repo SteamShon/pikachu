@@ -1,24 +1,19 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Customset, CustomsetInfo, Service } from "@prisma/client";
+import type { Service } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import type { CustomsetWithServiceSchemaType } from "../schema/customset";
-import { customsetWithServiceSchema } from "../schema/customset";
-import CustomsetInfoForm from "./customsetInfoForm";
+import type { ServiceSchemaType } from "../schema/service";
+import { serviceSchema } from "../schema/service";
 
-function CustomsetForm({
-  services,
-  initialData,
+function ServiceForm({
   onSubmit,
+  initialData,
 }: {
-  services: Service[];
-  initialData?: Customset & { customsetInfo: CustomsetInfo };
-  onSubmit: (input: CustomsetWithServiceSchemaType) => void;
+  onSubmit: (input: ServiceSchemaType) => void;
+  initialData?: Service;
 }) {
-  const service = services.length === 1 ? services[0] : undefined;
-
-  const methods = useForm<CustomsetWithServiceSchemaType>({
-    resolver: zodResolver(customsetWithServiceSchema),
+  const methods = useForm<ServiceSchemaType>({
+    resolver: zodResolver(serviceSchema),
   });
 
   const {
@@ -29,43 +24,22 @@ function CustomsetForm({
   } = methods;
 
   useEffect(() => {
-    reset({
-      ...(initialData ? initialData : {}),
-      serviceId: service?.id,
-    });
-  }, [reset, initialData, service]);
+    if (initialData) {
+      reset(initialData);
+    }
+  }, [initialData, reset]);
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} id="customset-form">
+      <form onSubmit={handleSubmit(onSubmit)} id="service-form">
         <div className="overflow-hidden bg-white shadow sm:rounded-lg">
           <div className="px-4 py-5 sm:px-6">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Customset
+              Service Information
             </h3>
           </div>
           <div className="border-t border-gray-200">
             <dl>
-              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Service</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <select
-                    {...register("serviceId")}
-                    defaultValue={initialData?.serviceId || undefined}
-                  >
-                    {services.map((service) => {
-                      return (
-                        <option key={service.id} value={service.id}>
-                          {service.name}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {errors.serviceId && (
-                    <p role="alert">{errors.serviceId?.message}</p>
-                  )}
-                </dd>
-              </div>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Name</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
@@ -112,7 +86,6 @@ function CustomsetForm({
             </dl>
           </div>
         </div>
-        <CustomsetInfoForm initialData={initialData?.customsetInfo} />
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
           <button
             type="submit"
@@ -126,4 +99,4 @@ function CustomsetForm({
   );
 }
 
-export default CustomsetForm;
+export default ServiceForm;

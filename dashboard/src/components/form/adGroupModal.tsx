@@ -1,56 +1,59 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Customset, CustomsetInfo, Service } from "@prisma/client";
+import type { AdGroup } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import type { serviceRouter } from "../../server/api/routers/service";
+import type { campaignRouter } from "../../server/api/routers/campaign";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
-import { buildCustomsetsTree } from "../../utils/tree";
-import type {
-  CustomsetSchemaType,
-  CustomsetWithServiceSchemaType,
-} from "../schema/customset";
-import CustomsetForm from "./customsetForm";
+import { buildCampaignTree } from "../../utils/tree";
+import type { AdGroupWithCampaignSchemaType } from "../schema/adGroup";
+import AdGroupForm from "./adGroupForm";
 
-function CustomsetModal({
-  services,
+function AdGroupModal({
+  campaigns,
   initialData,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
-  services: Service[];
-  initialData?: Customset & { customsetInfo: CustomsetInfo };
+  campaigns: ReturnType<typeof buildCampaignTree>[];
+  initialData?: AdGroup;
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  type RouterOutput = inferRouterOutputs<typeof serviceRouter>;
-  type OutputType = RouterOutput["addCustomset"];
+  type RouterOutput = inferRouterOutputs<typeof campaignRouter>;
+  type OutputType = RouterOutput["addAdGroup"];
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
-      if (!prev) return undefined;
+      if (!prev) return prev;
 
-      prev.customsets = buildCustomsetsTree(created.customsets);
+      const campaigns =
+        prev.placementGroups[created?.placement?.placementGroup?.id || ""]
+          ?.placements[created?.placement?.id || ""]?.campaigns;
+      if (!campaigns) return prev;
+
+      campaigns[created.id] = buildCampaignTree(created);
       return prev;
     });
 
     setModalOpen(false);
   };
-  const { mutate: create } = api.service.addCustomset.useMutation({
+  const { mutate: create } = api.campaign.addAdGroup.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
-  const { mutate: update } = api.service.updateCustomset.useMutation({
+
+  const { mutate: update } = api.campaign.updateAdGroup.useMutation({
     onSuccess(updated) {
       handleSuccess(updated);
     },
   });
 
-  const onSubmit = (input: CustomsetWithServiceSchemaType) => {
+  const onSubmit = (input: AdGroupWithCampaignSchemaType) => {
     if (initialData) update(input);
     else create(input);
   };
@@ -63,8 +66,8 @@ function CustomsetModal({
       maxWidth="lg"
     >
       <DialogContent>
-        <CustomsetForm
-          services={services}
+        <AdGroupForm
+          campaigns={campaigns}
           initialData={initialData}
           onSubmit={onSubmit}
           //onClose={() => setModalOpen(false)}
@@ -74,4 +77,4 @@ function CustomsetModal({
   );
 }
 
-export default CustomsetModal;
+export default AdGroupModal;

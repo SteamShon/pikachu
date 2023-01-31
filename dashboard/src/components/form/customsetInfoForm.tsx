@@ -30,7 +30,7 @@ function CustomsetInfoForm({ initialData }: { initialData?: CustomsetInfo }) {
             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
               <input
                 className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                defaultValue={initialData?.filePath}
+                defaultValue={initialData?.config}
                 {...register("customsetInfo.config")}
               />
               {errors.customsetInfo && errors.customsetInfo.config && (

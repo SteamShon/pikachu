@@ -1,56 +1,59 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Customset, CustomsetInfo, Service } from "@prisma/client";
+import type { ContentType, Placement } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import type { serviceRouter } from "../../server/api/routers/service";
+import type { placementGroupRouter } from "../../server/api/routers/placementGroup";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
-import { buildCustomsetsTree } from "../../utils/tree";
+import { buildPlacementGroupTree } from "../../utils/tree";
 import type {
-  CustomsetSchemaType,
-  CustomsetWithServiceSchemaType,
-} from "../schema/customset";
-import CustomsetForm from "./customsetForm";
+  PlacementSchemaType,
+  PlacementWithPlacementGroupSchemaType,
+} from "../schema/placement";
+import PlacementForm from "./placementForm";
 
-function CustomsetModal({
-  services,
+function PlacementModal({
+  placementGroups,
+  contentTypes,
   initialData,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
-  services: Service[];
-  initialData?: Customset & { customsetInfo: CustomsetInfo };
+  placementGroups: ReturnType<typeof buildPlacementGroupTree>[];
+  contentTypes: ContentType[];
+  initialData?: Placement;
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  type RouterOutput = inferRouterOutputs<typeof serviceRouter>;
-  type OutputType = RouterOutput["addCustomset"];
+  type RouterOutput = inferRouterOutputs<typeof placementGroupRouter>;
+  type OutputType = RouterOutput["addPlacement"];
+
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
-      if (!prev) return undefined;
+      if (!prev) return prev;
 
-      prev.customsets = buildCustomsetsTree(created.customsets);
+      prev.placementGroups[created.id] = buildPlacementGroupTree(created);
       return prev;
     });
-
     setModalOpen(false);
   };
-  const { mutate: create } = api.service.addCustomset.useMutation({
+
+  const { mutate: create } = api.placementGroup.addPlacement.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
-  const { mutate: update } = api.service.updateCustomset.useMutation({
+  const { mutate: update } = api.placementGroup.updatePlacement.useMutation({
     onSuccess(updated) {
       handleSuccess(updated);
     },
   });
 
-  const onSubmit = (input: CustomsetWithServiceSchemaType) => {
+  const onSubmit = (input: PlacementWithPlacementGroupSchemaType) => {
     if (initialData) update(input);
     else create(input);
   };
@@ -63,8 +66,9 @@ function CustomsetModal({
       maxWidth="lg"
     >
       <DialogContent>
-        <CustomsetForm
-          services={services}
+        <PlacementForm
+          placementGroups={placementGroups}
+          contentTypes={contentTypes}
           initialData={initialData}
           onSubmit={onSubmit}
           //onClose={() => setModalOpen(false)}
@@ -74,4 +78,4 @@ function CustomsetModal({
   );
 }
 
-export default CustomsetModal;
+export default PlacementModal;

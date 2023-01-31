@@ -1,4 +1,4 @@
-import { api } from "../../utils/api";
+import { api } from "../../../utils/api";
 
 function UserList() {
   const { data: users, isLoading } = api.user.getAll.useQuery();

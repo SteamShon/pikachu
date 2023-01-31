@@ -10,3 +10,11 @@ export const customsetSchema = z.object({
 });
 
 export type CustomsetSchemaType = z.infer<typeof customsetSchema>;
+
+export const customsetWithServiceSchema = customsetSchema.extend({
+  serviceId: z.string().min(1),
+});
+
+export type CustomsetWithServiceSchemaType = z.infer<
+  typeof customsetWithServiceSchema
+>;

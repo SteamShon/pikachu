@@ -1,24 +1,32 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Customset, CustomsetInfo, Service } from "@prisma/client";
+import type { ContentType, Placement } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import type { CustomsetWithServiceSchemaType } from "../schema/customset";
-import { customsetWithServiceSchema } from "../schema/customset";
-import CustomsetInfoForm from "./customsetInfoForm";
+import { z } from "zod";
+import type { buildPlacementGroupTree } from "../../utils/tree";
+import type { PlacementWithPlacementGroupSchemaType } from "../schema/placement";
+import {
+  PlacementSchemaType,
+  placementWithPlacementGroupSchema,
+} from "../schema/placement";
+import { placementSchema } from "../schema/placement";
 
-function CustomsetForm({
-  services,
+function PlacementForm({
+  placementGroups,
+  contentTypes,
   initialData,
   onSubmit,
 }: {
-  services: Service[];
-  initialData?: Customset & { customsetInfo: CustomsetInfo };
-  onSubmit: (input: CustomsetWithServiceSchemaType) => void;
+  placementGroups: ReturnType<typeof buildPlacementGroupTree>[];
+  contentTypes: ContentType[];
+  initialData?: Placement;
+  onSubmit: (input: PlacementWithPlacementGroupSchemaType) => void;
 }) {
-  const service = services.length === 1 ? services[0] : undefined;
+  const placementGroup =
+    placementGroups.length === 1 ? placementGroups[0] : undefined;
 
-  const methods = useForm<CustomsetWithServiceSchemaType>({
-    resolver: zodResolver(customsetWithServiceSchema),
+  const methods = useForm<PlacementWithPlacementGroupSchemaType>({
+    resolver: zodResolver(placementWithPlacementGroupSchema),
   });
 
   const {
@@ -31,38 +39,47 @@ function CustomsetForm({
   useEffect(() => {
     reset({
       ...(initialData ? initialData : {}),
-      serviceId: service?.id,
+      placementGroupId: placementGroup?.id,
     });
-  }, [reset, initialData, service]);
+  }, [reset, placementGroup, initialData]);
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} id="customset-form">
+      <form onSubmit={handleSubmit(onSubmit)} id="placement-form">
         <div className="overflow-hidden bg-white shadow sm:rounded-lg">
           <div className="px-4 py-5 sm:px-6">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Customset
+              Placement
             </h3>
           </div>
           <div className="border-t border-gray-200">
             <dl>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Service</dt>
+                <dt className="text-sm font-medium text-gray-500">
+                  PlacementGroup
+                </dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
-                    {...register("serviceId")}
-                    defaultValue={initialData?.serviceId || undefined}
+                    {...register("placementGroupId")}
+                    defaultValue={
+                      initialData?.placementGroupId || placementGroup?.id
+                    }
+                    disabled={initialData ? true : false}
                   >
-                    {services.map((service) => {
+                    <option value="">Please choose</option>
+                    {placementGroups.map((placementGroup) => {
                       return (
-                        <option key={service.id} value={service.id}>
-                          {service.name}
+                        <option
+                          key={placementGroup.id}
+                          value={placementGroup.id}
+                        >
+                          {placementGroup.name}
                         </option>
                       );
                     })}
                   </select>
-                  {errors.serviceId && (
-                    <p role="alert">{errors.serviceId?.message}</p>
+                  {errors.placementGroupId && (
+                    <p role="alert">{errors.placementGroupId?.message}</p>
                   )}
                 </dd>
               </div>
@@ -71,8 +88,8 @@ function CustomsetForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <input
                     className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                    defaultValue={initialData?.name}
                     {...register("name")}
+                    defaultValue={initialData?.name}
                   />
                   {errors.name && <p role="alert">{errors.name?.message}</p>}
                 </dd>
@@ -84,9 +101,9 @@ function CustomsetForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <textarea
                     className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                    defaultValue={initialData?.description || undefined}
                     rows={3}
                     {...register("description")}
+                    defaultValue={initialData?.description || undefined}
                   />
                   {errors.description && (
                     <p role="alert">{errors.description?.message}</p>
@@ -98,8 +115,9 @@ function CustomsetForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("status")}
-                    defaultValue={initialData?.status}
+                    defaultValue={initialData?.status || "CREATED"}
                   >
+                    <option value="">Please choose</option>
                     <option value="CREATED">CREATED</option>
                     <option value="PUBLISHED">PUBLISHED</option>
                     <option value="ARCHIVED">ARCHIVED</option>
@@ -109,10 +127,32 @@ function CustomsetForm({
                   )}
                 </dd>
               </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">
+                  ContentType
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <select
+                    {...register("contentTypeId")}
+                    defaultValue={initialData?.contentTypeId}
+                  >
+                    <option value="">Please choose</option>
+                    {contentTypes.map((contentType) => {
+                      return (
+                        <option key={contentType.id} value={contentType.id}>
+                          {contentType.name}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {errors.contentTypeId && (
+                    <p role="alert">{errors.contentTypeId?.message}</p>
+                  )}
+                </dd>
+              </div>
             </dl>
           </div>
         </div>
-        <CustomsetInfoForm initialData={initialData?.customsetInfo} />
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
           <button
             type="submit"
@@ -126,4 +166,4 @@ function CustomsetForm({
   );
 }
 
-export default CustomsetForm;
+export default PlacementForm;

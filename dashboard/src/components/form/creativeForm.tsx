@@ -1,32 +1,38 @@
-// import { api } from "../../utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { TextField } from "@mui/material";
-import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import type { Campaign } from "@prisma/client";
-import { useEffect } from "react";
-import { Controller, FormProvider, useForm } from "react-hook-form";
-import type { buildPlacementTree } from "../../utils/tree";
-import type { CampaignWithPlacementSchemaType } from "../schema/campaign";
-import { campaignWithPlacementSchema } from "../schema/campaign";
+import {
+  materialCells,
+  materialRenderers,
+} from "@jsonforms/material-renderers";
+import { JsonForms } from "@jsonforms/react";
+import type { Content, ContentType, Creative } from "@prisma/client";
+import { useEffect, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
+import { LivePreview, LiveProvider } from "react-live";
+import { jsonParseWithFallback } from "../../utils/json";
+import type { buildAdGroupTree } from "../../utils/tree";
+import type { CreativeWithAdGroupIdAndContentIdType } from "../schema/creative";
+import { creativeWithAdGroupIdAndContentId } from "../schema/creative";
 
-function CampaignForm({
-  placements,
+function CreativeForm({
+  adGroups,
+  contents,
   onSubmit,
   initialData,
 }: {
-  placements: ReturnType<typeof buildPlacementTree>[];
-  onSubmit: (input: CampaignWithPlacementSchemaType) => void;
-  initialData?: Campaign;
+  adGroups: ReturnType<typeof buildAdGroupTree>[];
+  contents: (Content & { contentType: ContentType })[];
+  onSubmit: (input: CreativeWithAdGroupIdAndContentIdType) => void;
+  initialData?: Creative;
 }) {
-  const placement = placements.length === 1 ? placements[0] : undefined;
-  const methods = useForm<CampaignWithPlacementSchemaType>({
-    resolver: zodResolver(campaignWithPlacementSchema),
-  });
+  const [content, setContent] = useState<
+    (Content & { contentType: ContentType }) | undefined
+  >(undefined);
 
+  const adGroup = adGroups.length === 1 ? adGroups[0] : undefined;
+  const methods = useForm<CreativeWithAdGroupIdAndContentIdType>({
+    resolver: zodResolver(creativeWithAdGroupIdAndContentId),
+  });
   const {
-    control,
     register,
     handleSubmit,
     reset,
@@ -34,11 +40,16 @@ function CampaignForm({
   } = methods;
 
   useEffect(() => {
+    setContent(
+      contents.find((content) => content.id === initialData?.contentId)
+    );
     reset({
       ...(initialData ? initialData : {}),
-      placementId: placement?.id,
+      adGroupId: adGroup?.id,
     });
-  }, [reset, placement, initialData]);
+  }, [reset, adGroup, initialData, contents]);
+
+  console.log(errors);
 
   return (
     <FormProvider {...methods}>
@@ -46,30 +57,30 @@ function CampaignForm({
         <div className="overflow-hidden bg-white shadow sm:rounded-lg">
           <div className="px-4 py-5 sm:px-6">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Campaign
+              Creative
             </h3>
           </div>
           <div className="border-t border-gray-200">
             <dl>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Placement</dt>
+                <dt className="text-sm font-medium text-gray-500">AdGroup</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
-                    {...register("placementId")}
-                    defaultValue={initialData?.placementId}
+                    {...register("adGroupId")}
+                    defaultValue={initialData?.adGroupId || adGroup?.id}
                     disabled={initialData ? true : false}
                   >
                     <option value="">Please choose</option>
-                    {placements.map((placement) => {
+                    {adGroups.map((adGroup) => {
                       return (
-                        <option key={placement.id} value={placement.id}>
-                          {placement.name}
+                        <option key={adGroup.id} value={adGroup.id}>
+                          {adGroup.name}
                         </option>
                       );
                     })}
                   </select>
-                  {errors.placementId && (
-                    <p role="alert">{errors.placementId?.message}</p>
+                  {errors.adGroupId && (
+                    <p role="alert">{errors.adGroupId?.message}</p>
                   )}
                 </dd>
               </div>
@@ -118,65 +129,59 @@ function CampaignForm({
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Type</dt>
+                <dt className="text-sm font-medium text-gray-500">Content</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
-                    {...register("type")}
-                    defaultValue={initialData?.type}
+                    {...register("contentId")}
+                    defaultValue={initialData?.contentId}
+                    onChange={(e) =>
+                      setContent(
+                        contents.find(
+                          (content) => content.id === e.target.value
+                        )
+                      )
+                    }
                   >
                     <option value="">Please choose</option>
-                    <option value="DISPLAY">DISPLAY</option>
-                    <option value="MESSAGE">MESSAGE</option>
+                    {contents.map((content) => {
+                      return (
+                        <option key={content.id} value={content.id}>
+                          {content.name}
+                        </option>
+                      );
+                    })}
                   </select>
-                  {errors.type && <p role="alert">{errors.type?.message}</p>}
-                </dd>
-              </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">StartedAt</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <Controller
-                    name="startedAt"
-                    control={control}
-                    defaultValue={initialData?.startedAt}
-                    render={({ field }) => (
-                      <LocalizationProvider dateAdapter={AdapterMoment}>
-                        <DateTimePicker
-                          label="StartedAt"
-                          renderInput={(params) => <TextField {...params} />}
-                          {...field}
-                          onChange={(value) => {
-                            field.onChange(value.toDate());
-                          }}
-                        />
-                      </LocalizationProvider>
-                    )}
-                  />
-                  {errors.startedAt && (
-                    <p role="alert">{errors.startedAt?.message}</p>
+                  {errors.contentId && (
+                    <p role="alert">{errors.contentId?.message}</p>
                   )}
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">StartedAt</dt>
+                <dt className="text-sm font-medium text-gray-500">Detail</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <Controller
-                    name="endAt"
-                    control={control}
-                    defaultValue={initialData?.startedAt}
-                    render={({ field }) => (
-                      <LocalizationProvider dateAdapter={AdapterMoment}>
-                        <DateTimePicker
-                          label="EndAt"
-                          renderInput={(params) => <TextField {...params} />}
-                          {...field}
-                          onChange={(value) => {
-                            field.onChange(value.toDate());
-                          }}
-                        />
-                      </LocalizationProvider>
-                    )}
-                  />
-                  {errors.endAt && <p role="alert">{errors.endAt?.message}</p>}
+                  {content ? (
+                    <JsonForms
+                      schema={jsonParseWithFallback(
+                        content?.contentType?.schema
+                      )}
+                      //uischema={uiSchema}
+                      data={jsonParseWithFallback(content?.values)}
+                      renderers={materialRenderers}
+                      cells={materialCells}
+                      readonly={true}
+                    />
+                  ) : null}
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Preview</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <LiveProvider
+                    code={content?.contentType?.uiSchema || undefined}
+                    noInline={true}
+                  >
+                    <LivePreview />
+                  </LiveProvider>
                 </dd>
               </div>
             </dl>
@@ -195,4 +200,4 @@ function CampaignForm({
   );
 }
 
-export default CampaignForm;
+export default CreativeForm;

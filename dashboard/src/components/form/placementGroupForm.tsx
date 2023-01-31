@@ -1,24 +1,25 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Customset, CustomsetInfo, Service } from "@prisma/client";
+import type { PlacementGroup, Service } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import type { CustomsetWithServiceSchemaType } from "../schema/customset";
-import { customsetWithServiceSchema } from "../schema/customset";
-import CustomsetInfoForm from "./customsetInfoForm";
+import type {
+  PlacementGroupSchemaType,
+  PlacementGroupWithServiceSchemaType,
+} from "../schema/placementGroup";
+import { placementGroupWithServiceSchema } from "../schema/placementGroup";
 
-function CustomsetForm({
+function PlacementGroupForm({
   services,
   initialData,
   onSubmit,
 }: {
   services: Service[];
-  initialData?: Customset & { customsetInfo: CustomsetInfo };
-  onSubmit: (input: CustomsetWithServiceSchemaType) => void;
+  initialData?: PlacementGroup;
+  onSubmit: (input: PlacementGroupWithServiceSchemaType) => void;
 }) {
   const service = services.length === 1 ? services[0] : undefined;
-
-  const methods = useForm<CustomsetWithServiceSchemaType>({
-    resolver: zodResolver(customsetWithServiceSchema),
+  const methods = useForm<PlacementGroupSchemaType & { serviceId: string }>({
+    resolver: zodResolver(placementGroupWithServiceSchema),
   });
 
   const {
@@ -29,19 +30,16 @@ function CustomsetForm({
   } = methods;
 
   useEffect(() => {
-    reset({
-      ...(initialData ? initialData : {}),
-      serviceId: service?.id,
-    });
-  }, [reset, initialData, service]);
+    reset({ ...(initialData ? initialData : {}), serviceId: service?.id });
+  }, [initialData, reset, service]);
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} id="customset-form">
+      <form onSubmit={handleSubmit(onSubmit)} id="placementGroup-form">
         <div className="overflow-hidden bg-white shadow sm:rounded-lg">
           <div className="px-4 py-5 sm:px-6">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Customset
+              PlacementGroup
             </h3>
           </div>
           <div className="border-t border-gray-200">
@@ -51,8 +49,10 @@ function CustomsetForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("serviceId")}
-                    defaultValue={initialData?.serviceId || undefined}
+                    defaultValue={initialData?.serviceId || service?.id || ""}
+                    disabled={initialData ? true : false}
                   >
+                    <option value="">Please choose</option>
                     {services.map((service) => {
                       return (
                         <option key={service.id} value={service.id}>
@@ -61,9 +61,7 @@ function CustomsetForm({
                       );
                     })}
                   </select>
-                  {errors.serviceId && (
-                    <p role="alert">{errors.serviceId?.message}</p>
-                  )}
+                  {errors.name && <p role="alert">{errors.name?.message}</p>}
                 </dd>
               </div>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -98,8 +96,9 @@ function CustomsetForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("status")}
-                    defaultValue={initialData?.status}
+                    defaultValue={initialData?.status || "CREATED"}
                   >
+                    <option value="">Please choose</option>
                     <option value="CREATED">CREATED</option>
                     <option value="PUBLISHED">PUBLISHED</option>
                     <option value="ARCHIVED">ARCHIVED</option>
@@ -112,7 +111,6 @@ function CustomsetForm({
             </dl>
           </div>
         </div>
-        <CustomsetInfoForm initialData={initialData?.customsetInfo} />
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
           <button
             type="submit"
@@ -126,4 +124,4 @@ function CustomsetForm({
   );
 }
 
-export default CustomsetForm;
+export default PlacementGroupForm;

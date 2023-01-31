@@ -1,56 +1,56 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Customset, CustomsetInfo, Service } from "@prisma/client";
+import type { Content } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import type { serviceRouter } from "../../server/api/routers/service";
+import type { contentTypeRouter } from "../../server/api/routers/contentType";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
-import { buildCustomsetsTree } from "../../utils/tree";
+import { buildContentTypeTree } from "../../utils/tree";
 import type {
-  CustomsetSchemaType,
-  CustomsetWithServiceSchemaType,
-} from "../schema/customset";
-import CustomsetForm from "./customsetForm";
+  ContentSchemaType,
+  ContentWithContentTypeSchemaType,
+} from "../schema/content";
+import ContentForm from "./contentForm";
 
-function CustomsetModal({
-  services,
+function ContentModal({
+  contentTypes,
   initialData,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
-  services: Service[];
-  initialData?: Customset & { customsetInfo: CustomsetInfo };
+  contentTypes: ReturnType<typeof buildContentTypeTree>[];
+  initialData?: Content;
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  type RouterOutput = inferRouterOutputs<typeof serviceRouter>;
-  type OutputType = RouterOutput["addCustomset"];
+  type RouterOutput = inferRouterOutputs<typeof contentTypeRouter>;
+  type OutputType = RouterOutput["addContent"];
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
-      if (!prev) return undefined;
+      if (!prev) return prev;
 
-      prev.customsets = buildCustomsetsTree(created.customsets);
+      prev.contentTypes[created.id] = buildContentTypeTree(created);
       return prev;
     });
 
     setModalOpen(false);
   };
-  const { mutate: create } = api.service.addCustomset.useMutation({
+  const { mutate: create } = api.contentType.addContent.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
-  const { mutate: update } = api.service.updateCustomset.useMutation({
+  const { mutate: update } = api.contentType.updateContent.useMutation({
     onSuccess(updated) {
       handleSuccess(updated);
     },
   });
 
-  const onSubmit = (input: CustomsetWithServiceSchemaType) => {
+  const onSubmit = (input: ContentWithContentTypeSchemaType) => {
     if (initialData) update(input);
     else create(input);
   };
@@ -63,8 +63,8 @@ function CustomsetModal({
       maxWidth="lg"
     >
       <DialogContent>
-        <CustomsetForm
-          services={services}
+        <ContentForm
+          contentTypes={contentTypes}
           initialData={initialData}
           onSubmit={onSubmit}
           //onClose={() => setModalOpen(false)}
@@ -74,4 +74,4 @@ function CustomsetModal({
   );
 }
 
-export default CustomsetModal;
+export default ContentModal;

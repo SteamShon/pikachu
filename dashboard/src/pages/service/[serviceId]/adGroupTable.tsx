@@ -3,7 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { AdGroup, Service } from "@prisma/client";
+import type { AdGroup } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -15,11 +15,9 @@ import type { buildServiceTree } from "../../../utils/tree";
 import { buildCampaignTree } from "../../../utils/tree";
 
 function AdGroupTable({
-  service,
   serviceTree,
   setServiceTree,
 }: {
-  service: Service;
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -197,8 +195,10 @@ function AdGroupTable({
           experimentalFeatures={{ newEditingApi: true }}
           selectionModel={(adGroupIds || []) as string[]}
           onSelectionModelChange={(ids) => {
-            router.query.adGroupIds = ids;
-            router.push(router);
+            if (ids && Array.isArray(ids)) {
+              router.query.adGroupIds = ids.map((id) => String(id));
+              router.push(router);
+            }
           }}
           components={{
             Toolbar: toolbar,

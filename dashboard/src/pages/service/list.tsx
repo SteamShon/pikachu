@@ -116,9 +116,10 @@ function ServiceList() {
         experimentalFeatures={{ newEditingApi: true }}
         selectionModel={(serviceIds || []) as string[]}
         onSelectionModelChange={(ids) => {
-          router.query.serviceIds = ids;
-          router.push(router);
-          console.log(ids);
+          if (ids && Array.isArray(ids)) {
+            router.query.serviceIds = ids.map((id) => String(id));
+            router.push(router);
+          }
         }}
         components={{
           Toolbar: toolbar,

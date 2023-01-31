@@ -144,9 +144,10 @@ function CustomsetTable({
           experimentalFeatures={{ newEditingApi: true }}
           selectionModel={(customsetIds || []) as string[]}
           onSelectionModelChange={(ids) => {
-            router.query.customsetIds = ids;
-            router.push(router);
-            console.log(ids);
+            if (ids && Array.isArray(ids)) {
+              router.query.customsetIds = ids.map((id) => String(id));
+              router.push(router);
+            }
           }}
           components={{
             Toolbar: toolbar,

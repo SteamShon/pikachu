@@ -39,7 +39,11 @@ export const contentTypeRouter = createTRPCRouter({
         },
 
         include: {
-          contents: true,
+          contents: {
+            include: {
+              creatives: true,
+            },
+          },
         },
       });
 
@@ -75,7 +79,11 @@ export const contentTypeRouter = createTRPCRouter({
         },
 
         include: {
-          contents: true,
+          contents: {
+            include: {
+              creatives: true,
+            },
+          },
         },
       });
 

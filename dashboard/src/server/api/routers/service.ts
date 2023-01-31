@@ -205,7 +205,11 @@ export const serviceRouter = createTRPCRouter({
           },
           contentTypes: {
             include: {
-              contents: true,
+              contents: {
+                include: {
+                  creatives: true,
+                },
+              },
             },
           },
           customsets: {
@@ -263,7 +267,11 @@ export const serviceRouter = createTRPCRouter({
           },
           contentTypes: {
             include: {
-              contents: true,
+              contents: {
+                include: {
+                  creatives: true,
+                },
+              },
             },
           },
           customsets: {

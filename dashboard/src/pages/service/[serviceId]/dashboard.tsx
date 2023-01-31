@@ -58,11 +58,7 @@ function Dashboard() {
       description: `campaigns`,
       table: () =>
         service ? (
-          <CampaignTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
+          <CampaignTable setServiceTree={setTree} serviceTree={tree} />
         ) : null,
     },
     {
@@ -70,11 +66,7 @@ function Dashboard() {
       description: `adGroups`,
       table: () =>
         service ? (
-          <AdGroupTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
+          <AdGroupTable setServiceTree={setTree} serviceTree={tree} />
         ) : null,
     },
     {
@@ -82,11 +74,7 @@ function Dashboard() {
       description: `creatives`,
       table: () =>
         service ? (
-          <CreativeTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
+          <CreativeTable setServiceTree={setTree} serviceTree={tree} />
         ) : null,
     },
     {
@@ -106,11 +94,7 @@ function Dashboard() {
       description: `contents`,
       table: () =>
         service ? (
-          <ContentTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
+          <ContentTable setServiceTree={setTree} serviceTree={tree} />
         ) : null,
     },
     {

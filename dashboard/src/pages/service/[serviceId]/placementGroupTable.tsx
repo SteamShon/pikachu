@@ -131,9 +131,10 @@ function PlacementGroupTable({
           experimentalFeatures={{ newEditingApi: true }}
           selectionModel={(placementGroupIds || []) as string[]}
           onSelectionModelChange={(ids) => {
-            router.query.placementGroupIds = ids;
-            router.push(router);
-            console.log(ids);
+            if (ids && Array.isArray(ids)) {
+              router.query.placementGroupIds = ids.map((id) => String(id));
+              router.push(router);
+            }
           }}
           components={{
             Toolbar: toolbar,

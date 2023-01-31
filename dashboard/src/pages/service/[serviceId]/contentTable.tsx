@@ -3,7 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Content, Service } from "@prisma/client";
+import type { Content, Creative } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -18,11 +18,9 @@ import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypeTree } from "../../../utils/tree";
 function ContentTable({
-  service,
   serviceTree,
   setServiceTree,
 }: {
-  service: Service;
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -82,7 +80,7 @@ function ContentTable({
       renderCell: (params: GridRenderCellParams<Date>) => {
         return (
           <ol>
-            {params.row.creatives.map((creative) => {
+            {params.row.creatives.map((creative: Creative) => {
               return <li key={creative.id}>{creative.name}</li>;
             })}
           </ol>
@@ -190,9 +188,10 @@ function ContentTable({
           experimentalFeatures={{ newEditingApi: true }}
           selectionModel={(contentIds || []) as string[]}
           onSelectionModelChange={(ids) => {
-            router.query.contentIds = ids;
-            router.push(router);
-            console.log(ids);
+            if (ids && Array.isArray(ids)) {
+              router.query.contentIds = ids.map((id) => String(id));
+              router.push(router);
+            }
           }}
           components={{
             Toolbar: toolbar,

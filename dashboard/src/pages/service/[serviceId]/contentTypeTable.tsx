@@ -54,7 +54,6 @@ function ContentTypeTable({
     (ContentType & { contents: Content[] }) | undefined
   >(undefined);
 
-  const filtered = [service];
   const rows = serviceTree?.contentTypes
     ? Object.values(serviceTree.contentTypes).map((contentType) => {
         return {
@@ -186,9 +185,10 @@ function ContentTypeTable({
           experimentalFeatures={{ newEditingApi: true }}
           selectionModel={(contentTypeIds || []) as string[]}
           onSelectionModelChange={(ids) => {
-            router.query.contentTypeIds = ids;
-            router.push(router);
-            console.log(ids);
+            if (ids && Array.isArray(ids)) {
+              router.query.contentTypeIds = ids.map((id) => String(id));
+              router.push(router);
+            }
           }}
           components={{
             Toolbar: toolbar,

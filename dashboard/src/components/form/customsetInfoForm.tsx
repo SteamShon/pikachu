@@ -2,10 +2,7 @@ import type { CustomsetInfo } from "@prisma/client";
 import { useFormContext } from "react-hook-form";
 
 function CustomsetInfoForm({ initialData }: { initialData?: CustomsetInfo }) {
-  const {
-    register,
-    formState: { errors },
-  } = useFormContext();
+  const { register } = useFormContext();
 
   return (
     <div className="overflow-hidden bg-white shadow sm:rounded-lg">
@@ -20,9 +17,9 @@ function CustomsetInfoForm({ initialData }: { initialData?: CustomsetInfo }) {
                 defaultValue={initialData?.filePath}
                 {...register("customsetInfo.filePath")}
               />
-              {errors.customsetInfo && errors.customsetInfo.filePath && (
+              {/* {errors.customsetInfo && errors.customsetInfo[`filePath`] && (
                 <p role="alert">{errors.customsetInfo?.filePath?.message}</p>
-              )}
+              )} */}
             </dd>
           </div>
           <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -33,9 +30,9 @@ function CustomsetInfoForm({ initialData }: { initialData?: CustomsetInfo }) {
                 defaultValue={initialData?.config}
                 {...register("customsetInfo.config")}
               />
-              {errors.customsetInfo && errors.customsetInfo.config && (
+              {/* {errors.customsetInfo && errors.customsetInfo.config && (
                 <p role="alert">{errors.customsetInfo?.config?.message}</p>
-              )}
+              )} */}
             </dd>
           </div>
         </dl>

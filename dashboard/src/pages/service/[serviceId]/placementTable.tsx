@@ -3,7 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Placement, Service } from "@prisma/client";
+import type { Placement } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -164,8 +164,10 @@ function PlacementTable({
           experimentalFeatures={{ newEditingApi: true }}
           selectionModel={(placementIds || []) as string[]}
           onSelectionModelChange={(ids) => {
-            router.query.placementIds = ids;
-            router.push(router);
+            if (ids && Array.isArray(ids)) {
+              router.query.placementIds = ids.map((id) => String(id));
+              router.push(router);
+            }
           }}
           components={{
             Toolbar: toolbar,

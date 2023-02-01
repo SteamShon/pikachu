@@ -1,4 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import LoadingButton from "@mui/lab/LoadingButton";
+import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { api } from "../../utils/api";
 import type { UsersOnServicesSchemaType } from "../schema/usersOnServices";
@@ -6,11 +8,11 @@ import { usersOnServicesSchema } from "../schema/usersOnServices";
 
 function UsersOnServicesForm({
   onSubmit,
-  onClose,
 }: {
   onSubmit: (input: UsersOnServicesSchemaType) => void;
-  onClose: () => void;
 }) {
+  const [loading, setLoading] = useState(false);
+
   const onSubmitFunction = (data: UsersOnServicesSchemaType) => {
     const params = { ...data };
 
@@ -98,19 +100,19 @@ function UsersOnServicesForm({
             </div>
           </div>
           <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-            <button
+            <LoadingButton
               type="submit"
+              variant="contained"
+              loadingPosition="end"
+              onClick={handleSubmit((input) => {
+                setLoading(true);
+                onSubmit(input);
+              })}
+              loading={loading}
               className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
             >
-              Save
-            </button>
-            <button
-              type="button"
-              className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-red-500 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
+              <span>Save</span>
+            </LoadingButton>
           </div>
         </form>
       </FormProvider>

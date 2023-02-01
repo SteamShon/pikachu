@@ -1,8 +1,7 @@
-import { Dialog, DialogContent, LinearProgress } from "@mui/material";
+import { Dialog, DialogContent } from "@mui/material";
 import type { Content, ContentType, Creative } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import { useState } from "react";
 import type { adGroupRouter } from "../../server/api/routers/adGroup";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
@@ -27,7 +26,6 @@ function CreativeModal({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  const [loading, setLoading] = useState(false);
   type RouterOutput = inferRouterOutputs<typeof adGroupRouter>;
   type OutputType = RouterOutput["addCreative"];
   const handleSuccess = (created: OutputType): void => {
@@ -58,12 +56,8 @@ function CreativeModal({
     },
   });
   const onSubmit = (input: CreativeWithAdGroupIdAndContentIdType) => {
-    setLoading(true);
-
     if (initialData) update(input);
     else create(input);
-
-    setLoading(false);
   };
 
   return (
@@ -74,7 +68,6 @@ function CreativeModal({
       maxWidth="lg"
     >
       <DialogContent>
-        {loading ? <LinearProgress /> : null}
         <CreativeForm
           adGroups={adGroups}
           contents={contents}

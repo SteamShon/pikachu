@@ -1,7 +1,6 @@
-import { Dialog, DialogContent, LinearProgress } from "@mui/material";
+import { Dialog, DialogContent } from "@mui/material";
 import type { Service, User, UsersOnServices } from "@prisma/client";
 import type { Dispatch, SetStateAction } from "react";
-import { useState } from "react";
 import { api } from "../../utils/api";
 
 import type { UsersOnServicesSchemaType } from "../schema/usersOnServices";
@@ -22,7 +21,6 @@ function UsersOnServicesModal({
   setModalOpen,
   setUsersOnServices,
 }: UsersOnServicesModalProps) {
-  const [loading, setLoading] = useState(false);
   const { mutate: create } = api.usersOnServices.create.useMutation({
     onSuccess(created) {
       setUsersOnServices(created.services);
@@ -38,12 +36,8 @@ function UsersOnServicesModal({
   });
 
   const onSubmit = (input: UsersOnServicesSchemaType) => {
-    setLoading(true);
-
     if (initialData) update(input);
     else create(input);
-
-    setLoading(false);
   };
 
   return (
@@ -54,11 +48,7 @@ function UsersOnServicesModal({
       maxWidth="lg"
     >
       <DialogContent>
-        {loading ? <LinearProgress /> : null}
-        <UsersOnServicesForm
-          onSubmit={onSubmit}
-          onClose={() => setModalOpen(false)}
-        />
+        <UsersOnServicesForm onSubmit={onSubmit} />
       </DialogContent>
     </Dialog>
   );

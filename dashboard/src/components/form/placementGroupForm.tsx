@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import LoadingButton from "@mui/lab/LoadingButton";
 import type { PlacementGroup, Service } from "@prisma/client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import type {
   PlacementGroupSchemaType,
@@ -17,6 +18,7 @@ function PlacementGroupForm({
   initialData?: PlacementGroup;
   onSubmit: (input: PlacementGroupWithServiceSchemaType) => void;
 }) {
+  const [loading, setLoading] = useState(false);
   const service = services.length === 1 ? services[0] : undefined;
   const methods = useForm<PlacementGroupSchemaType & { serviceId: string }>({
     resolver: zodResolver(placementGroupWithServiceSchema),
@@ -112,12 +114,19 @@ function PlacementGroupForm({
           </div>
         </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <button
+          <LoadingButton
             type="submit"
+            variant="contained"
+            loadingPosition="end"
+            onClick={handleSubmit((input) => {
+              setLoading(true);
+              onSubmit(input);
+            })}
+            loading={loading}
             className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
           >
-            Save
-          </button>
+            <span>Save</span>
+          </LoadingButton>
         </div>
       </form>
     </FormProvider>

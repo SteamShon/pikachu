@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import LoadingButton from "@mui/lab/LoadingButton";
 import { Grid, Step, StepButton, Stepper } from "@mui/material";
 import type { Content, ContentType, Service } from "@prisma/client";
 import { useEffect, useState } from "react";
@@ -21,6 +22,7 @@ function ContentTypeForm({
   initialData?: ContentType & { contents: Content[] };
   onSubmit: (input: ContentTypeSchemaType & { serviceId: string }) => void;
 }) {
+  const [loading, setLoading] = useState(false);
   const [schema, setSchema] = useState<string | undefined>(undefined);
   // eslint-disable-next-line @typescript-eslint/ban-types
   const [defaultValues, setDefaultValues] = useState<{ [x: string]: {} }>({});
@@ -203,6 +205,23 @@ function ContentTypeForm({
             </Grid>
             <Grid item xs={12}>
               {steps[activeStep]?.component}
+              {activeStep === steps.length - 1 ? (
+                <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                  <LoadingButton
+                    type="submit"
+                    variant="contained"
+                    loadingPosition="end"
+                    onClick={handleSubmit((input) => {
+                      setLoading(true);
+                      onSubmit(input);
+                    })}
+                    loading={loading}
+                    className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    <span>Save</span>
+                  </LoadingButton>
+                </div>
+              ) : null}
             </Grid>
           </Grid>
         </div>

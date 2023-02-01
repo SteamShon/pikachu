@@ -1,5 +1,6 @@
 // import { api } from "../../utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
+import LoadingButton from "@mui/lab/LoadingButton";
 import type { AdGroup } from "@prisma/client";
 import { QueryBuilderDnD } from "@react-querybuilder/dnd";
 import { useEffect, useState } from "react";
@@ -22,6 +23,7 @@ function AdGroupForm({
   onSubmit: (input: AdGroupWithCampaignSchemaType) => void;
   initialData?: AdGroup;
 }) {
+  const [loading, setLoading] = useState(false);
   const initialQuery: RuleGroupType = { combinator: "and", rules: [] };
   const [query, setQuery] = useState(
     initialData?.filter ? parseJsonLogic(initialData?.filter) : initialQuery
@@ -166,12 +168,19 @@ function AdGroupForm({
           </div>
         </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <button
+          <LoadingButton
             type="submit"
+            variant="contained"
+            loadingPosition="end"
+            onClick={handleSubmit((input) => {
+              setLoading(true);
+              onSubmit(input);
+            })}
+            loading={loading}
             className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
           >
-            Save
-          </button>
+            <span>Save</span>
+          </LoadingButton>
         </div>
       </form>
     </FormProvider>

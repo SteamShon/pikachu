@@ -1,8 +1,7 @@
-import { Dialog, DialogContent, LinearProgress } from "@mui/material";
+import { Dialog, DialogContent } from "@mui/material";
 import type { Campaign } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import { useState } from "react";
 import type { placementRouter } from "../../server/api/routers/placement";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
@@ -25,7 +24,6 @@ function CampaignModal({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  const [loading, setLoading] = useState(false);
   type RouterOutput = inferRouterOutputs<typeof placementRouter>;
   type OutputType = RouterOutput["addCampaign"];
 
@@ -55,12 +53,8 @@ function CampaignModal({
   });
 
   const onSubmit = (input: CampaignWithPlacementSchemaType) => {
-    setLoading(true);
-
     if (initialData) update(input);
     else create(input);
-
-    setLoading(false);
   };
 
   return (
@@ -71,7 +65,6 @@ function CampaignModal({
       maxWidth="lg"
     >
       <DialogContent>
-        {loading ? <LinearProgress /> : null}
         <CampaignForm
           placements={placements}
           initialData={initialData}

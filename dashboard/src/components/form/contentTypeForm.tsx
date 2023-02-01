@@ -98,7 +98,7 @@ function ContentTypeForm({
                 {...register("schema")}
               />
               <JsonSchemaEditor
-                data={jsonParseWithFallback(initialData?.schema)}
+                data={jsonParseWithFallback(schema || initialData?.schema)}
                 onSchemaChange={(schema) => {
                   setValue("schema", schema);
                 }}
@@ -125,7 +125,7 @@ function ContentTypeForm({
               <JsonForms
                 schema={jsonParseWithFallback(schema)}
                 //uischema={uiSchema}
-                data={defaultValues}
+                data={getValues("defaultValues") || {}}
                 renderers={materialRenderers}
                 cells={materialCells}
                 onChange={({ data }) => {

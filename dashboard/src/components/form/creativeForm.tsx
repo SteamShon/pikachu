@@ -10,6 +10,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { LivePreview, LiveProvider } from "react-live";
 import { jsonParseWithFallback } from "../../utils/json";
 import type { buildAdGroupTree } from "../../utils/tree";
+import { replacePropsInFunction } from "../common/CodeTemplate";
 import type { CreativeWithAdGroupIdAndContentIdType } from "../schema/creative";
 import { creativeWithAdGroupIdAndContentId } from "../schema/creative";
 
@@ -48,8 +49,6 @@ function CreativeForm({
       adGroupId: adGroup?.id,
     });
   }, [reset, adGroup, initialData, contents]);
-
-  console.log(errors);
 
   return (
     <FormProvider {...methods}>
@@ -177,7 +176,10 @@ function CreativeForm({
                 <dt className="text-sm font-medium text-gray-500">Preview</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <LiveProvider
-                    code={content?.contentType?.uiSchema || undefined}
+                    code={replacePropsInFunction({
+                      code: content?.contentType?.uiSchema || undefined,
+                      contents: [jsonParseWithFallback(content?.values)],
+                    })}
                     noInline={true}
                   >
                     <LivePreview />

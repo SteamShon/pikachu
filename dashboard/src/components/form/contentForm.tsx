@@ -6,7 +6,7 @@ import {
 import { JsonForms } from "@jsonforms/react";
 import type { Content, ContentType } from "@prisma/client";
 import { useEffect, useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm } from "react-hook-form";
 import { LivePreview, LiveProvider } from "react-live";
 import { jsonParseWithFallback } from "../../utils/json";
 import { replacePropsInFunction } from "../common/CodeTemplate";
@@ -36,6 +36,7 @@ function ContentForm({
   });
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -152,19 +153,25 @@ function ContentForm({
                 <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">Values</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                    {contentType ? (
-                      <JsonForms
-                        schema={jsonParseWithFallback(contentType?.schema)}
-                        //uischema={uiSchema}
-                        data={defaultValues}
-                        renderers={materialRenderers}
-                        cells={materialCells}
-                        onChange={({ data }) => {
-                          setValue("values", data);
-                          setDefaultValues(data);
-                        }}
-                      />
-                    ) : null}
+                    <Controller
+                      name="values"
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <JsonForms
+                          schema={jsonParseWithFallback(contentType?.schema)}
+                          //uischema={uiSchema}
+                          data={defaultValues}
+                          renderers={materialRenderers}
+                          cells={materialCells}
+                          onChange={({ data }) => {
+                            field.onChange(data);
+                            // setValue("values", data);
+                            setDefaultValues(data);
+                          }}
+                        />
+                      )}
+                    />
                   </dd>
                 </div>
               </dl>

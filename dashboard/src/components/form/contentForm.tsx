@@ -61,7 +61,8 @@ function ContentForm({
       contentTypeId: contentTypeId || undefined,
       values: parsedValues,
     });
-  }, [reset, initialData, contentTypes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reset, initialData]);
 
   return (
     <>
@@ -157,7 +158,7 @@ function ContentForm({
                       name="values"
                       control={control}
                       rules={{ required: true }}
-                      render={({ field }) => (
+                      render={({}) => (
                         <JsonForms
                           schema={jsonParseWithFallback(contentType?.schema)}
                           //uischema={uiSchema}
@@ -165,8 +166,9 @@ function ContentForm({
                           renderers={materialRenderers}
                           cells={materialCells}
                           onChange={({ data }) => {
-                            field.onChange(data);
-                            // setValue("values", data);
+                            console.log(data);
+                            //field.onChange(data);
+                            setValue("values", data);
                             setDefaultValues(data);
                           }}
                         />

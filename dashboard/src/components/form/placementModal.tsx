@@ -1,7 +1,8 @@
-import { Dialog, DialogContent } from "@mui/material";
+import { Dialog, DialogContent, LinearProgress } from "@mui/material";
 import type { ContentType, Placement } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 import type { placementGroupRouter } from "../../server/api/routers/placementGroup";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
@@ -26,6 +27,7 @@ function PlacementModal({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
+  const [loading, setLoading] = useState(false);
   type RouterOutput = inferRouterOutputs<typeof placementGroupRouter>;
   type OutputType = RouterOutput["addPlacement"];
 
@@ -51,8 +53,12 @@ function PlacementModal({
   });
 
   const onSubmit = (input: PlacementWithPlacementGroupSchemaType) => {
+    setLoading(true);
+
     if (initialData) update(input);
     else create(input);
+
+    setLoading(false);
   };
 
   return (
@@ -63,6 +69,7 @@ function PlacementModal({
       maxWidth="lg"
     >
       <DialogContent>
+        {loading ? <LinearProgress /> : null}
         <PlacementForm
           placementGroups={placementGroups}
           contentTypes={contentTypes}

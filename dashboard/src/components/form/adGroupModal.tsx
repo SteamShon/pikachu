@@ -1,7 +1,8 @@
-import { Dialog, DialogContent } from "@mui/material";
+import { Dialog, DialogContent, LinearProgress } from "@mui/material";
 import type { AdGroup } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 import type { campaignRouter } from "../../server/api/routers/campaign";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
@@ -24,6 +25,7 @@ function AdGroupModal({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
+  const [loading, setLoading] = useState(false);
   type RouterOutput = inferRouterOutputs<typeof campaignRouter>;
   type OutputType = RouterOutput["addAdGroup"];
   const handleSuccess = (created: OutputType): void => {
@@ -54,8 +56,12 @@ function AdGroupModal({
   });
 
   const onSubmit = (input: AdGroupWithCampaignSchemaType) => {
+    setLoading(true);
+
     if (initialData) update(input);
     else create(input);
+
+    setLoading(false);
   };
 
   return (
@@ -66,6 +72,7 @@ function AdGroupModal({
       maxWidth="lg"
     >
       <DialogContent>
+        {loading ? <LinearProgress /> : null}
         <AdGroupForm
           campaigns={campaigns}
           initialData={initialData}

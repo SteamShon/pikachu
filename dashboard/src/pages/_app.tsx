@@ -33,7 +33,6 @@ const MyApp: AppType<{ session: Session | null }> = ({
     <SessionProvider session={session}>
       <Navbar />
       {pageLoading ? <div>Loading...</div> : <Component {...pageProps} />}
-
       <Analytics />
     </SessionProvider>
   );

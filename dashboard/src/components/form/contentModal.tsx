@@ -1,7 +1,8 @@
-import { Dialog, DialogContent } from "@mui/material";
+import { Dialog, DialogContent, LinearProgress } from "@mui/material";
 import type { Content } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 import type { contentTypeRouter } from "../../server/api/routers/contentType";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
@@ -24,6 +25,7 @@ function ContentModal({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
+  const [loading, setLoading] = useState(false);
   type RouterOutput = inferRouterOutputs<typeof contentTypeRouter>;
   type OutputType = RouterOutput["addContent"];
   const handleSuccess = (created: OutputType): void => {
@@ -48,8 +50,12 @@ function ContentModal({
   });
 
   const onSubmit = (input: ContentWithContentTypeSchemaType) => {
+    setLoading(true);
+
     if (initialData) update(input);
     else create(input);
+
+    setLoading(false);
   };
 
   return (
@@ -60,6 +66,7 @@ function ContentModal({
       maxWidth="lg"
     >
       <DialogContent>
+        {loading ? <LinearProgress /> : null}
         <ContentForm
           contentTypes={contentTypes}
           initialData={initialData}

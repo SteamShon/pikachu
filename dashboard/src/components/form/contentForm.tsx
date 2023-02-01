@@ -55,7 +55,7 @@ function ContentForm({
     const parsedValues = jsonParseWithFallback(values) as { [x: string]: {} };
 
     setDefaultValues(parsedValues);
-
+    console.log(parsedValues);
     reset({
       ...others,
       contentTypeId: contentTypeId || undefined,
@@ -166,7 +166,7 @@ function ContentForm({
                           renderers={materialRenderers}
                           cells={materialCells}
                           onChange={({ data }) => {
-                            console.log(data);
+                            if (Object.keys(data).length === 0) return;
                             //field.onChange(data);
                             setValue("values", data);
                             setDefaultValues(data);

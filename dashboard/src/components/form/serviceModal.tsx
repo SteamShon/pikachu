@@ -1,6 +1,7 @@
-import { Dialog, DialogContent } from "@mui/material";
+import { Dialog, DialogContent, LinearProgress } from "@mui/material";
 import type { Service } from "@prisma/client";
 import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 import { api } from "../../utils/api";
 import type { ServiceSchemaType } from "../schema/service";
 import ServiceForm from "./serviceForm";
@@ -16,6 +17,7 @@ function ServiceModal({
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServices: Dispatch<SetStateAction<Service[]>>;
 }) {
+  const [loading, setLoading] = useState(false);
   const { mutate: create } = api.service.create.useMutation({
     onSuccess(service) {
       setServices((prev) => [...prev, service]);
@@ -37,8 +39,12 @@ function ServiceModal({
   });
 
   const onSubmit = (input: ServiceSchemaType) => {
+    setLoading(true);
+
     if (initialData) update(input);
     else create(input);
+
+    setLoading(false);
   };
 
   return (
@@ -49,6 +55,7 @@ function ServiceModal({
       maxWidth="lg"
     >
       <DialogContent>
+        {loading ? <LinearProgress /> : null}
         <ServiceForm
           initialData={initialData}
           onSubmit={onSubmit}

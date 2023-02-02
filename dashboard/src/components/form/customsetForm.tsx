@@ -1,8 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import LoadingButton from "@mui/lab/LoadingButton";
 import type { Customset, CustomsetInfo, Service } from "@prisma/client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { CustomsetWithServiceSchemaType } from "../schema/customset";
 import { customsetWithServiceSchema } from "../schema/customset";
 import CustomsetInfoForm from "./customsetInfoForm";
@@ -16,9 +16,6 @@ function CustomsetForm({
   initialData?: Customset & { customsetInfo: CustomsetInfo };
   onSubmit: (input: CustomsetWithServiceSchemaType) => void;
 }) {
-  const [loading, setLoading] = useState(false);
-  const service = services.length === 1 ? services[0] : undefined;
-
   const methods = useForm<CustomsetWithServiceSchemaType>({
     resolver: zodResolver(customsetWithServiceSchema),
   });
@@ -33,9 +30,9 @@ function CustomsetForm({
   useEffect(() => {
     reset({
       ...(initialData ? initialData : {}),
-      serviceId: service?.id,
+      serviceId: initialData?.serviceId || undefined,
     });
-  }, [reset, initialData, service]);
+  }, [reset, initialData]);
 
   return (
     <FormProvider {...methods}>
@@ -54,6 +51,7 @@ function CustomsetForm({
                   <select
                     {...register("serviceId")}
                     defaultValue={initialData?.serviceId || undefined}
+                    disabled={initialData ? true : false}
                   >
                     {services.map((service) => {
                       return (
@@ -116,19 +114,10 @@ function CustomsetForm({
         </div>
         <CustomsetInfoForm initialData={initialData?.customsetInfo} />
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <LoadingButton
-            type="submit"
-            variant="contained"
-            loadingPosition="end"
-            onClick={handleSubmit((input) => {
-              setLoading(true);
-              onSubmit(input);
-            })}
-            loading={loading}
-            className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-          >
-            <span>Save</span>
-          </LoadingButton>
+          <CustomLoadingButton
+            handleSubmit={handleSubmit}
+            onSubmit={onSubmit}
+          />
         </div>
       </form>
     </FormProvider>

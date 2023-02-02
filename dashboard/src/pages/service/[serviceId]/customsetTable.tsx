@@ -3,12 +3,13 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Customset, CustomsetInfo, Service } from "@prisma/client";
+import type { Service } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
+import type CustomsetForm from "../../../components/form/customsetForm";
 import CustomsetModal from "../../../components/form/customsetModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
@@ -30,7 +31,7 @@ function CustomsetTable({
   const [modalOpen, setModalOpen] = useState(false);
   const { customsetIds } = router.query;
   const [customset, setCustomset] = useState<
-    (Customset & { customsetInfo: CustomsetInfo }) | undefined
+    Parameters<typeof CustomsetForm>[0]["initialData"] | undefined
   >(undefined);
 
   const { mutate: deleteCustomset } = api.service.removeCustomset.useMutation({

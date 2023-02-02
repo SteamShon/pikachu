@@ -1,12 +1,24 @@
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { api } from "../utils/api";
+import ErrorMessage from "./common/ErrorMessage";
+import Loading from "./common/Loading";
 
 function Navbar() {
-  const { data: services } = api.user.getServices.useQuery();
   const router = useRouter();
   const { serviceId } = router.query;
+
+  const {
+    data: services,
+    isLoading,
+    isError,
+    error,
+  } = api.user.getServices.useQuery();
+
   const service = services?.find((service) => service.serviceId === serviceId);
+  if (isLoading) return <Loading />;
+  if (isError) return <ErrorMessage error={error} />;
 
   return (
     <nav className="bg-gray-800">
@@ -51,6 +63,12 @@ function Navbar() {
                 >
                   Members
                 </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white"
+                >
+                  Sign out
+                </button>
               </div>
             </div>
           </div>

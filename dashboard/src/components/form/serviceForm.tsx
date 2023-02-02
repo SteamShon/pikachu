@@ -1,8 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import LoadingButton from "@mui/lab/LoadingButton";
 import type { Service } from "@prisma/client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { ServiceSchemaType } from "../schema/service";
 import { serviceSchema } from "../schema/service";
 function ServiceForm({
@@ -12,7 +12,6 @@ function ServiceForm({
   onSubmit: (input: ServiceSchemaType) => void;
   initialData?: Service;
 }) {
-  const [loading, setLoading] = useState(false);
   const methods = useForm<ServiceSchemaType>({
     resolver: zodResolver(serviceSchema),
   });
@@ -88,19 +87,10 @@ function ServiceForm({
           </div>
         </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <LoadingButton
-            type="submit"
-            variant="contained"
-            loadingPosition="end"
-            onClick={handleSubmit((input) => {
-              setLoading(true);
-              onSubmit(input);
-            })}
-            loading={loading}
-            className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-          >
-            <span>Save</span>
-          </LoadingButton>
+          <CustomLoadingButton
+            handleSubmit={handleSubmit}
+            onSubmit={onSubmit}
+          />
         </div>
       </form>
     </FormProvider>

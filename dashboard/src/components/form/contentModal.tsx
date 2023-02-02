@@ -1,5 +1,4 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Content } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { contentTypeRouter } from "../../server/api/routers/contentType";
@@ -17,7 +16,7 @@ function ContentModal({
   setServiceTree,
 }: {
   contentTypes: ReturnType<typeof buildContentTypeTree>[];
-  initialData?: Content;
+  initialData?: Parameters<typeof ContentForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<

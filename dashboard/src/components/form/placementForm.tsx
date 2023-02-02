@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import LoadingButton from "@mui/lab/LoadingButton";
-import type { ContentType, Placement } from "@prisma/client";
-import { useEffect, useState } from "react";
+import type { ContentType, Placement, PlacementGroup } from "@prisma/client";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import type { buildPlacementGroupTree } from "../../utils/tree";
+import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { PlacementWithPlacementGroupSchemaType } from "../schema/placement";
 import { placementWithPlacementGroupSchema } from "../schema/placement";
 
@@ -15,13 +15,9 @@ function PlacementForm({
 }: {
   placementGroups: ReturnType<typeof buildPlacementGroupTree>[];
   contentTypes: ContentType[];
-  initialData?: Placement;
+  initialData?: Placement & { placementGroup: PlacementGroup };
   onSubmit: (input: PlacementWithPlacementGroupSchemaType) => void;
 }) {
-  const [loading, setLoading] = useState(false);
-  const placementGroup =
-    placementGroups.length === 1 ? placementGroups[0] : undefined;
-
   const methods = useForm<PlacementWithPlacementGroupSchemaType>({
     resolver: zodResolver(placementWithPlacementGroupSchema),
   });
@@ -36,9 +32,9 @@ function PlacementForm({
   useEffect(() => {
     reset({
       ...(initialData ? initialData : {}),
-      placementGroupId: placementGroup?.id,
+      placementGroupId: initialData?.placementGroup?.id,
     });
-  }, [reset, placementGroup, initialData]);
+  }, [reset, initialData]);
 
   return (
     <FormProvider {...methods}>
@@ -58,9 +54,7 @@ function PlacementForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("placementGroupId")}
-                    defaultValue={
-                      initialData?.placementGroupId || placementGroup?.id
-                    }
+                    defaultValue={initialData?.placementGroupId || undefined}
                     disabled={initialData ? true : false}
                   >
                     <option value="">Please choose</option>
@@ -151,19 +145,10 @@ function PlacementForm({
           </div>
         </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <LoadingButton
-            type="submit"
-            variant="contained"
-            loadingPosition="end"
-            onClick={handleSubmit((input) => {
-              setLoading(true);
-              onSubmit(input);
-            })}
-            loading={loading}
-            className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-          >
-            <span>Save</span>
-          </LoadingButton>
+          <CustomLoadingButton
+            handleSubmit={handleSubmit}
+            onSubmit={onSubmit}
+          />
         </div>
       </form>
     </FormProvider>

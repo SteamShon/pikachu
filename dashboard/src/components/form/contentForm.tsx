@@ -4,13 +4,13 @@ import {
   materialRenderers,
 } from "@jsonforms/material-renderers";
 import { JsonForms } from "@jsonforms/react";
-import LoadingButton from "@mui/lab/LoadingButton";
 import type { Content, ContentType } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { LivePreview, LiveProvider } from "react-live";
 import { jsonParseWithFallback } from "../../utils/json";
 import { replacePropsInFunction } from "../common/CodeTemplate";
+import CustomLoadingButton from "../common/CustomLoadingButton";
 import type {
   ContentSchemaType,
   ContentWithContentTypeSchemaType,
@@ -23,10 +23,9 @@ function ContentForm({
   onSubmit,
 }: {
   contentTypes: ContentType[];
-  initialData?: Content;
+  initialData?: Content & { contentType: ContentType };
   onSubmit: (input: ContentSchemaType & { contentTypeId: string }) => void;
 }) {
-  const [loading, setLoading] = useState(false);
   const [contentType, setContentType] = useState<ContentType | undefined>(
     undefined
   );
@@ -47,20 +46,17 @@ function ContentForm({
   } = methods;
 
   useEffect(() => {
-    const { contentTypeId, values, ...others } = initialData || {};
+    const { values, ...others } = initialData || {};
 
-    const selectedContentType = contentTypes.find(
-      (contentType) => contentType.id === contentTypeId
-    );
-    setContentType(selectedContentType);
+    setContentType(initialData?.contentType);
     // eslint-disable-next-line @typescript-eslint/ban-types
     const parsedValues = jsonParseWithFallback(values) as { [x: string]: {} };
 
     setDefaultValues(parsedValues);
-    console.log(parsedValues);
+
     reset({
       ...others,
-      contentTypeId: contentTypeId || undefined,
+      contentTypeId: initialData?.contentType.id,
       values: parsedValues,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -209,19 +205,10 @@ function ContentForm({
             </div>
           </div>
           <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-            <LoadingButton
-              type="submit"
-              variant="contained"
-              loadingPosition="end"
-              onClick={handleSubmit((input) => {
-                setLoading(true);
-                onSubmit(input);
-              })}
-              loading={loading}
-              className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              <span>Save</span>
-            </LoadingButton>
+            <CustomLoadingButton
+              handleSubmit={handleSubmit}
+              onSubmit={onSubmit}
+            />
           </div>
         </form>
       </FormProvider>

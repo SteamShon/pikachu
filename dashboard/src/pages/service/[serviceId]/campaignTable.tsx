@@ -3,12 +3,12 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Campaign } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
+import type CampaignForm from "../../../components/form/campaignForm";
 import CampaignModal from "../../../components/form/campaignModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
@@ -26,7 +26,9 @@ function CampaignTable({
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const { placementIds, campaignIds } = router.query;
-  const [campaign, setCampaign] = useState<Campaign | undefined>(undefined);
+  const [campaign, setCampaign] = useState<
+    Parameters<typeof CampaignForm>[0]["initialData"] | undefined
+  >(undefined);
   const selectedIds = (placementIds || []) as string[];
 
   const { mutate: deleteCampaign } = api.placement.removeCampaign.useMutation({

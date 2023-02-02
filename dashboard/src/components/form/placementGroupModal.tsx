@@ -1,5 +1,5 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { PlacementGroup, Service } from "@prisma/client";
+import type { Service } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { serviceRouter } from "../../server/api/routers/service";
@@ -17,7 +17,7 @@ function PlacementGroupModal({
 }: {
   services: Service[];
   modalOpen: boolean;
-  initialData?: PlacementGroup;
+  initialData?: Parameters<typeof PlacementGroupForm>[0]["initialData"];
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>

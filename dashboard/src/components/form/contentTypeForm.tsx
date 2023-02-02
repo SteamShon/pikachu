@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import LoadingButton from "@mui/lab/LoadingButton";
 import { Grid, Step, StepButton, Stepper } from "@mui/material";
 import type { Content, ContentType, Service } from "@prisma/client";
 import { useEffect, useState } from "react";
@@ -7,6 +6,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 import { jsonParseWithFallback } from "../../utils/json";
 import { removeRenderFunction } from "../common/CodeTemplate";
+import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { ContentTypeSchemaType } from "../schema/contentType";
 import { contentTypeSchema } from "../schema/contentType";
 import ContentTypeFormBuilder from "./contentTypeFormBuilder";
@@ -22,14 +22,12 @@ function ContentTypeForm({
   initialData?: ContentType & { contents: Content[] };
   onSubmit: (input: ContentTypeSchemaType & { serviceId: string }) => void;
 }) {
-  const [loading, setLoading] = useState(false);
   const [schema, setSchema] = useState<string | undefined>(undefined);
   // eslint-disable-next-line @typescript-eslint/ban-types
   const [defaultValues, setDefaultValues] = useState<{ [x: string]: {} }>({});
   const [code, setCode] = useState<string | undefined>(undefined);
   const [activeStep, setActiveStep] = useState(0);
 
-  const service = services.length === 1 ? services[0] : undefined;
   const methods = useForm<ContentTypeSchemaType & { serviceId: string }>({
     resolver: zodResolver(
       contentTypeSchema.extend({
@@ -124,7 +122,7 @@ function ContentTypeForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("serviceId")}
-                    defaultValue={initialData?.serviceId || service?.id || ""}
+                    defaultValue={initialData?.serviceId || undefined}
                   >
                     <option key="" value="" selected>
                       Select
@@ -207,19 +205,10 @@ function ContentTypeForm({
               {steps[activeStep]?.component}
               {activeStep === steps.length - 1 ? (
                 <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                  <LoadingButton
-                    type="submit"
-                    variant="contained"
-                    loadingPosition="end"
-                    onClick={handleSubmit((input) => {
-                      setLoading(true);
-                      onSubmit(input);
-                    })}
-                    loading={loading}
-                    className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    <span>Save</span>
-                  </LoadingButton>
+                  <CustomLoadingButton
+                    handleSubmit={handleSubmit}
+                    onSubmit={onSubmit}
+                  />
                 </div>
               ) : null}
             </Grid>

@@ -1,5 +1,4 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { AdGroup } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { campaignRouter } from "../../server/api/routers/campaign";
@@ -17,7 +16,7 @@ function AdGroupModal({
   setServiceTree,
 }: {
   campaigns: ReturnType<typeof buildCampaignTree>[];
-  initialData?: AdGroup;
+  initialData?: Parameters<typeof AdGroupForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<

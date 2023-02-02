@@ -5,7 +5,7 @@ import {
 import { JsonForms } from "@jsonforms/react";
 import type { Content, ContentType } from "@prisma/client";
 import type { Dispatch, SetStateAction } from "react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { jsonParseWithFallback } from "../../utils/json";
 

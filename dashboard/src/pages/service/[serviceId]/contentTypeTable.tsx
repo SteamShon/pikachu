@@ -8,7 +8,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Content, ContentType, Service } from "@prisma/client";
+import type { Service } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -16,6 +16,7 @@ import { useState } from "react";
 import { LivePreview, LiveProvider } from "react-live";
 import { replacePropsInFunction } from "../../../components/common/CodeTemplate";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
+import type ContentTypeForm from "../../../components/form/contentTypeForm";
 import ContentTypeModal from "../../../components/form/contentTypeModal";
 import { api } from "../../../utils/api";
 import { jsonParseWithFallback } from "../../../utils/json";
@@ -34,7 +35,9 @@ function ContentTypeTable({
   >;
 }) {
   const router = useRouter();
-
+  const [contentType, setContentType] = useState<
+    Parameters<typeof ContentTypeForm>[0]["initialData"] | undefined
+  >(undefined);
   const [modalOpen, setModalOpen] = useState(false);
   const { contentTypeIds } = router.query;
 
@@ -49,10 +52,6 @@ function ContentTypeTable({
         setModalOpen(false);
       },
     });
-
-  const [contentType, setContentType] = useState<
-    (ContentType & { contents: Content[] }) | undefined
-  >(undefined);
 
   const rows = serviceTree?.contentTypes
     ? Object.values(serviceTree.contentTypes).map((contentType) => {

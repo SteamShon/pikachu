@@ -12,7 +12,7 @@ function ServiceModal({
   setServices,
 }: {
   modalOpen: boolean;
-  initialData?: Service;
+  initialData?: Parameters<typeof ServiceForm>[0]["initialData"];
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServices: Dispatch<SetStateAction<Service[]>>;
 }) {

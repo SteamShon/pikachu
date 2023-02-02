@@ -1,15 +1,14 @@
-// import { api } from "../../utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
-import LoadingButton from "@mui/lab/LoadingButton";
 import { TextField } from "@mui/material";
 import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import type { Campaign } from "@prisma/client";
+import type { Campaign, Placement } from "@prisma/client";
 import moment from "moment";
 import { useEffect } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import type { buildPlacementTree } from "../../utils/tree";
+import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { CampaignWithPlacementSchemaType } from "../schema/campaign";
 import { campaignWithPlacementSchema } from "../schema/campaign";
 
@@ -20,10 +19,8 @@ function CampaignForm({
 }: {
   placements: ReturnType<typeof buildPlacementTree>[];
   onSubmit: (input: CampaignWithPlacementSchemaType) => void;
-  initialData?: Campaign;
+  initialData?: Campaign & { placement: Placement };
 }) {
-  const [loading, setLoading] = useState(false);
-  const placement = placements.length === 1 ? placements[0] : undefined;
   const methods = useForm<CampaignWithPlacementSchemaType>({
     resolver: zodResolver(campaignWithPlacementSchema),
   });
@@ -39,9 +36,9 @@ function CampaignForm({
   useEffect(() => {
     reset({
       ...(initialData ? initialData : {}),
-      placementId: placement?.id,
+      placementId: initialData?.placement.id,
     });
-  }, [reset, placement, initialData]);
+  }, [reset, initialData]);
 
   return (
     <FormProvider {...methods}>
@@ -190,19 +187,10 @@ function CampaignForm({
           </div>
         </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <LoadingButton
-            type="submit"
-            variant="contained"
-            loadingPosition="end"
-            onClick={handleSubmit((input) => {
-              setLoading(true);
-              onSubmit(input);
-            })}
-            loading={loading}
-            className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-          >
-            <span>Save</span>
-          </LoadingButton>
+          <CustomLoadingButton
+            handleSubmit={handleSubmit}
+            onSubmit={onSubmit}
+          />
         </div>
       </form>
     </FormProvider>

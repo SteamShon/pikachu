@@ -3,7 +3,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Creative } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -11,6 +10,7 @@ import { useState } from "react";
 import { LivePreview, LiveProvider } from "react-live";
 import { replacePropsInFunction } from "../../../components/common/CodeTemplate";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
+import type CreativeForm from "../../../components/form/creativeForm";
 import CreativeModal from "../../../components/form/creativeModal";
 import { api } from "../../../utils/api";
 import { jsonParseWithFallback } from "../../../utils/json";
@@ -28,7 +28,9 @@ function CreativeTable({
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const { adGroupIds, creativeIds } = router.query;
-  const [creative, setCreative] = useState<Creative | undefined>(undefined);
+  const [creative, setCreative] = useState<
+    Parameters<typeof CreativeForm>[0]["initialData"] | undefined
+  >(undefined);
   const selectedIds = (adGroupIds || []) as string[];
 
   const { mutate: deleteCreative } = api.adGroup.removeCreative.useMutation({
@@ -62,9 +64,13 @@ function CreativeTable({
               const { creatives, ...adGroupData } = adGroup;
               return {
                 ...adGroupData,
-                campaign: campaignData,
-                placement: placementData,
-                placementGroup: placementGroupData,
+                campaign: {
+                  ...campaignData,
+                  placement: {
+                    ...placementData,
+                    placementGroup: placementGroupData,
+                  },
+                },
                 creatives,
               };
             });
@@ -102,7 +108,7 @@ function CreativeTable({
       headerName: "PlacementGroup",
       flex: 1,
       valueGetter: (params) => {
-        return params.row.adGroup.placementGroup.name;
+        return params.row.adGroup.campaign.placement.placementGroup.name;
       },
     },
     {
@@ -110,7 +116,7 @@ function CreativeTable({
       headerName: "Placement",
       flex: 1,
       valueGetter: (params) => {
-        return params.row.adGroup.placement.name;
+        return params.row.adGroup.campaign.placement.name;
       },
     },
     {

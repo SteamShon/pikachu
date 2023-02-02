@@ -1,5 +1,5 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Content, ContentType, Creative } from "@prisma/client";
+import type { Content, ContentType } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { adGroupRouter } from "../../server/api/routers/adGroup";
@@ -19,7 +19,7 @@ function CreativeModal({
 }: {
   adGroups: ReturnType<typeof buildAdGroupTree>[];
   contents: (Content & { contentType: ContentType })[];
-  initialData?: Creative;
+  initialData?: Parameters<typeof CreativeForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<

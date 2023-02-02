@@ -8,14 +8,21 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import GridCustomToolbar from "../../components/common/GridCustomToolbar";
+import Loading from "../../components/common/Loading";
+import type ServiceForm from "../../components/form/serviceForm";
 import ServiceModal from "../../components/form/serviceModal";
 import { api } from "../../utils/api";
 
 function ServiceList() {
   const router = useRouter();
+  const [service, setService] = useState<
+    Parameters<typeof ServiceForm>[0]["initialData"] | undefined
+  >(undefined);
+  const [services, setServices] = useState<Service[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const { serviceIds } = router.query;
-  const { data: allServices } = api.service.getAllOnlyServices.useQuery();
+  const { data: allServices, isLoading } =
+    api.service.getAllOnlyServices.useQuery();
 
   const { mutate: deleteService } = api.service.delete.useMutation({
     onSuccess(deleted) {
@@ -25,9 +32,6 @@ function ServiceList() {
       setModalOpen(false);
     },
   });
-
-  const [service, setService] = useState<Service | undefined>(undefined);
-  const [services, setServices] = useState<Service[]>([]);
 
   useEffect(() => {
     if (allServices) setServices(allServices);
@@ -104,6 +108,9 @@ function ServiceList() {
       setModalOpen(true);
     },
   });
+
+  if (isLoading) return <Loading />;
+
   return (
     <Box sx={{ height: 400, width: "100%" }}>
       <DataGrid

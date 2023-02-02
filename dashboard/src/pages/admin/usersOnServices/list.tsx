@@ -6,13 +6,18 @@ import { DataGrid } from "@mui/x-data-grid";
 import type { Service, User, UsersOnServices } from "@prisma/client";
 import { useEffect, useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
+import Loading from "../../../components/common/Loading";
 import UsersOnServicesModal from "../../../components/form/usersOnServicesModal";
 import { api } from "../../../utils/api";
 
 function UsersOnServicesList() {
   const [modalOpen, setModalOpen] = useState(false);
-  const { data: usersOnServicesList } = api.usersOnServices.getAll.useQuery();
+  const { data: usersOnServicesList, isLoading } =
+    api.usersOnServices.getAll.useQuery();
 
+  const { data: users, isLoading: isUsersLoading } = api.user.getAll.useQuery();
+  const { data: services, isLoading: isServicesLoading } =
+    api.service.getAllOnlyServices.useQuery();
   const [usersOnServices, setUsersOnServices] = useState<
     (UsersOnServices & { user: User; service: Service })[]
   >([]);
@@ -93,6 +98,8 @@ function UsersOnServicesList() {
     },
   });
 
+  if (isLoading || isUsersLoading || isServicesLoading) return <Loading />;
+
   return (
     <Box sx={{ height: 400, width: "100%" }}>
       <DataGrid
@@ -110,6 +117,8 @@ function UsersOnServicesList() {
 
       <UsersOnServicesModal
         key="usersOnServices"
+        users={users || []}
+        services={services || []}
         modalOpen={modalOpen}
         setModalOpen={setModalOpen}
         setUsersOnServices={setUsersOnServices}

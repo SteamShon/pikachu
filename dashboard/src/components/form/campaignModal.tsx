@@ -1,5 +1,4 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Campaign } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { placementRouter } from "../../server/api/routers/placement";
@@ -17,7 +16,7 @@ function CampaignModal({
   setServiceTree,
 }: {
   placements: ReturnType<typeof buildPlacementTree>[];
-  initialData?: Campaign;
+  initialData?: Parameters<typeof CampaignForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<

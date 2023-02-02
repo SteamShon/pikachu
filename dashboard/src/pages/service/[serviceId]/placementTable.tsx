@@ -3,12 +3,12 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Placement } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
+import type PlacementForm from "../../../components/form/placementForm";
 import PlacementModal from "../../../components/form/placementModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
@@ -26,7 +26,9 @@ function PlacementTable({
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const { placementGroupIds, placementIds } = router.query;
-  const [placement, setPlacement] = useState<Placement | undefined>(undefined);
+  const [placement, setPlacement] = useState<
+    Parameters<typeof PlacementForm>[0]["initialData"] | undefined
+  >(undefined);
   const selectedIds = (placementGroupIds || []) as string[];
 
   const { mutate: deletePlacement } =

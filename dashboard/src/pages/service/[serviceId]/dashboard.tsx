@@ -1,6 +1,7 @@
 import { Grid } from "@mui/material";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import Loading from "../../../components/common/Loading";
 import { api } from "../../../utils/api";
 import { buildServiceTree } from "../../../utils/tree";
 import AdGroupTable from "./adGroupTable";
@@ -18,13 +19,13 @@ function Dashboard() {
 
   const { serviceId, step } = router.query;
 
-  const { data: service } = api.service.get.useQuery({
-    id: serviceId as string,
-  });
-
   const [tree, setTree] = useState<
     ReturnType<typeof buildServiceTree> | undefined
   >(undefined);
+
+  const { data: service, isLoading } = api.service.get.useQuery({
+    id: serviceId as string,
+  });
 
   useEffect(() => {
     if (service) {
@@ -113,6 +114,8 @@ function Dashboard() {
   const activeStep = step
     ? steps.findIndex((s) => s.label === (step as string))
     : 0;
+
+  if (isLoading) return <Loading />;
 
   return (
     <Grid

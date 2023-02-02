@@ -1,7 +1,6 @@
 // import { api } from "../../utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
-import LoadingButton from "@mui/lab/LoadingButton";
-import type { AdGroup } from "@prisma/client";
+import type { AdGroup, Campaign } from "@prisma/client";
 import { QueryBuilderDnD } from "@react-querybuilder/dnd";
 import { useEffect, useState } from "react";
 import * as ReactDnD from "react-dnd";
@@ -11,6 +10,7 @@ import type { Field, RuleGroupType } from "react-querybuilder";
 import { formatQuery, parseJsonLogic, QueryBuilder } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
 import type { buildCampaignTree } from "../../utils/tree";
+import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { AdGroupWithCampaignSchemaType } from "../schema/adGroup";
 import { adGroupWithCampaignSchema } from "../schema/adGroup";
 
@@ -21,19 +21,17 @@ function AdGroupForm({
 }: {
   campaigns: ReturnType<typeof buildCampaignTree>[];
   onSubmit: (input: AdGroupWithCampaignSchemaType) => void;
-  initialData?: AdGroup;
+  initialData?: AdGroup & { campaign: Campaign };
 }) {
-  const [loading, setLoading] = useState(false);
   const initialQuery: RuleGroupType = { combinator: "and", rules: [] };
   const [query, setQuery] = useState(
     initialData?.filter ? parseJsonLogic(initialData?.filter) : initialQuery
   );
+  //TODO: seperate into Segment component.
   const fields: Field[] = [
     { name: "firstName", label: "First Name" },
     { name: "lastName", label: "Last Name" },
   ];
-
-  const campaign = campaigns.length === 1 ? campaigns[0] : undefined;
 
   const methods = useForm<AdGroupWithCampaignSchemaType>({
     resolver: zodResolver(adGroupWithCampaignSchema),
@@ -50,9 +48,9 @@ function AdGroupForm({
   useEffect(() => {
     reset({
       ...(initialData ? initialData : {}),
-      campaignId: campaign?.id,
+      campaignId: initialData?.campaign.id,
     });
-  }, [reset, campaign, initialData]);
+  }, [reset, initialData]);
 
   return (
     <FormProvider {...methods}>
@@ -168,19 +166,10 @@ function AdGroupForm({
           </div>
         </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <LoadingButton
-            type="submit"
-            variant="contained"
-            loadingPosition="end"
-            onClick={handleSubmit((input) => {
-              setLoading(true);
-              onSubmit(input);
-            })}
-            loading={loading}
-            className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-          >
-            <span>Save</span>
-          </LoadingButton>
+          <CustomLoadingButton
+            handleSubmit={handleSubmit}
+            onSubmit={onSubmit}
+          />
         </div>
       </form>
     </FormProvider>

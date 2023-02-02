@@ -1,8 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import LoadingButton from "@mui/lab/LoadingButton";
 import type { PlacementGroup, Service } from "@prisma/client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import CustomLoadingButton from "../common/CustomLoadingButton";
 import type {
   PlacementGroupSchemaType,
   PlacementGroupWithServiceSchemaType,
@@ -18,8 +18,6 @@ function PlacementGroupForm({
   initialData?: PlacementGroup;
   onSubmit: (input: PlacementGroupWithServiceSchemaType) => void;
 }) {
-  const [loading, setLoading] = useState(false);
-  const service = services.length === 1 ? services[0] : undefined;
   const methods = useForm<PlacementGroupSchemaType & { serviceId: string }>({
     resolver: zodResolver(placementGroupWithServiceSchema),
   });
@@ -32,8 +30,11 @@ function PlacementGroupForm({
   } = methods;
 
   useEffect(() => {
-    reset({ ...(initialData ? initialData : {}), serviceId: service?.id });
-  }, [initialData, reset, service]);
+    reset({
+      ...(initialData ? initialData : {}),
+      serviceId: initialData?.serviceId || undefined,
+    });
+  }, [initialData, reset]);
 
   return (
     <FormProvider {...methods}>
@@ -51,7 +52,7 @@ function PlacementGroupForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("serviceId")}
-                    defaultValue={initialData?.serviceId || service?.id || ""}
+                    defaultValue={initialData?.serviceId || undefined}
                     disabled={initialData ? true : false}
                   >
                     <option value="">Please choose</option>
@@ -114,19 +115,10 @@ function PlacementGroupForm({
           </div>
         </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <LoadingButton
-            type="submit"
-            variant="contained"
-            loadingPosition="end"
-            onClick={handleSubmit((input) => {
-              setLoading(true);
-              onSubmit(input);
-            })}
-            loading={loading}
-            className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-          >
-            <span>Save</span>
-          </LoadingButton>
+          <CustomLoadingButton
+            handleSubmit={handleSubmit}
+            onSubmit={onSubmit}
+          />
         </div>
       </form>
     </FormProvider>

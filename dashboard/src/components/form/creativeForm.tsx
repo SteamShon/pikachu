@@ -4,14 +4,22 @@ import {
   materialRenderers,
 } from "@jsonforms/material-renderers";
 import { JsonForms } from "@jsonforms/react";
-import LoadingButton from "@mui/lab/LoadingButton";
-import type { Content, ContentType, Creative } from "@prisma/client";
+import type {
+  AdGroup,
+  Campaign,
+  Content,
+  ContentType,
+  Creative,
+  Placement,
+  PlacementGroup,
+} from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { LivePreview, LiveProvider } from "react-live";
 import { jsonParseWithFallback } from "../../utils/json";
 import type { buildAdGroupTree } from "../../utils/tree";
 import { replacePropsInFunction } from "../common/CodeTemplate";
+import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { CreativeWithAdGroupIdAndContentIdType } from "../schema/creative";
 import { creativeWithAdGroupIdAndContentId } from "../schema/creative";
 
@@ -24,14 +32,20 @@ function CreativeForm({
   adGroups: ReturnType<typeof buildAdGroupTree>[];
   contents: (Content & { contentType: ContentType })[];
   onSubmit: (input: CreativeWithAdGroupIdAndContentIdType) => void;
-  initialData?: Creative;
+  initialData?: Creative & {
+    adGroup: AdGroup & {
+      campaign: Campaign & {
+        placement: Placement & {
+          placementGroup: PlacementGroup;
+        };
+      };
+    };
+  };
 }) {
-  const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<
     (Content & { contentType: ContentType }) | undefined
   >(undefined);
 
-  const adGroup = adGroups.length === 1 ? adGroups[0] : undefined;
   const methods = useForm<CreativeWithAdGroupIdAndContentIdType>({
     resolver: zodResolver(creativeWithAdGroupIdAndContentId),
   });
@@ -48,9 +62,9 @@ function CreativeForm({
     );
     reset({
       ...(initialData ? initialData : {}),
-      adGroupId: adGroup?.id,
+      adGroupId: initialData?.adGroup.id,
     });
-  }, [reset, adGroup, initialData, contents]);
+  }, [reset, initialData, contents]);
 
   return (
     <FormProvider {...methods}>
@@ -68,7 +82,7 @@ function CreativeForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("adGroupId")}
-                    defaultValue={initialData?.adGroupId || adGroup?.id}
+                    defaultValue={initialData?.adGroupId}
                     disabled={initialData ? true : false}
                   >
                     <option value="">Please choose</option>
@@ -192,19 +206,10 @@ function CreativeForm({
           </div>
         </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <LoadingButton
-            type="submit"
-            variant="contained"
-            loadingPosition="end"
-            onClick={handleSubmit((input) => {
-              setLoading(true);
-              onSubmit(input);
-            })}
-            loading={loading}
-            className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-          >
-            <span>Save</span>
-          </LoadingButton>
+          <CustomLoadingButton
+            handleSubmit={handleSubmit}
+            onSubmit={onSubmit}
+          />
         </div>
       </form>
     </FormProvider>

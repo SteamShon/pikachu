@@ -6,21 +6,23 @@ import { api } from "../../utils/api";
 import type { UsersOnServicesSchemaType } from "../schema/usersOnServices";
 import UsersOnServicesForm from "./usersOnServicesForm";
 
-interface UsersOnServicesModalProps {
+function UsersOnServicesModal({
+  users,
+  services,
+  modalOpen,
+  initialData,
+  setModalOpen,
+  setUsersOnServices,
+}: {
+  users: User[];
+  services: Service[];
   modalOpen: boolean;
   initialData?: UsersOnServices;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setUsersOnServices: Dispatch<
     SetStateAction<(UsersOnServices & { user: User; service: Service })[]>
   >;
-}
-
-function UsersOnServicesModal({
-  modalOpen,
-  initialData,
-  setModalOpen,
-  setUsersOnServices,
-}: UsersOnServicesModalProps) {
+}) {
   const { mutate: create } = api.usersOnServices.create.useMutation({
     onSuccess(created) {
       setUsersOnServices(created.services);
@@ -48,7 +50,11 @@ function UsersOnServicesModal({
       maxWidth="lg"
     >
       <DialogContent>
-        <UsersOnServicesForm onSubmit={onSubmit} />
+        <UsersOnServicesForm
+          onSubmit={onSubmit}
+          users={users}
+          services={services}
+        />
       </DialogContent>
     </Dialog>
   );

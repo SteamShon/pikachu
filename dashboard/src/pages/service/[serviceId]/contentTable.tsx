@@ -3,7 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Content, Creative } from "@prisma/client";
+import type { Creative } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -12,6 +12,7 @@ import { LivePreview, LiveProvider } from "react-live";
 import { replacePropsInFunction } from "../../../components/common/CodeTemplate";
 
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
+import type ContentForm from "../../../components/form/contentForm";
 import ContentModal from "../../../components/form/contentModal";
 import { api } from "../../../utils/api";
 import { jsonParseWithFallback } from "../../../utils/json";
@@ -30,7 +31,9 @@ function ContentTable({
 
   const [modalOpen, setModalOpen] = useState(false);
   const { contentTypeIds, contentIds } = router.query;
-  const [content, setContent] = useState<Content | undefined>(undefined);
+  const [content, setContent] = useState<
+    Parameters<typeof ContentForm>[0]["initialData"] | undefined
+  >(undefined);
 
   const selectedIds = (contentTypeIds || []) as string[];
 

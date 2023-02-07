@@ -1,14 +1,15 @@
-import { createTRPCRouter } from "./trpc";
+import { adGroupRouter } from "./routers/adGroup";
+import { awsRouter } from "./routers/aws";
+import { campaignRouter } from "./routers/campaign";
+import { contentTypeRouter } from "./routers/contentType";
 import { customsetRouter } from "./routers/customset";
 import { exampleRouter } from "./routers/example";
-import { userRouter } from "./routers/user";
-import { campaignRouter } from "./routers/campaign";
-import { adGroupRouter } from "./routers/adGroup";
-import { serviceRouter } from "./routers/service";
-import { placementGroupRouter } from "./routers/placementGroup";
-import { contentTypeRouter } from "./routers/contentType";
-import { usersOnServicesRouter } from "./routers/usersOnServices";
 import { placementRouter } from "./routers/placement";
+import { placementGroupRouter } from "./routers/placementGroup";
+import { serviceRouter } from "./routers/service";
+import { userRouter } from "./routers/user";
+import { usersOnServicesRouter } from "./routers/usersOnServices";
+import { createTRPCRouter } from "./trpc";
 
 /**
  * This is the primary router for your server.
@@ -26,6 +27,7 @@ export const appRouter = createTRPCRouter({
   placement: placementRouter,
   contentType: contentTypeRouter,
   usersOnServices: usersOnServicesRouter,
+  aws: awsRouter,
 });
 
 // export type definition of API

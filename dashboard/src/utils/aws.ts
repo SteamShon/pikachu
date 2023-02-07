@@ -1,16 +1,31 @@
-import S3 from "aws-sdk/clients/s3";
 import type { Object as S3Object } from "aws-sdk/clients/s3";
+import type S3 from "aws-sdk/clients/s3";
 
-const s3 = new S3({
-  region: "ap-northeast-2",
-  accessKeyId: process.env.AWS_ACCESS_KEY,
-  secretAccessKey: process.env.AWS_SECRET_KEY,
-  signatureVersion: "v4",
-});
-
-interface TreeNode {
+export type TreeNode = {
   name: string;
   children: TreeNode[];
+};
+
+export function buildPath(
+  nodes: TreeNode[],
+  paths: TreeNode[],
+  targetNodeName: string
+): TreeNode[] {
+  const found = nodes.find((n) => n.name === targetNodeName);
+
+  if (found) {
+    return [...paths, found];
+  }
+
+  let subPaths: TreeNode[] = [];
+  nodes.forEach((node) => {
+    node.children.forEach((child) => {
+      subPaths = buildPath([child], [...paths, node], targetNodeName);
+      if (subPaths.length > 0) return subPaths;
+    });
+  });
+
+  return subPaths;
 }
 
 export function objectsToTree({ paths }: { paths: S3Object[] }) {
@@ -18,8 +33,13 @@ export function objectsToTree({ paths }: { paths: S3Object[] }) {
     const names = p.Key?.split("/") || [];
 
     names.reduce((q, name) => {
+      if (name === "") return q;
+
       let temp = q.find((o) => o.name === name);
-      if (!temp) q.push((temp = { name, children: [] }));
+      if (!temp) {
+        q.push((temp = { name, children: [] }));
+      }
+
       return temp.children;
     }, prev);
 
@@ -28,9 +48,11 @@ export function objectsToTree({ paths }: { paths: S3Object[] }) {
 }
 
 export async function listFoldersRecursively({
+  s3,
   bucketName,
   prefix = "",
 }: {
+  s3: S3;
   bucketName: string;
   prefix?: string;
 }) {
@@ -50,7 +72,11 @@ export async function listFoldersRecursively({
         folders.push(item);
 
         folders.push(
-          ...(await listFoldersRecursively({ bucketName, prefix: item.Key }))
+          ...(await listFoldersRecursively({
+            s3,
+            bucketName,
+            prefix: item.Key,
+          }))
         );
       }
     }

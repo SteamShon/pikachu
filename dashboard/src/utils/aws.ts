@@ -1,11 +1,19 @@
-import type { Object as S3Object } from "aws-sdk/clients/s3";
-import type S3 from "aws-sdk/clients/s3";
+import type { CubeConfig } from "@prisma/client";
+import type { Buckets, Object as S3Object } from "aws-sdk/clients/s3";
+import S3 from "aws-sdk/clients/s3";
 
 export type TreeNode = {
   name: string;
   children: TreeNode[];
 };
-
+export function loadS3(config: CubeConfig): S3 {
+  return new S3({
+    region: config.s3Region,
+    accessKeyId: config.s3AccessKeyId,
+    secretAccessKey: config.s3SecretAccessKey,
+    signatureVersion: "v4",
+  });
+}
 export function buildPath(
   nodes: TreeNode[],
   paths: TreeNode[],
@@ -46,7 +54,14 @@ export function objectsToTree({ paths }: { paths: S3Object[] }) {
     return prev;
   }, []);
 }
-
+export async function listBuckets({
+  s3,
+}: {
+  s3: S3;
+}): Promise<Buckets | undefined> {
+  const buckets = await s3.listBuckets().promise();
+  return buckets.Buckets;
+}
 export async function listFoldersRecursively({
   s3,
   bucketName,

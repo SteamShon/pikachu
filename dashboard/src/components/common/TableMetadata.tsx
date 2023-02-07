@@ -2,10 +2,12 @@ import { TextField } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { useEffect, useState } from "react";
 import type { S3Config } from "../../utils/duckdb";
-import { loadDuckDB } from "../../utils/duckdb";
-import { fetchMetadata, ParquetMetadataColumns } from "../../utils/duckdb";
+import {
+  fetchMetadata,
+  loadDuckDB,
+  ParquetMetadataColumns,
+} from "../../utils/duckdb";
 import { jsonParseWithFallback } from "../../utils/json";
-import useDuckDB from "../hook/useDuckDB";
 
 function TableMetadata({ s3Path }: { s3Path?: string }) {
   const [metadata, setMetadata] = useState<{ [x: string]: unknown }[]>([]);

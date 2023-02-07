@@ -2,25 +2,9 @@ import { cubeConfigWithServiceSchema } from "../../../components/schema/cubeConf
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { prisma } from "../../db";
 import { z } from "zod";
+import { cubeWithCubeConfigSchema } from "../../../components/schema/cube";
 
 export const cubeConfigRouter = createTRPCRouter({
-  getCubeConfigs: protectedProcedure
-    .input(z.object({ serviceId: z.string().min(1) }))
-    .query(async ({ input, ctx }) => {
-      const cubeConfigs = await prisma.service.findFirst({
-        where: {
-          id: input.serviceId,
-        },
-        include: {
-          cubeConfigs: {
-            include: {
-              cubes: true,
-            },
-          },
-        },
-      });
-      return cubeConfigs;
-    }),
   addCubeConfig: protectedProcedure
     .input(cubeConfigWithServiceSchema)
     .mutation(async ({ input }) => {
@@ -115,5 +99,89 @@ export const cubeConfigRouter = createTRPCRouter({
       });
 
       return service;
+    }),
+  addCube: protectedProcedure
+    .input(cubeWithCubeConfigSchema)
+    .mutation(async ({ input }) => {
+      const { cubeConfigId, ...cubeInput } = input;
+      const cubeConfig = await prisma.cubeConfig.update({
+        where: {
+          id: cubeConfigId,
+        },
+        data: {
+          cubes: {
+            connectOrCreate: {
+              where: {
+                cubeConfigId_name: {
+                  cubeConfigId,
+                  name: cubeInput.name,
+                },
+              },
+              create: cubeInput,
+            },
+          },
+        },
+        include: {
+          cubes: true,
+        },
+      });
+
+      return cubeConfig;
+    }),
+  updateCube: protectedProcedure
+    .input(cubeWithCubeConfigSchema)
+    .mutation(async ({ input }) => {
+      const { cubeConfigId, ...cubeInput } = input;
+      const cubeConfig = await prisma.cubeConfig.update({
+        where: {
+          id: cubeConfigId,
+        },
+        data: {
+          cubes: {
+            update: {
+              where: {
+                cubeConfigId_name: {
+                  cubeConfigId,
+                  name: cubeInput.name,
+                },
+              },
+              data: cubeInput,
+            },
+          },
+        },
+        include: {
+          cubes: true,
+        },
+      });
+
+      return cubeConfig;
+    }),
+  //TODO: Refactor all remove apis use id instead of name.
+  removeCube: protectedProcedure
+    .input(
+      z.object({
+        cubeConfigId: z.string().min(1),
+        id: z.string().min(1),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { cubeConfigId, id } = input;
+      const cubeConfig = await prisma.cubeConfig.update({
+        where: {
+          id: cubeConfigId,
+        },
+        data: {
+          cubes: {
+            delete: {
+              id,
+            },
+          },
+        },
+        include: {
+          cubes: true,
+        },
+      });
+
+      return cubeConfig;
     }),
 });

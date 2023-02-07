@@ -56,6 +56,12 @@ const treeData = [
   {
     id: "CubeConfigs",
     name: "CubeConfigs",
+    children: [
+      {
+        id: "Cubes",
+        name: "Cubes",
+      },
+    ],
   },
 ];
 function SideMenu() {

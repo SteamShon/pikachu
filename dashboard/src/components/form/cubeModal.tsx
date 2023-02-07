@@ -1,23 +1,22 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Service } from "@prisma/client";
+import type { CubeConfig } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { cubeConfigRouter } from "../../server/api/routers/cubeConfig";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
-import { buildCubeConfigsTree } from "../../utils/tree";
-import type { CubeConfigWithServiceSchemaType } from "../schema/cubeConfig";
-import CubeConfigForm from "./cubeConfigForm";
+import type { CubeWithCubeConfigSchemaType } from "../schema/cube";
+import CubeForm from "./cubeForm";
 
-function CubeConfigModal({
-  services,
+function CubeModal({
+  cubeConfigs,
   initialData,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
-  services: Service[];
-  initialData?: Parameters<typeof CubeConfigForm>[0]["initialData"];
+  cubeConfigs: CubeConfig[];
+  initialData?: Parameters<typeof CubeForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
@@ -25,28 +24,28 @@ function CubeConfigModal({
   >;
 }) {
   type RouterOutput = inferRouterOutputs<typeof cubeConfigRouter>;
-  type OutputType = RouterOutput["addCubeConfig"];
+  type OutputType = RouterOutput["addCube"];
   const handleSuccess = (created: OutputType): void => {
-    setServiceTree((prev) => {
-      if (!prev) return prev;
+    // setServiceTree((prev) => {
+    //   if (!prev) return prev;
 
-      prev.cubeConfigs = buildCubeConfigsTree(created.cubeConfigs);
-      return prev;
-    });
+    //   prev.cubeConfigs = buildCubeConfigsTree(created.cubeConfigs);
+    //   return prev;
+    // });
 
     setModalOpen(false);
   };
-  const { mutate: create } = api.cubeConfig.addCubeConfig.useMutation({
+  const { mutate: create } = api.cubeConfig.addCube.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
-  const { mutate: update } = api.cubeConfig.updateCubeConfig.useMutation({
+  const { mutate: update } = api.cubeConfig.updateCube.useMutation({
     onSuccess(updated) {
       handleSuccess(updated);
     },
   });
-  const onSubmit = (input: CubeConfigWithServiceSchemaType) => {
+  const onSubmit = (input: CubeWithCubeConfigSchemaType) => {
     if (initialData) update(input);
     else create(input);
   };
@@ -59,8 +58,8 @@ function CubeConfigModal({
       maxWidth="lg"
     >
       <DialogContent>
-        <CubeConfigForm
-          services={services}
+        <CubeForm
+          cubeConfigs={cubeConfigs}
           initialData={initialData}
           onSubmit={onSubmit}
           //onClose={() => setModalOpen(false)}
@@ -70,4 +69,4 @@ function CubeConfigModal({
   );
 }
 
-export default CubeConfigModal;
+export default CubeModal;

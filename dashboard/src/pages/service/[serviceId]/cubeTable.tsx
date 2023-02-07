@@ -11,11 +11,14 @@ import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type CubeConfigForm from "../../../components/form/cubeConfigForm";
 import CubeConfigModal from "../../../components/form/cubeConfigModal";
+import type CubeForm from "../../../components/form/cubeForm";
+import CubeModal from "../../../components/form/cubeModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
+import { buildCubeConfigTree } from "../../../utils/tree";
 import { buildCubeConfigsTree } from "../../../utils/tree";
 
-function CubeConfigTable({
+function CubeTable({
   service,
   serviceTree,
   setServiceTree,
@@ -28,28 +31,37 @@ function CubeConfigTable({
 }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const [cubeConfig, setCubeConfig] =
-    useState<Parameters<typeof CubeConfigForm>[0]["initialData"]>(undefined);
+  const { cubeConfigIds } = router.query;
+  const [cube, setCube] =
+    useState<Parameters<typeof CubeForm>[0]["initialData"]>(undefined);
+  const selectedIds = (cubeConfigIds || []) as string[];
 
-  const { mutate: deleteCubeConfig } =
-    api.cubeConfig.removeCubeConfig.useMutation({
-      onSuccess(deleted) {
-        setServiceTree((prev) => {
-          if (!prev) return undefined;
+  const { mutate: deleteCube } = api.cubeConfig.removeCube.useMutation({
+    onSuccess(deleted) {
+      setServiceTree((prev) => {
+        if (!prev) return undefined;
 
-          prev.cubeConfigs = buildCubeConfigsTree(deleted.cubeConfigs);
-          return prev;
-        });
-        setModalOpen(false);
-      },
-    });
+        prev.cubeConfigs[deleted.id] = buildCubeConfigTree(deleted);
+        return prev;
+      });
+      setModalOpen(false);
+    },
+  });
   const allCubeConfigs = serviceTree
     ? Object.values(serviceTree.cubeConfigs)
     : [];
 
-  const cubeConfigs = allCubeConfigs;
+  const cubeConfigs =
+    selectedIds.length === 0
+      ? allCubeConfigs
+      : allCubeConfigs.filter((cubeConfig) => {
+          return selectedIds.includes(cubeConfig.id);
+        });
 
-  const rows = cubeConfigs;
+  const rows = cubeConfigs.flatMap((cubeConfig) => {
+    return Object.values(cubeConfig.cubes);
+  });
+
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", width: 90 },
     {
@@ -65,6 +77,11 @@ function CubeConfigTable({
     {
       field: "status",
       headerName: "Status",
+      flex: 1,
+    },
+    {
+      field: "s3Path",
+      headerName: "s3Path",
       flex: 1,
     },
     {
@@ -92,9 +109,9 @@ function CubeConfigTable({
               onClick={(e) => {
                 e.stopPropagation();
                 if (confirm("Are you sure?")) {
-                  deleteCubeConfig({
-                    serviceId: params.row.serviceId,
-                    name: params.row.name,
+                  deleteCube({
+                    cubeConfigId: params.row.cubeConfigId,
+                    id: params.row.id,
                   });
                 }
               }}
@@ -103,7 +120,7 @@ function CubeConfigTable({
             <Button
               onClick={(e) => {
                 e.stopPropagation();
-                setCubeConfig(params.row);
+                setCube(params.row);
                 setModalOpen(true);
               }}
               startIcon={<EditIcon />}
@@ -116,7 +133,7 @@ function CubeConfigTable({
   const toolbar = GridCustomToolbar({
     label: "Create",
     onClick: () => {
-      setCubeConfig(undefined);
+      setCube(undefined);
       setModalOpen(true);
     },
   });
@@ -145,16 +162,16 @@ function CubeConfigTable({
           }}
         />
       </div>
-      <CubeConfigModal
+      <CubeModal
         key="cubeConfigModal"
-        services={[service]}
+        cubeConfigs={cubeConfigs}
         modalOpen={modalOpen}
         setModalOpen={setModalOpen}
-        initialData={cubeConfig}
+        initialData={cube}
         setServiceTree={setServiceTree}
       />
     </div>
   );
 }
 
-export default CubeConfigTable;
+export default CubeTable;

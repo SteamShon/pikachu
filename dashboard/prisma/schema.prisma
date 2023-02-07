@@ -96,7 +96,6 @@ model Service {
     createdAt       DateTime          @default(now())
     updatedAt       DateTime          @updatedAt
     customsets      Customset[]
-    cubes           Cube[]
     cubeConfigs     CubeConfig[]
 
     @@unique([name])
@@ -283,14 +282,16 @@ model CustomsetInfo {
 
 model Cube {
     id           String     @id @default(cuid())
-    service      Service    @relation(fields: [serviceId], references: [id])
-    serviceId    String
+    name         String
+    description  String?
     cubeConfig   CubeConfig @relation(fields: [cubeConfigId], references: [id], onDelete: Cascade)
     cubeConfigId String
     s3Path       String
     status       String     @default("CREATED")
     createdAt    DateTime   @default(now())
     updatedAt    DateTime   @updatedAt
+
+    @@unique([cubeConfigId, name])
 }
 
 model CubeConfig {

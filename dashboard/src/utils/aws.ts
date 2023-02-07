@@ -100,3 +100,10 @@ export async function listFoldersRecursively({
 
   return folders;
 }
+
+export function partitionBucketPrefix(path: string) {
+  const tokens = path.replace("s3://", "").split("/");
+  const bucket = tokens.shift();
+
+  return { bucket, prefix: tokens.join("/") };
+}

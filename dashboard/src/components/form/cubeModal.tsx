@@ -5,6 +5,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { cubeConfigRouter } from "../../server/api/routers/cubeConfig";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
+import { buildCubeConfigTree } from "../../utils/tree";
 import type { CubeWithCubeConfigSchemaType } from "../schema/cube";
 import CubeForm from "./cubeForm";
 
@@ -26,12 +27,12 @@ function CubeModal({
   type RouterOutput = inferRouterOutputs<typeof cubeConfigRouter>;
   type OutputType = RouterOutput["addCube"];
   const handleSuccess = (created: OutputType): void => {
-    // setServiceTree((prev) => {
-    //   if (!prev) return prev;
+    setServiceTree((prev) => {
+      if (!prev) return prev;
 
-    //   prev.cubeConfigs = buildCubeConfigsTree(created.cubeConfigs);
-    //   return prev;
-    // });
+      prev.cubeConfigs[created.id] = buildCubeConfigTree(created);
+      return prev;
+    });
 
     setModalOpen(false);
   };

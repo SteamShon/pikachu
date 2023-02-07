@@ -1,9 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Cube, CubeConfig } from "@prisma/client";
-import type { Object as S3Object } from "aws-sdk/clients/s3";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { listFoldersRecursively, loadS3 } from "../../utils/aws";
+import {
+  listFoldersRecursively,
+  loadS3,
+  partitionBucketPrefix,
+} from "../../utils/aws";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { CubeWithCubeConfigSchemaType } from "../schema/cube";
 import { cubeWithCubeConfigSchema } from "../schema/cube";
@@ -16,12 +19,19 @@ function CubeForm({
   initialData?: Cube;
   onSubmit: (input: CubeWithCubeConfigSchemaType) => void;
 }) {
-  const [cubeConfig, setCubeConfig] = useState<CubeConfig | undefined>(
+  const [selectedCubeConfig, setSelectedCubeConfig] = useState<
+    CubeConfig | undefined
+  >(undefined);
+  const [buckets, setBuckets] = useState<string[]>([]);
+  const [s3Paths, setS3Paths] = useState<string[]>([]);
+
+  const [selectedBucket, setSelectedBucket] = useState<string | undefined>(
     undefined
   );
-  const [buckets, setBuckets] = useState<string[]>([]);
-  const [bucket, setBucket] = useState<string | undefined>(undefined);
-  const [s3Paths, setS3Paths] = useState<S3Object[]>([]);
+  const [selectedPath, setSelectedPath] = useState<string | undefined>(
+    undefined
+  );
+
   const methods = useForm<CubeWithCubeConfigSchemaType>({
     resolver: zodResolver(cubeWithCubeConfigSchema),
   });
@@ -33,46 +43,30 @@ function CubeForm({
     formState: { errors },
   } = methods;
 
-  useEffect(() => {
-    reset({
-      ...(initialData ? initialData : {}),
-    });
-    const initialCubeConfig = cubeConfigs.find(
-      (cubeConfig) => cubeConfig.id === initialData?.cubeConfigId
-    );
-    setCubeConfig(initialCubeConfig);
-    setBuckets(["pikachu-dev"]);
-    if (initialData) {
-      const tokens = initialData.s3Path.split("/");
-      const currentBucket = tokens[2];
-
-      setBucket(currentBucket);
-      const prefix = tokens.slice(3, tokens.length).join("/");
-      if (initialCubeConfig && currentBucket) {
-        const s3 = loadS3(initialCubeConfig);
-        listFoldersRecursively({
-          s3,
-          bucketName: currentBucket,
-          prefix,
-        }).then((currentPaths) => setS3Paths(currentPaths));
-      }
-    }
-  }, [cubeConfigs, initialData, reset]);
-
-  const handleBucketSelect = async (value: string) => {
-    setBucket(value);
-    if (!cubeConfig) return;
+  const handleBucketSelect = async (
+    cubeConfig?: CubeConfig,
+    newBucket?: string
+  ) => {
+    setSelectedBucket(newBucket);
+    if (!cubeConfig || !newBucket) return;
 
     const s3 = loadS3(cubeConfig);
     const folders = await listFoldersRecursively({
       s3,
-      bucketName: value,
+      bucketName: newBucket,
     });
 
-    setS3Paths(folders);
+    const newPaths = [
+      ...new Set(folders.map((p) => `s3://${newBucket}/${p.Key}`)),
+    ];
+    setS3Paths(newPaths);
+    return newPaths;
   };
-  const handleCubeConfigSelect = async (value: string) => {
-    const selected = cubeConfigs.find((cubeConfig) => cubeConfig.id === value);
+
+  const handleCubeConfigSelect = async (newCubeConfigId: string) => {
+    const selected = cubeConfigs.find(
+      (cubeConfig) => cubeConfig.id === newCubeConfigId
+    );
 
     if (selected) {
       // const s3 = loadS3(selected);
@@ -82,8 +76,32 @@ function CubeForm({
       setBuckets(["pikachu-dev"]);
     }
 
-    setCubeConfig(selected);
+    setSelectedCubeConfig(selected);
+    return selected;
   };
+
+  useEffect(() => {
+    reset({
+      ...(initialData ? initialData : {}),
+    });
+    const initialize = async () => {
+      if (initialData) {
+        setSelectedPath(initialData.s3Path);
+        const { bucket } = partitionBucketPrefix(initialData.s3Path);
+
+        const cubeConfig = await handleCubeConfigSelect(
+          initialData?.cubeConfigId
+        );
+        await handleBucketSelect(cubeConfig, bucket);
+      }
+    };
+
+    initialize()
+      .then(() => console.log("initialized finished"))
+      .catch((e) => console.error(e));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cubeConfigs, initialData, reset]);
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} id="cubeConfig-form">
@@ -102,7 +120,7 @@ function CubeForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("cubeConfigId")}
-                    defaultValue={initialData?.cubeConfigId || undefined}
+                    value={selectedCubeConfig?.id}
                     disabled={initialData ? true : false}
                     onChange={(e) => handleCubeConfigSelect(e.target.value)}
                   >
@@ -167,34 +185,32 @@ function CubeForm({
                   S3 Buckets
                 </dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <select onChange={(e) => handleBucketSelect(e.target.value)}>
+                  <select
+                    onChange={(e) =>
+                      handleBucketSelect(selectedCubeConfig, e.target.value)
+                    }
+                    value={selectedBucket}
+                  >
                     <option value="">Please choose</option>
-                    {buckets.map((bucket, idx) => {
+                    {buckets.map((bucket) => {
                       return (
-                        <option key={idx} value={bucket}>
+                        <option key={bucket} value={bucket}>
                           {bucket}
                         </option>
                       );
                     })}
                   </select>
-
-                  {errors.s3Path && (
-                    <p role="alert">{errors.s3Path?.message}</p>
-                  )}
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">s3Path</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <select
-                    {...register("s3Path")}
-                    defaultValue={initialData?.s3Path}
-                  >
+                  <select {...register("s3Path")} value={selectedPath}>
                     <option value="">Please choose</option>
-                    {s3Paths.map((s3Path, idx) => {
+                    {s3Paths.map((s3Path) => {
                       return (
-                        <option key={idx} value={s3Path.Key}>
-                          {s3Path.Key}
+                        <option key={s3Path} value={s3Path}>
+                          {s3Path}
                         </option>
                       );
                     })}

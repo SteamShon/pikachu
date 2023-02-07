@@ -154,6 +154,11 @@ export const serviceRouter = createTRPCRouter({
               createdBy: true,
             },
           },
+          cubeConfigs: {
+            include: {
+              cubes: true,
+            },
+          },
         },
       });
     }),

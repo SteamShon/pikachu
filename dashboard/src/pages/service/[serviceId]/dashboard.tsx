@@ -9,6 +9,7 @@ import CampaignTable from "./campaignTable";
 import ContentTable from "./contentTable";
 import ContentTypeTable from "./contentTypeTable";
 import CreativeTable from "./creativeTable";
+import CubeConfigTable from "./cubeConfigTable";
 import CustomsetTable from "./customsetTable";
 import PlacementGroupTable from "./placementGroupTable";
 import PlacementTable from "./placementTable";
@@ -104,6 +105,18 @@ function Dashboard() {
       table: () =>
         service ? (
           <CustomsetTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
+        ) : null,
+    },
+    {
+      label: "CubeConfigs",
+      description: `cubeConfigs`,
+      table: () =>
+        service ? (
+          <CubeConfigTable
             service={service}
             setServiceTree={setTree}
             serviceTree={tree}

@@ -4,6 +4,8 @@ import type {
   Content,
   ContentType,
   Creative,
+  Cube,
+  CubeConfig,
   Customset,
   CustomsetInfo,
   Placement,
@@ -41,6 +43,7 @@ export function buildTree(
       contents: (Content & { creatives: Creative[] })[];
     })[];
     customsets: (Customset & { customsetInfo: CustomsetInfo })[];
+    cubeConfigs: (CubeConfig & { cubes: Cube[] })[];
   })[]
 ): Record<string, ReturnType<typeof buildServiceTree>> {
   const tree = arrayToRecord(
@@ -70,11 +73,13 @@ export function buildServiceTree(
       contents: (Content & { creatives: Creative[] })[];
     })[];
     customsets: (Customset & { customsetInfo: CustomsetInfo })[];
+    cubeConfigs: (CubeConfig & { cubes: Cube[] })[];
   }
 ): Service & {
   placementGroups: Record<string, ReturnType<typeof buildPlacementGroupTree>>;
   contentTypes: Record<string, ReturnType<typeof buildContentTypeTree>>;
   customsets: Record<string, Customset & { customsetInfo: CustomsetInfo }>;
+  cubeConfigs: Record<string, ReturnType<typeof buildCubeConfigTree>>;
 } {
   const placementGroups = arrayToRecord(
     service.placementGroups.map((placementGroup) => {
@@ -90,7 +95,9 @@ export function buildServiceTree(
 
   const customsets = buildCustomsetsTree(service.customsets);
 
-  return { ...service, placementGroups, contentTypes, customsets };
+  const cubeConfigs = buildCubeConfigsTree(service.cubeConfigs);
+
+  return { ...service, placementGroups, contentTypes, customsets, cubeConfigs };
 }
 
 export function buildPlacementGroupTree(
@@ -217,4 +224,29 @@ export function buildCustomsetsTree(
     string,
     Customset & { customsetInfo: CustomsetInfo }
   >;
+}
+
+export function buildCubeConfigTree(
+  cubeConfig: CubeConfig & {
+    cubes: Cube[];
+  }
+): CubeConfig & {
+  cubes: Record<string, Cube>;
+} {
+  const cubes = arrayToRecord(cubeConfig.cubes) as Record<
+    string,
+    typeof cubeConfig.cubes[0]
+  >;
+
+  return { ...cubeConfig, cubes };
+}
+
+export function buildCubeConfigsTree(
+  cubeConfigs: (CubeConfig & { cubes: Cube[] })[]
+): Record<string, ReturnType<typeof buildCubeConfigTree>> {
+  return arrayToRecord(
+    cubeConfigs.map((cubeConfig) => {
+      return buildCubeConfigTree(cubeConfig);
+    })
+  ) as Record<string, ReturnType<typeof buildCubeConfigTree>>;
 }

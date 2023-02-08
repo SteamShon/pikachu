@@ -1,7 +1,8 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import * as duckdb from "@duckdb/duckdb-wasm";
+import type { Cube, CubeConfig } from "@prisma/client";
 
-export async function loadDuckDB(): Promise<AsyncDuckDB> {
+export async function loadDuckDB(cubeConfig: CubeConfig): Promise<AsyncDuckDB> {
   const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
 
   // Select a bundle based on browser checks
@@ -19,6 +20,15 @@ export async function loadDuckDB(): Promise<AsyncDuckDB> {
   const db = new duckdb.AsyncDuckDB(logger, worker);
   await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
   URL.revokeObjectURL(worker_url);
+
+  // set s3 config.
+  const setQuery = `
+SET s3_region='${cubeConfig.s3Region}';
+SET s3_access_key_id='${cubeConfig.s3AccessKeyId}';
+SET s3_secret_access_key='${cubeConfig.s3SecretAccessKey}';
+  `;
+  console.log(setQuery);
+  await executeQuery(db, setQuery);
   return db;
 }
 
@@ -56,6 +66,7 @@ export async function executeQuery(
     return buffer;
   });
 }
+/*
 export const ParquetMetadataColumns = [
   // "row_group_id",
   // "row_group_num_rows",
@@ -84,43 +95,66 @@ export const ParquetMetadataColumns = [
   // "total_compressed_size",
   // "total_uncompressed_size",
 ];
-// export const ParquetMetadataColumns = [
-//   "column_name",
-//   "column_type",
-//   "min",
-//   "max",
-//   "approx_unique",
-//   "avg",
-//   "std",
-//   "q25",
-//   "q50",
-//   "q75",
-//   "count",
-//   "null_percentage",
-// ];
+*/
+export const ParquetMetadataColumns = [
+  "column_name",
+  "column_type",
+  "min",
+  "max",
+  "approx_unique",
+  "avg",
+  "std",
+  "q25",
+  "q50",
+  "q75",
+  "count",
+  "null_percentage",
+];
 
-export type S3Config = {
-  s3_region: string;
-  s3_access_key_id: string;
-  s3_secret_access_key: string;
-};
-export async function fetchMetadata(
+export async function fetchParquetSchema(
   db: AsyncDuckDB,
-  path: string,
-  s3Config: S3Config
+  path: string
 ): Promise<Record<string, unknown>[]> {
   // const _path =
   //   "https://shell.duckdb.org/data/tpch/0_01/parquet/orders.parquet";
   const _path = path;
-  const setCommands = Object.entries(s3Config).map(([key, value]) => {
-    `${key}='${value}'`;
-  });
-  const setCommand = setCommands.join(";");
   const query = `
-    ${setCommand}
-
-    SELECT * FROM parquet_metadata('${_path}');
+SELECT * FROM parquet_schema('${_path}');
   `;
   console.log(query);
   return executeQuery(db, query);
+}
+
+export async function fetchValues(
+  cubeConfig: CubeConfig,
+  cube: Cube,
+  fieldName: string,
+  value?: string
+): Promise<unknown[]> {
+  const db = await loadDuckDB(cubeConfig);
+  return (await fetchValuesInner(db, cube.s3Path, fieldName, value)).map(
+    (row) => {
+      return row[`${fieldName}`];
+    }
+  );
+}
+
+export async function fetchValuesInner(
+  db: AsyncDuckDB,
+  path: string,
+  fieldName: string,
+  value?: string
+): Promise<unknown[]> {
+  // const _path =
+  //   "https://shell.duckdb.org/data/tpch/0_01/parquet/orders.parquet";
+  const _path = path;
+  const where = value ? ` WHERE ${fieldName} like '%${value}%'` : ``;
+  const query = `
+SELECT distinct ${fieldName} FROM read_parquet('${_path}') ${where};
+  `;
+  console.log(query);
+  const rows = await executeQuery(db, query);
+  return rows.map((row) => {
+    return row[`${fieldName}`];
+  });
 }

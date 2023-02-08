@@ -5,18 +5,16 @@ import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import type { Service } from "@prisma/client";
 import moment from "moment";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type CubeConfigForm from "../../../components/form/cubeConfigForm";
-import CubeConfigModal from "../../../components/form/cubeConfigModal";
 import type CubeForm from "../../../components/form/cubeForm";
 import CubeModal from "../../../components/form/cubeModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildCubeConfigTree } from "../../../utils/tree";
-import { buildCubeConfigsTree } from "../../../utils/tree";
 
 function CubeTable({
   service,
@@ -125,6 +123,22 @@ function CubeTable({
               }}
               startIcon={<EditIcon />}
             ></Button>
+
+            <Link
+              className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white"
+              aria-current="page"
+              href={{
+                pathname:
+                  "/service/[serviceId]/[cubeConfigId]/[cubeId]/queryBuilder",
+                query: {
+                  serviceId: service.id,
+                  cubeConfigId: params.row.cubeConfigId,
+                  cubeId: params.row.id,
+                },
+              }}
+            >
+              Edit
+            </Link>
           </div>
         );
       },

@@ -2,6 +2,7 @@ import { adGroupRouter } from "./routers/adGroup";
 import { awsRouter } from "./routers/aws";
 import { campaignRouter } from "./routers/campaign";
 import { contentTypeRouter } from "./routers/contentType";
+import { cubeRouter } from "./routers/cube";
 import { cubeConfigRouter } from "./routers/cubeConfig";
 import { customsetRouter } from "./routers/customset";
 import { exampleRouter } from "./routers/example";
@@ -29,6 +30,7 @@ export const appRouter = createTRPCRouter({
   contentType: contentTypeRouter,
   usersOnServices: usersOnServicesRouter,
   cubeConfig: cubeConfigRouter,
+  cube: cubeRouter,
   aws: awsRouter,
 });
 

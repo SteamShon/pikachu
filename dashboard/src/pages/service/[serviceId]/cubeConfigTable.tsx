@@ -5,7 +5,6 @@ import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import type { Service } from "@prisma/client";
 import moment from "moment";
-import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
@@ -26,7 +25,6 @@ function CubeConfigTable({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [cubeConfig, setCubeConfig] =
     useState<Parameters<typeof CubeConfigForm>[0]["initialData"]>(undefined);

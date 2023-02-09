@@ -1,6 +1,6 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import * as duckdb from "@duckdb/duckdb-wasm";
-import type { Cube, CubeConfig } from "@prisma/client";
+import type { CubeConfig } from "@prisma/client";
 
 export async function loadDuckDB(cubeConfig: CubeConfig): Promise<AsyncDuckDB> {
   const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
@@ -95,7 +95,6 @@ export const ParquetMetadataColumns = [
   // "total_compressed_size",
   // "total_uncompressed_size",
 ];
-*/
 export const ParquetMetadataColumns = [
   "column_name",
   "column_type",
@@ -110,6 +109,7 @@ export const ParquetMetadataColumns = [
   "count",
   "null_percentage",
 ];
+*/
 
 export async function fetchParquetSchema(
   db: AsyncDuckDB,
@@ -126,20 +126,6 @@ SELECT * FROM parquet_schema('${_path}');
 }
 
 export async function fetchValues(
-  cubeConfig: CubeConfig,
-  cube: Cube,
-  fieldName: string,
-  value?: string
-): Promise<unknown[]> {
-  const db = await loadDuckDB(cubeConfig);
-  return (await fetchValuesInner(db, cube.s3Path, fieldName, value)).map(
-    (row) => {
-      return row[`${fieldName}`];
-    }
-  );
-}
-
-export async function fetchValuesInner(
   db: AsyncDuckDB,
   path: string,
   fieldName: string,
@@ -157,4 +143,29 @@ SELECT distinct ${fieldName} FROM read_parquet('${_path}') ${where};
   return rows.map((row) => {
     return row[`${fieldName}`];
   });
+}
+
+export async function countPopulation({
+  db,
+  path,
+  where,
+  idFieldName,
+  distinct,
+}: {
+  db: AsyncDuckDB;
+  path: string;
+  where?: string;
+  idFieldName?: string;
+  distinct?: boolean;
+}): Promise<string> {
+  const distinctClause = distinct || false ? "DISTINCT" : "";
+  const columnClause = idFieldName || "*";
+  const selectClause = `COUNT(${distinctClause} ${columnClause}) as popoulation`;
+  const whereClause = where ? `WHERE ${where}` : "";
+  const query = `
+SELECT ${selectClause} FROM read_parquet('${path}') ${whereClause};
+  `;
+  console.log(query);
+  const rows = await executeQuery(db, query);
+  return String(rows[0]?.popoulation);
 }

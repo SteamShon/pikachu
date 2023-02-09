@@ -1,8 +1,13 @@
+import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
+import DragIndicator from "@mui/icons-material/DragIndicator";
+import SendIcon from "@mui/icons-material/Send";
+import LoadingButton from "@mui/lab/LoadingButton";
 import {
   Button,
   Card,
   Checkbox,
   createTheme,
+  debounce,
   FormControl,
   FormControlLabel,
   Grid,
@@ -17,25 +22,19 @@ import {
   ThemeProvider,
   Typography,
 } from "@mui/material";
-import DragIndicator from "@mui/icons-material/DragIndicator";
 import type { Cube, CubeConfig } from "@prisma/client";
 import { QueryBuilderMaterial } from "@react-querybuilder/material";
 import { useEffect, useMemo, useState } from "react";
-import type {
-  Operator,
-  OptionList,
-  RuleGroupType,
-  ValueEditorType,
-} from "react-querybuilder";
+import type { Operator, RuleGroupType } from "react-querybuilder";
 import QueryBuilder, { formatQuery } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
 import {
+  countPopulation,
   fetchParquetSchema,
-  fetchValues,
   loadDuckDB,
 } from "../../utils/duckdb";
-import AsyncValueEditor from "./AsyncValueEditor";
-import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
+import AsyncValueEditor from "../common/AsyncValueEditor";
+
 const muiTheme = createTheme();
 
 const muiComponents = {
@@ -56,10 +55,21 @@ const muiComponents = {
 
 const initialQuery: RuleGroupType = { combinator: "and", rules: [] };
 
-function TableMetadata({ cube }: { cube: Cube & { cubeConfig: CubeConfig } }) {
-  const [db, setDB] = useState<AsyncDuckDB | undefined>(undefined);
+function SegmentQueryBuilder({
+  cube,
+  query,
+  onQueryChange,
+  onPopulationChange,
+}: {
+  cube: Cube & { cubeConfig: CubeConfig };
+  query?: RuleGroupType;
+  population?: string;
+  onQueryChange: (newQuery: RuleGroupType) => void;
+  onPopulationChange: (population: string) => void;
+}) {
+  const [db] = useState<AsyncDuckDB | undefined>(undefined);
   const [metadata, setMetadata] = useState<{ [x: string]: unknown }[]>([]);
-  const [query, setQuery] = useState<RuleGroupType>(initialQuery);
+  const [populationLoading, setPopulationLoading] = useState(false);
 
   const loadMetadata = useMemo(
     () => async () => {
@@ -69,17 +79,36 @@ function TableMetadata({ cube }: { cube: Cube & { cubeConfig: CubeConfig } }) {
       const rows = await fetchParquetSchema(duckDB, cube.s3Path);
       setMetadata(rows);
     },
-    []
+    [cube.cubeConfig, cube.s3Path, db]
+  );
+
+  const fetchPopulation = useMemo(
+    () =>
+      debounce((q?: RuleGroupType) => {
+        (async () => {
+          if (!q) return;
+
+          const duckDB = db ? db : await loadDuckDB(cube.cubeConfig);
+          console.log("fetch population");
+
+          const sql = formatQuery(q, "sql");
+          const count = await countPopulation({
+            db: duckDB,
+            path: cube.s3Path,
+            where: sql,
+          });
+
+          setPopulationLoading(false);
+          onPopulationChange(count);
+        })();
+      }, 1000),
+
+    [cube.cubeConfig, cube.s3Path, db, onPopulationChange]
   );
 
   useEffect(() => {
     loadMetadata();
   }, [loadMetadata]);
-
-  const rows = (metadata || []).map((row, idx) => {
-    row.rowId = String(idx);
-    return row;
-  });
 
   const fields = (metadata || []).map((row) => {
     const name = row.name as string;
@@ -125,39 +154,22 @@ function TableMetadata({ cube }: { cube: Cube & { cubeConfig: CubeConfig } }) {
     <Grid
       container
       direction="row"
+      spacing={3}
       justifyContent="flex-start"
-      alignItems="stretch"
+      // alignItems="stretch"
     >
       <Grid item xs={12}>
         <Card>
           <Typography>{cube.s3Path}</Typography>
         </Card>
       </Grid>
-      <Grid item xs={2}>
-        <h4>Query Builder</h4>
-      </Grid>
-      <Grid item xs={10}>
-        {/* <DataGrid
-          getRowId={(row) => row.rowId as string}
-          rows={rows}
-          columns={columns}
-          autoHeight
-          getRowHeight={() => "auto"}
-          pageSize={10}
-          rowsPerPageOptions={[10, 20, 30, 40, 50]}
-          checkboxSelection
-          disableSelectionOnClick
-          experimentalFeatures={{ newEditingApi: true }}
-          components={{
-            Toolbar: GridToolbar,
-          }}
-        /> */}
+      <Grid item xs={12}>
         <ThemeProvider theme={muiTheme}>
           <QueryBuilderMaterial muiComponents={muiComponents}>
             <QueryBuilder
               fields={fields}
-              query={query}
-              onQueryChange={(q) => setQuery(q)}
+              query={query || initialQuery}
+              onQueryChange={onQueryChange}
               getOperators={getOperators}
               controlElements={{
                 valueEditor: AsyncValueEditor,
@@ -167,14 +179,29 @@ function TableMetadata({ cube }: { cube: Cube & { cubeConfig: CubeConfig } }) {
           </QueryBuilderMaterial>
         </ThemeProvider>
       </Grid>
-      <Grid item xs={2}>
-        <h4>SQL</h4>
+      <Grid item xs={8}></Grid>
+      <Grid item xs={3}>
+        <LoadingButton
+          type="button"
+          variant="contained"
+          loadingPosition="end"
+          endIcon={<SendIcon />}
+          onClick={() => {
+            setPopulationLoading(true);
+            fetchPopulation(query);
+          }}
+          loading={populationLoading}
+          className="inline-flex w-full justify-end rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+        >
+          <span>Calculate Population</span>
+        </LoadingButton>
       </Grid>
-      <Grid item xs={10}>
-        <pre>{formatQuery(query, "sql")}</pre>
+      <Grid item xs={1}></Grid>
+      <Grid item xs={12}>
+        {query ? <pre>SQL: {formatQuery(query, "sql")}</pre> : null}
       </Grid>
     </Grid>
   );
 }
 
-export default TableMetadata;
+export default SegmentQueryBuilder;

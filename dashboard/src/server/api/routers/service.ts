@@ -186,7 +186,6 @@ export const serviceRouter = createTRPCRouter({
         },
         include: {
           placementGroups: {
-            orderBy: { updatedAt: "desc" },
             include: {
               placements: {
                 include: {
@@ -221,6 +220,11 @@ export const serviceRouter = createTRPCRouter({
             include: {
               customsetInfo: true,
               createdBy: true,
+            },
+          },
+          cubeConfigs: {
+            include: {
+              cubes: true,
             },
           },
         },
@@ -248,7 +252,6 @@ export const serviceRouter = createTRPCRouter({
         },
         include: {
           placementGroups: {
-            orderBy: { updatedAt: "desc" },
             include: {
               placements: {
                 include: {
@@ -283,6 +286,11 @@ export const serviceRouter = createTRPCRouter({
             include: {
               customsetInfo: true,
               createdBy: true,
+            },
+          },
+          cubeConfigs: {
+            include: {
+              cubes: true,
             },
           },
         },
@@ -314,7 +322,6 @@ export const serviceRouter = createTRPCRouter({
         },
         include: {
           placementGroups: {
-            orderBy: { updatedAt: "desc" },
             include: {
               placements: {
                 include: {
@@ -349,6 +356,11 @@ export const serviceRouter = createTRPCRouter({
             include: {
               customsetInfo: true,
               createdBy: true,
+            },
+          },
+          cubeConfigs: {
+            include: {
+              cubes: true,
             },
           },
         },

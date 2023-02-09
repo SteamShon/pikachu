@@ -8,7 +8,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import type { ValueEditorProps } from "react-querybuilder";
 import { ValueEditor } from "react-querybuilder";
-import { fetchValuesInner, loadDuckDB } from "../../utils/duckdb";
+import { fetchValues, loadDuckDB } from "../../utils/duckdb";
 
 const AsyncValueEditor = (props: ValueEditorProps) => {
   const useSearch = props.fieldData?.useSearch || false;
@@ -28,7 +28,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
           setDB(duckDB);
 
           const values = (
-            await fetchValuesInner(duckDB, cube.s3Path, props.field, prefix)
+            await fetchValues(duckDB, cube.s3Path, props.field, prefix)
           ).map((value) => String(value));
           // const values = ["0", "1", "2", "3"];
 
@@ -42,16 +42,14 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
   useEffect(() => {
     if (!useSearch) return;
 
-    let active = true;
-
     if (!open) {
       return undefined;
     }
     fetch(inputValue);
 
-    return () => {
-      active = false;
-    };
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    return () => {};
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, props.field, inputValue, fetch]);
 
   return (

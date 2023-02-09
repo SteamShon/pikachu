@@ -129,7 +129,7 @@ function CubeTable({
               aria-current="page"
               href={{
                 pathname:
-                  "/service/[serviceId]/[cubeConfigId]/[cubeId]/queryBuilder",
+                  "/service/[serviceId]/[cubeConfigId]/[cubeId]/segment/segmentTable",
                 query: {
                   serviceId: service.id,
                   cubeConfigId: params.row.cubeConfigId,

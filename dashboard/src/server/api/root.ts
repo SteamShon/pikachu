@@ -1,5 +1,4 @@
 import { adGroupRouter } from "./routers/adGroup";
-import { awsRouter } from "./routers/aws";
 import { campaignRouter } from "./routers/campaign";
 import { contentTypeRouter } from "./routers/contentType";
 import { cubeRouter } from "./routers/cube";
@@ -31,7 +30,6 @@ export const appRouter = createTRPCRouter({
   usersOnServices: usersOnServicesRouter,
   cubeConfig: cubeConfigRouter,
   cube: cubeRouter,
-  aws: awsRouter,
 });
 
 // export type definition of API

@@ -20,7 +20,7 @@ import {
 import DragIndicator from "@mui/icons-material/DragIndicator";
 import type { Cube, CubeConfig } from "@prisma/client";
 import { QueryBuilderMaterial } from "@react-querybuilder/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   Operator,
   OptionList,
@@ -60,27 +60,21 @@ function TableMetadata({ cube }: { cube: Cube & { cubeConfig: CubeConfig } }) {
   const [db, setDB] = useState<AsyncDuckDB | undefined>(undefined);
   const [metadata, setMetadata] = useState<{ [x: string]: unknown }[]>([]);
   const [query, setQuery] = useState<RuleGroupType>(initialQuery);
-  const loadMetadata = async () => {
-    const duckDB = db ? db : await loadDuckDB(cube.cubeConfig);
-    console.log("start initialize");
 
-    const rows = await fetchParquetSchema(duckDB, cube.s3Path);
-    setMetadata(rows);
-  };
+  const loadMetadata = useMemo(
+    () => async () => {
+      const duckDB = db ? db : await loadDuckDB(cube.cubeConfig);
+      console.log("start initialize");
+
+      const rows = await fetchParquetSchema(duckDB, cube.s3Path);
+      setMetadata(rows);
+    },
+    []
+  );
 
   useEffect(() => {
-    (async () => {
-      const duckDB = db ? db : await loadDuckDB(cube.cubeConfig);
-      setDB(duckDB);
-    })();
-  }, []);
-
-  // useEffect(() => {
-
-  //   loadMetadata()
-  //     .then(() => console.log("initialize success"))
-  //     .catch((e) => console.error(e));
-  // }, []);
+    loadMetadata();
+  }, [loadMetadata]);
 
   const rows = (metadata || []).map((row, idx) => {
     row.rowId = String(idx);
@@ -90,17 +84,19 @@ function TableMetadata({ cube }: { cube: Cube & { cubeConfig: CubeConfig } }) {
   const fields = (metadata || []).map((row) => {
     const name = row.name as string;
     const type = row.type as string;
-
-    return { name: name, label: name, type, valueEditorType: "multiselect" };
+    if (name === "payment_type") {
+      return { name, label: name, useSearch: true };
+    }
+    return { name: name, label: name, type };
   });
   const getOperators = (fieldName: string): Operator[] => {
     const field = fields.find((f) => f.name === fieldName);
 
     if (!field) return [];
+    if (field.name === "payment_type") {
+      return [{ name: "in", label: "in" }];
+    }
 
-    return [{ name: "in", label: "in" }];
-
-    /*
     switch (field.type) {
       case "BOOLEAN":
         return [{ name: "=", label: "=" }];
@@ -123,7 +119,6 @@ function TableMetadata({ cube }: { cube: Cube & { cubeConfig: CubeConfig } }) {
       default:
         return [];
     }
-    */
   };
 
   return (
@@ -139,9 +134,7 @@ function TableMetadata({ cube }: { cube: Cube & { cubeConfig: CubeConfig } }) {
         </Card>
       </Grid>
       <Grid item xs={2}>
-        <button type="button" onClick={(e) => loadMetadata()}>
-          Show Schema
-        </button>
+        <h4>Query Builder</h4>
       </Grid>
       <Grid item xs={10}>
         {/* <DataGrid
@@ -174,8 +167,10 @@ function TableMetadata({ cube }: { cube: Cube & { cubeConfig: CubeConfig } }) {
           </QueryBuilderMaterial>
         </ThemeProvider>
       </Grid>
-      <Grid item xs={12}>
+      <Grid item xs={2}>
         <h4>SQL</h4>
+      </Grid>
+      <Grid item xs={10}>
         <pre>{formatQuery(query, "sql")}</pre>
       </Grid>
     </Grid>

@@ -53,6 +53,16 @@ const treeData = [
     id: "Customsets",
     name: "Customsets",
   },
+  {
+    id: "CubeConfigs",
+    name: "CubeConfigs",
+    children: [
+      {
+        id: "Cubes",
+        name: "Cubes",
+      },
+    ],
+  },
 ];
 function SideMenu() {
   const router = useRouter();

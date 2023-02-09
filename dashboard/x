@@ -1,0 +1,271 @@
+yarn run v1.22.4
+$ next dev
+ready - started server on 0.0.0.0:3000, url: http://localhost:3000
+info  - Loaded env from /home/shon/workspace/pikachu/dashboard/.env
+event - compiled client and server successfully in 4.1s (1263 modules)
+wait  - compiling /_error (client and server)...
+wait  - compiling /api/auth/[...nextauth] (client and server)...
+wait  - compiling /api/trpc/[trpc] (client and server)...
+event - compiled client and server successfully in 857 ms (1312 modules)
+wait  - compiling /admin/aws (client and server)...
+event - compiled client and server successfully in 342 ms (1315 modules)
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE "public"."Session"."sessionToken" IN ($1,$2) OFFSET $3
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/
+dataset/samples/
+prisma:query SELECT "public"."UsersOnServices"."serviceId", "public"."UsersOnServices"."userId", "public"."UsersOnServices"."role", "public"."UsersOnServices"."assignedAt" FROM "public"."UsersOnServices" WHERE ("public"."UsersOnServices"."serviceId","public"."UsersOnServices"."userId") IN (SELECT "t0"."serviceId", "t0"."userId" FROM "public"."UsersOnServices" AS "t0" INNER JOIN "public"."User" AS "j0" ON ("j0"."id") = ("t0"."userId") WHERE ("j0"."id" = $1 AND "t0"."serviceId" IS NOT NULL AND "t0"."userId" IS NOT NULL)) OFFSET $2
+dataset/samples/nyc-taxi/
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+prisma:query SELECT "public"."Service"."id", "public"."Service"."name", "public"."Service"."description", "public"."Service"."status", "public"."Service"."createdAt", "public"."Service"."updatedAt" FROM "public"."Service" WHERE "public"."Service"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/
+dataset/samples/
+dataset/samples/nyc-taxi/
+prisma:query SELECT "public"."UsersOnServices"."serviceId", "public"."UsersOnServices"."userId", "public"."UsersOnServices"."role", "public"."UsersOnServices"."assignedAt" FROM "public"."UsersOnServices" WHERE ("public"."UsersOnServices"."serviceId","public"."UsersOnServices"."userId") IN (SELECT "t0"."serviceId", "t0"."userId" FROM "public"."UsersOnServices" AS "t0" INNER JOIN "public"."User" AS "j0" ON ("j0"."id") = ("t0"."userId") WHERE ("j0"."id" = $1 AND "t0"."serviceId" IS NOT NULL AND "t0"."userId" IS NOT NULL)) OFFSET $2
+dataset/samples/nyc-taxi/202201/
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+prisma:query SELECT "public"."Service"."id", "public"."Service"."name", "public"."Service"."description", "public"."Service"."status", "public"."Service"."createdAt", "public"."Service"."updatedAt" FROM "public"."Service" WHERE "public"."Service"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."UsersOnServices"."serviceId", "public"."UsersOnServices"."userId", "public"."UsersOnServices"."role", "public"."UsersOnServices"."assignedAt" FROM "public"."UsersOnServices" WHERE ("public"."UsersOnServices"."serviceId","public"."UsersOnServices"."userId") IN (SELECT "t0"."serviceId", "t0"."userId" FROM "public"."UsersOnServices" AS "t0" INNER JOIN "public"."User" AS "j0" ON ("j0"."id") = ("t0"."userId") WHERE ("j0"."id" = $1 AND "t0"."serviceId" IS NOT NULL AND "t0"."userId" IS NOT NULL)) OFFSET $2
+dataset/samples/
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/
+prisma:query SELECT "public"."Service"."id", "public"."Service"."name", "public"."Service"."description", "public"."Service"."status", "public"."Service"."createdAt", "public"."Service"."updatedAt" FROM "public"."Service" WHERE "public"."Service"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+wait  - compiling...
+wait  - compiling /api/trpc/[trpc] (client and server)...
+event - compiled client and server successfully in 836 ms (1266 modules)
+event - compiled client and server successfully (1314 modules)
+prisma:query SELECT 1
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+dataset/
+dataset
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/samples/
+dataset/
+dataset/samples/nyc-taxi/
+dataset/samples/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+wait  - compiling /api/auth/[...nextauth] (client and server)...
+event - compiled successfully in 71 ms (147 modules)
+dataset/samples/nyc-taxi/202201/
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+prisma:query SELECT 1
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+prisma:query SELECT "public"."UsersOnServices"."serviceId", "public"."UsersOnServices"."userId", "public"."UsersOnServices"."role", "public"."UsersOnServices"."assignedAt" FROM "public"."UsersOnServices" WHERE ("public"."UsersOnServices"."serviceId","public"."UsersOnServices"."userId") IN (SELECT "t0"."serviceId", "t0"."userId" FROM "public"."UsersOnServices" AS "t0" INNER JOIN "public"."User" AS "j0" ON ("j0"."id") = ("t0"."userId") WHERE ("j0"."id" = $1 AND "t0"."serviceId" IS NOT NULL AND "t0"."userId" IS NOT NULL)) OFFSET $2
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Service"."id", "public"."Service"."name", "public"."Service"."description", "public"."Service"."status", "public"."Service"."createdAt", "public"."Service"."updatedAt" FROM "public"."Service" WHERE "public"."Service"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."UsersOnServices"."serviceId", "public"."UsersOnServices"."userId", "public"."UsersOnServices"."role", "public"."UsersOnServices"."assignedAt" FROM "public"."UsersOnServices" WHERE ("public"."UsersOnServices"."serviceId","public"."UsersOnServices"."userId") IN (SELECT "t0"."serviceId", "t0"."userId" FROM "public"."UsersOnServices" AS "t0" INNER JOIN "public"."User" AS "j0" ON ("j0"."id") = ("t0"."userId") WHERE ("j0"."id" = $1 AND "t0"."serviceId" IS NOT NULL AND "t0"."userId" IS NOT NULL)) OFFSET $2
+dataset/
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/samples/
+dataset/samples/nyc-taxi/
+prisma:query SELECT "public"."Service"."id", "public"."Service"."name", "public"."Service"."description", "public"."Service"."status", "public"."Service"."createdAt", "public"."Service"."updatedAt" FROM "public"."Service" WHERE "public"."Service"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+wait  - compiling...
+event - compiled client and server successfully in 517 ms (1314 modules)
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+dataset
+dataset/
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/
+dataset/samples/
+dataset/samples/nyc-taxi/
+dataset/samples/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+prisma:query SELECT 1
+prisma:query SELECT 1
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."UsersOnServices"."serviceId", "public"."UsersOnServices"."userId", "public"."UsersOnServices"."role", "public"."UsersOnServices"."assignedAt" FROM "public"."UsersOnServices" WHERE ("public"."UsersOnServices"."serviceId","public"."UsersOnServices"."userId") IN (SELECT "t0"."serviceId", "t0"."userId" FROM "public"."UsersOnServices" AS "t0" INNER JOIN "public"."User" AS "j0" ON ("j0"."id") = ("t0"."userId") WHERE ("j0"."id" = $1 AND "t0"."serviceId" IS NOT NULL AND "t0"."userId" IS NOT NULL)) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Service"."id", "public"."Service"."name", "public"."Service"."description", "public"."Service"."status", "public"."Service"."createdAt", "public"."Service"."updatedAt" FROM "public"."Service" WHERE "public"."Service"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Session"."id", "public"."Session"."sessionToken", "public"."Session"."userId", "public"."Session"."expires" FROM "public"."Session" WHERE ("public"."Session"."sessionToken" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/
+prisma:query SELECT "public"."UsersOnServices"."serviceId", "public"."UsersOnServices"."userId", "public"."UsersOnServices"."role", "public"."UsersOnServices"."assignedAt" FROM "public"."UsersOnServices" WHERE ("public"."UsersOnServices"."serviceId","public"."UsersOnServices"."userId") IN (SELECT "t0"."serviceId", "t0"."userId" FROM "public"."UsersOnServices" AS "t0" INNER JOIN "public"."User" AS "j0" ON ("j0"."id") = ("t0"."userId") WHERE ("j0"."id" = $1 AND "t0"."serviceId" IS NOT NULL AND "t0"."userId" IS NOT NULL)) OFFSET $2
+dataset/samples/
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."role" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/
+prisma:query SELECT "public"."Service"."id", "public"."Service"."name", "public"."Service"."description", "public"."Service"."status", "public"."Service"."createdAt", "public"."Service"."updatedAt" FROM "public"."Service" WHERE "public"."Service"."id" IN ($1) OFFSET $2
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+dataset/samples/nyc-taxi/202201/yellow_tripdata_2022-01.parquet
+info  - Loaded env from /home/shon/workspace/pikachu/dashboard/.env

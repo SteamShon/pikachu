@@ -137,7 +137,7 @@ function CubeTable({
                 },
               }}
             >
-              Edit
+              Segments
             </Link>
           </div>
         );

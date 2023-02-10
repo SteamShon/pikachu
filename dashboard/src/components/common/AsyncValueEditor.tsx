@@ -48,14 +48,14 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
     if (!useSearch) return;
 
     if (!open) {
-      return undefined;
+      return;
     }
     fetch(inputValue);
 
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, props.field, inputValue, fetch]);
+  }, [loading, inputValue, cube.cubeConfig, cube.s3Path]);
 
   return (
     <>

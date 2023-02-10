@@ -60,6 +60,12 @@ const treeData = [
       {
         id: "Cubes",
         name: "Cubes",
+        children: [
+          {
+            id: "Segments",
+            name: "Segments",
+          },
+        ],
       },
     ],
   },

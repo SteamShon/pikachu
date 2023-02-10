@@ -11,15 +11,14 @@ import SegmentQueryBuilder from "./segmentQueryBuilder";
 
 function SegmentForm({
   cubes,
-  cube,
   onSubmit,
   initialData,
 }: {
   cubes: (Cube & { cubeConfig: CubeConfig })[];
-  cube: Cube & { cubeConfig: CubeConfig; segments: Segment[] };
   onSubmit: (input: SegmentWithCubeSchemaType) => void;
   initialData?: Segment;
 }) {
+  const [cube, setCube] = useState<typeof cubes[0] | undefined>(undefined);
   const [query, setQuery] = useState<RuleGroupType | undefined>(undefined);
   const [, setPopulation] = useState<string | undefined>(undefined);
   const methods = useForm<SegmentWithCubeSchemaType>({
@@ -35,10 +34,13 @@ function SegmentForm({
 
   useEffect(() => {
     reset(initialData);
+    if (initialData) {
+      setCube(cubes.find((cube) => cube.id === initialData?.cubeId));
+    }
     if (initialData?.where) {
       setQuery(parseSQL(initialData.where));
     }
-  }, [reset, initialData]);
+  }, [reset, initialData, cubes]);
 
   return (
     <FormProvider {...methods}>
@@ -58,6 +60,9 @@ function SegmentForm({
                     {...register("cubeId")}
                     defaultValue={initialData?.cubeId}
                     disabled={initialData ? true : false}
+                    onChange={(e) => {
+                      setCube(cubes.find((cube) => cube.id === e.target.value));
+                    }}
                   >
                     <option value="">Please choose</option>
                     {cubes.map((cube) => {
@@ -120,18 +125,20 @@ function SegmentForm({
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Where</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <SegmentQueryBuilder
-                    cube={cube}
-                    query={query}
-                    onQueryChange={(newQuery) => {
-                      setQuery(newQuery);
-                      setValue("where", formatQuery(newQuery, "sql"));
-                    }}
-                    onPopulationChange={(newPopulation) => {
-                      setPopulation(newPopulation);
-                      setValue("population", newPopulation);
-                    }}
-                  />
+                  {cube ? (
+                    <SegmentQueryBuilder
+                      cube={cube}
+                      query={query}
+                      onQueryChange={(newQuery) => {
+                        setQuery(newQuery);
+                        setValue("where", formatQuery(newQuery, "sql"));
+                      }}
+                      onPopulationChange={(newPopulation) => {
+                        setPopulation(newPopulation);
+                        setValue("population", newPopulation);
+                      }}
+                    />
+                  ) : null}
                   {errors.where && <p role="alert">{errors.where?.message}</p>}
                 </dd>
               </div>

@@ -10,6 +10,7 @@ import type {
   CustomsetInfo,
   Placement,
   PlacementGroup,
+  Segment,
   Service,
 } from "@prisma/client";
 
@@ -43,7 +44,7 @@ export function buildTree(
       contents: (Content & { creatives: Creative[] })[];
     })[];
     customsets: (Customset & { customsetInfo: CustomsetInfo })[];
-    cubeConfigs: (CubeConfig & { cubes: Cube[] })[];
+    cubeConfigs: (CubeConfig & { cubes: (Cube & { segments: Segment[] })[] })[];
   })[]
 ): Record<string, ReturnType<typeof buildServiceTree>> {
   const tree = arrayToRecord(
@@ -73,7 +74,7 @@ export function buildServiceTree(
       contents: (Content & { creatives: Creative[] })[];
     })[];
     customsets: (Customset & { customsetInfo: CustomsetInfo })[];
-    cubeConfigs: (CubeConfig & { cubes: Cube[] })[];
+    cubeConfigs: (CubeConfig & { cubes: (Cube & { segments: Segment[] })[] })[];
   }
 ): Service & {
   placementGroups: Record<string, ReturnType<typeof buildPlacementGroupTree>>;
@@ -226,23 +227,35 @@ export function buildCustomsetsTree(
   >;
 }
 
+export function buildCubeTree(
+  cube: Cube & { segments: Segment[] }
+): Cube & { segments: Record<string, Segment> } {
+  const segments = arrayToRecord(cube.segments) as Record<
+    string,
+    typeof cube.segments[0]
+  >;
+
+  return { ...cube, segments };
+}
+
 export function buildCubeConfigTree(
   cubeConfig: CubeConfig & {
-    cubes: Cube[];
+    cubes: (Cube & { segments: Segment[] })[];
   }
 ): CubeConfig & {
-  cubes: Record<string, Cube>;
+  cubes: Record<string, ReturnType<typeof buildCubeTree>>;
 } {
-  const cubes = arrayToRecord(cubeConfig.cubes) as Record<
-    string,
-    typeof cubeConfig.cubes[0]
-  >;
+  const cubes = arrayToRecord(
+    cubeConfig.cubes.map((cube) => {
+      return buildCubeTree(cube);
+    })
+  ) as Record<string, ReturnType<typeof buildCubeTree>>;
 
   return { ...cubeConfig, cubes };
 }
 
 export function buildCubeConfigsTree(
-  cubeConfigs: (CubeConfig & { cubes: Cube[] })[]
+  cubeConfigs: (CubeConfig & { cubes: (Cube & { segments: Segment[] })[] })[]
 ): Record<string, ReturnType<typeof buildCubeConfigTree>> {
   return arrayToRecord(
     cubeConfigs.map((cubeConfig) => {

@@ -13,5 +13,28 @@ const config = {
     locales: ["en"],
     defaultLocale: "en",
   },
+  webpack: (webpackConfig, { isServer }) => {
+    // WASM imports are not supported by default. Workaround inspired by:
+    // https://github.com/vercel/next.js/issues/29362#issuecomment-1149903338
+    // https://github.com/vercel/next.js/issues/32612#issuecomment-1082704675
+    return {
+      ...webpackConfig,
+      experiments: {
+        asyncWebAssembly: true,
+        layers: true,
+      },
+      optimization: {
+        ...webpackConfig.optimization,
+        moduleIds: "named",
+        minimize: false,
+      },
+      output: {
+        ...webpackConfig.output,
+        webassemblyModuleFilename: isServer
+          ? "./../public/static/wasm/[modulehash].wasm"
+          : "public/static/wasm/[modulehash].wasm",
+      },
+    };
+  },
 };
 export default config;

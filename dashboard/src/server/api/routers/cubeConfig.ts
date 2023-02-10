@@ -29,7 +29,11 @@ export const cubeConfigRouter = createTRPCRouter({
         include: {
           cubeConfigs: {
             include: {
-              cubes: true,
+              cubes: {
+                include: {
+                  segments: true,
+                },
+              },
             },
           },
         },
@@ -58,7 +62,11 @@ export const cubeConfigRouter = createTRPCRouter({
         include: {
           cubeConfigs: {
             include: {
-              cubes: true,
+              cubes: {
+                include: {
+                  segments: true,
+                },
+              },
             },
           },
         },
@@ -92,7 +100,11 @@ export const cubeConfigRouter = createTRPCRouter({
         include: {
           cubeConfigs: {
             include: {
-              cubes: true,
+              cubes: {
+                include: {
+                  segments: true,
+                },
+              },
             },
           },
         },
@@ -122,7 +134,11 @@ export const cubeConfigRouter = createTRPCRouter({
           },
         },
         include: {
-          cubes: true,
+          cubes: {
+            include: {
+              segments: true,
+            },
+          },
         },
       });
 
@@ -150,7 +166,11 @@ export const cubeConfigRouter = createTRPCRouter({
           },
         },
         include: {
-          cubes: true,
+          cubes: {
+            include: {
+              segments: true,
+            },
+          },
         },
       });
 
@@ -178,7 +198,11 @@ export const cubeConfigRouter = createTRPCRouter({
           },
         },
         include: {
-          cubes: true,
+          cubes: {
+            include: {
+              segments: true,
+            },
+          },
         },
       });
 

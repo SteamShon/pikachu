@@ -8,13 +8,12 @@ import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type CubeForm from "../../../components/form/cubeForm";
-import CubeModal from "../../../components/form/cubeModal";
+import type SegmentForm from "../../../components/form/segmentForm";
+import SegmentModal from "../../../components/form/segmentModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
-import { buildCubeConfigTree } from "../../../utils/tree";
-
-function CubeTable({
+import { buildCubeTree } from "../../../utils/tree";
+function SegmentTable({
   serviceTree,
   setServiceTree,
 }: {
@@ -24,48 +23,72 @@ function CubeTable({
   >;
 }) {
   const router = useRouter();
+  const [segment, setSegment] =
+    useState<Parameters<typeof SegmentForm>[0]["initialData"]>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
-  const { cubeConfigIds } = router.query;
-  const [cube, setCube] =
-    useState<Parameters<typeof CubeForm>[0]["initialData"]>(undefined);
-  const selectedIds = (cubeConfigIds || []) as string[];
+  const { cubeIds } = router.query;
+  const selectedIds = (cubeIds || []) as string[];
 
-  const { mutate: deleteCube } = api.cubeConfig.removeCube.useMutation({
+  const { mutate: deleteSegment } = api.cube.removeSegment.useMutation({
     onSuccess(deleted) {
       setServiceTree((prev) => {
-        if (!prev) return undefined;
+        if (!prev) return prev;
 
-        prev.cubeConfigs[deleted.id] = buildCubeConfigTree(deleted);
+        const cubeConfig = prev.cubeConfigs[deleted.cubeConfigId];
+        if (!cubeConfig) return prev;
+        cubeConfig.cubes[deleted.id] = buildCubeTree(deleted);
+
         return prev;
       });
       setModalOpen(false);
     },
   });
-  const allCubeConfigs = serviceTree
-    ? Object.values(serviceTree.cubeConfigs)
+
+  const allCubes = serviceTree?.cubeConfigs
+    ? Object.values(serviceTree.cubeConfigs).flatMap(
+        ({ cubes, ...cubeConfig }) => {
+          return Object.values(cubes).flatMap(({ segments, ...cube }) => {
+            return { ...cube, segments: Object.values(segments), cubeConfig };
+          });
+        }
+      )
     : [];
 
-  const cubeConfigs =
+  const cubes =
     selectedIds.length === 0
-      ? allCubeConfigs
-      : allCubeConfigs.filter((cubeConfig) => {
-          return selectedIds.includes(cubeConfig.id);
+      ? allCubes
+      : allCubes.filter((cube) => {
+          return selectedIds.includes(cube.id);
         });
 
-  const rows = cubeConfigs.flatMap(({ cubes, ...cubeConfig }) => {
-    return Object.values(cubes).map(({ segments, ...cube }) => {
-      return { ...cube, cubeConfig, segments: Object.values(segments) };
+  const rows = cubes.flatMap(({ segments, cubeConfig, ...cube }) => {
+    return segments.map((segment) => {
+      return {
+        ...segment,
+        cube: {
+          ...cube,
+          cubeConfig,
+        },
+      };
     });
   });
 
   const columns: GridColDef[] = [
-    { field: "id", headerName: "ID", width: 90 },
+    { field: "id", headerName: "ID", flex: 1 },
     {
       field: "cubeConfig.name",
       headerName: "CubeConfig",
       flex: 1,
       valueGetter: (params) => {
-        return params.row.cubeConfig.name;
+        return params.row.cube.cubeConfig.name;
+      },
+    },
+    {
+      field: "cube.name",
+      headerName: "Cube",
+      flex: 1,
+      valueGetter: (params) => {
+        return params.row.cube.name;
       },
     },
     {
@@ -84,8 +107,13 @@ function CubeTable({
       flex: 1,
     },
     {
-      field: "s3Path",
-      headerName: "s3Path",
+      field: "where",
+      headerName: "Where",
+      flex: 1,
+    },
+    {
+      field: "population",
+      headerName: "Population",
       flex: 1,
     },
     {
@@ -113,8 +141,8 @@ function CubeTable({
               onClick={(e) => {
                 e.stopPropagation();
                 if (confirm("Are you sure?")) {
-                  deleteCube({
-                    cubeConfigId: params.row.cubeConfigId,
+                  deleteSegment({
+                    cubeId: params.row.cubeId,
                     id: params.row.id,
                   });
                 }
@@ -124,7 +152,7 @@ function CubeTable({
             <Button
               onClick={(e) => {
                 e.stopPropagation();
-                setCube(params.row);
+                setSegment(params.row);
                 setModalOpen(true);
               }}
               startIcon={<EditIcon />}
@@ -134,13 +162,15 @@ function CubeTable({
       },
     },
   ];
+
   const toolbar = GridCustomToolbar({
     label: "Create",
     onClick: () => {
-      setCube(undefined);
+      setSegment(undefined);
       setModalOpen(true);
     },
   });
+
   return (
     <div style={{ display: "flex", height: "100%" }}>
       <div style={{ flexGrow: 1 }}>
@@ -154,10 +184,10 @@ function CubeTable({
           checkboxSelection
           disableSelectionOnClick
           experimentalFeatures={{ newEditingApi: true }}
-          // selectionModel={(cubeConfigIds || []) as string[]}
+          // selectionModel={(cubeIds || []) as string[]}
           // onSelectionModelChange={(ids) => {
           //   if (ids && Array.isArray(ids)) {
-          //     router.query.cubeConfigIds = ids.map((id) => String(id));
+          //     router.query.placementGroupIds = ids.map((id) => String(id));
           //     router.push(router);
           //   }
           // }}
@@ -166,16 +196,17 @@ function CubeTable({
           }}
         />
       </div>
-      <CubeModal
-        key="cubeConfigModal"
-        cubeConfigs={cubeConfigs}
+
+      <SegmentModal
+        key="segmentModal"
+        cubes={cubes}
         modalOpen={modalOpen}
+        initialData={segment}
         setModalOpen={setModalOpen}
-        initialData={cube}
         setServiceTree={setServiceTree}
       />
     </div>
   );
 }
 
-export default CubeTable;
+export default SegmentTable;

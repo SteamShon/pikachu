@@ -1,6 +1,7 @@
 import { useSession } from "next-auth/react";
-import Navbar from "./Navbar";
+import { SnackbarProvider } from "notistack";
 import Login from "./Login";
+import Navbar from "./Navbar";
 
 export default function Layout({ Component, pageProps: { ...pageProps } }) {
   const { data: session } = useSession();
@@ -8,8 +9,10 @@ export default function Layout({ Component, pageProps: { ...pageProps } }) {
   if (!session) return <Login />;
   return (
     <>
-      <Navbar />
-      <Component {...pageProps} />
+      <SnackbarProvider>
+        <Navbar />
+        <Component {...pageProps} />
+      </SnackbarProvider>
     </>
   );
 }

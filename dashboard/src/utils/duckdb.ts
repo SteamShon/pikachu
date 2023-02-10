@@ -2,33 +2,36 @@ import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import * as duckdb from "@duckdb/duckdb-wasm";
 import type { CubeConfig } from "@prisma/client";
 
-export async function loadDuckDB(cubeConfig: CubeConfig): Promise<AsyncDuckDB> {
-  const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
+export async function loadDuckDB(
+  cubeConfig: CubeConfig
+): Promise<AsyncDuckDB | undefined> {
+  const allBundles = duckdb.getJsDelivrBundles();
+  const bestBundle = await duckdb.selectBundle(allBundles);
 
-  // Select a bundle based on browser checks
-  const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+  console.log(bestBundle);
+  if (!bestBundle.mainWorker) {
+    console.error("can't initialize workder");
+    return Promise.resolve(undefined);
+  }
 
-  const worker_url = URL.createObjectURL(
-    new Blob([`importScripts("${bundle.mainWorker}");`], {
-      type: "text/javascript",
-    })
-  );
-
+  const worker = await duckdb.createWorker(bestBundle.mainWorker);
   // Instantiate the asynchronus version of DuckDB-wasm
-  const worker = new Worker(worker_url);
   const logger = new duckdb.ConsoleLogger();
   const db = new duckdb.AsyncDuckDB(logger, worker);
-  await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-  URL.revokeObjectURL(worker_url);
+  await db.instantiate(bestBundle.mainModule, bestBundle.pthreadWorker);
 
   // set s3 config.
   const setQuery = `
+SET home_directory='/tmp/';
 SET s3_region='${cubeConfig.s3Region}';
 SET s3_access_key_id='${cubeConfig.s3AccessKeyId}';
 SET s3_secret_access_key='${cubeConfig.s3SecretAccessKey}';
   `;
-  console.log(setQuery);
+
   await executeQuery(db, setQuery);
+
+  console.log("duckdb: load db instance success.");
+
   return db;
 }
 
@@ -36,11 +39,8 @@ export async function executeQuery(
   db: AsyncDuckDB,
   query: string
 ): Promise<Record<string, unknown>[]> {
+  console.log(`duckdb: ${query}`);
   const conn = await db.connect();
-
-  await conn.query(
-    `SET home_directory="/home/shon/workspace/pikachu/dashboard"`
-  );
 
   const result = await conn.query(query);
 
@@ -117,11 +117,13 @@ export async function fetchParquetSchema(
 ): Promise<Record<string, unknown>[]> {
   // const _path =
   //   "https://shell.duckdb.org/data/tpch/0_01/parquet/orders.parquet";
+  console.log(`duckdb: fetch parquet schema: ${path}`);
+
   const _path = path;
   const query = `
 SELECT * FROM parquet_schema('${_path}');
   `;
-  console.log(query);
+
   return executeQuery(db, query);
 }
 
@@ -138,7 +140,7 @@ export async function fetchValues(
   const query = `
 SELECT distinct ${fieldName} FROM read_parquet('${_path}') ${where};
   `;
-  console.log(query);
+
   const rows = await executeQuery(db, query);
   return rows.map((row) => {
     return row[`${fieldName}`];
@@ -165,7 +167,7 @@ export async function countPopulation({
   const query = `
 SELECT ${selectClause} FROM read_parquet('${path}') ${whereClause};
   `;
-  console.log(query);
+
   const rows = await executeQuery(db, query);
   return String(rows[0]?.popoulation);
 }

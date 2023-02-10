@@ -14,6 +14,7 @@ import CubeTable from "./cubeTable";
 import CustomsetTable from "./customsetTable";
 import PlacementGroupTable from "./placementGroupTable";
 import PlacementTable from "./placementTable";
+import SegmentTable from "./segmentTable";
 import SideMenu from "./sideMenu";
 
 function Dashboard() {
@@ -129,11 +130,15 @@ function Dashboard() {
       description: `cubes`,
       table: () =>
         service ? (
-          <CubeTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
+          <CubeTable setServiceTree={setTree} serviceTree={tree} />
+        ) : null,
+    },
+    {
+      label: "Segments",
+      description: `segments`,
+      table: () =>
+        service ? (
+          <SegmentTable setServiceTree={setTree} serviceTree={tree} />
         ) : null,
     },
   ];

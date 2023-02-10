@@ -5,12 +5,14 @@ import {
   debounce,
   TextField,
 } from "@mui/material";
+import { useSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
 import type { ValueEditorProps } from "react-querybuilder";
 import { ValueEditor } from "react-querybuilder";
 import { fetchValues, loadDuckDB } from "../../utils/duckdb";
 
 const AsyncValueEditor = (props: ValueEditorProps) => {
+  const { enqueueSnackbar } = useSnackbar();
   const useSearch = props.fieldData?.useSearch || false;
   const { cube } = props.context;
   const [db, setDB] = useState<AsyncDuckDB | undefined>(undefined);
@@ -23,20 +25,23 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
     () =>
       debounce((prefix?: string) => {
         (async () => {
-          console.log("loading values");
           const duckDB = db ? db : await loadDuckDB(cube.cubeConfig);
+
+          if (!duckDB) {
+            enqueueSnackbar("failed to initialize db.", { variant: "error" });
+            return;
+          }
           setDB(duckDB);
 
           const values = (
             await fetchValues(duckDB, cube.s3Path, props.field, prefix)
           ).map((value) => String(value));
-          // const values = ["0", "1", "2", "3"];
 
-          console.log(values);
           setOptions(values);
         })();
       }, 1000),
-    [cube.cubeConfig, cube.s3Path, db, props.field]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cube.cubeConfig, cube.s3Path, props.field]
   );
 
   useEffect(() => {

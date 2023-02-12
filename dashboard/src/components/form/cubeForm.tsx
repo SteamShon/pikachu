@@ -10,6 +10,7 @@ import {
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { CubeWithCubeConfigSchemaType } from "../schema/cube";
 import { cubeWithCubeConfigSchema } from "../schema/cube";
+import CubePathBuilder from "./cubePathBuilder";
 function CubeForm({
   cubeConfigs,
   initialData,
@@ -205,19 +206,12 @@ function CubeForm({
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">s3Path</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <select {...register("s3Path")} value={selectedPath}>
-                    <option value="">Please choose</option>
-                    {s3Paths.map((s3Path) => {
-                      return (
-                        <option key={s3Path} value={s3Path}>
-                          {s3Path}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {errors.s3Path && (
-                    <p role="alert">{errors.s3Path?.message}</p>
-                  )}
+                  {selectedCubeConfig ? (
+                    <CubePathBuilder
+                      cubeConfig={selectedCubeConfig}
+                      onChange={console.log}
+                    />
+                  ) : null}
                 </dd>
               </div>
             </dl>

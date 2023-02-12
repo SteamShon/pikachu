@@ -5,7 +5,12 @@ export const datasetPathSchema = z.object({
 });
 export const targetDatasetSchema = z.object({
   target: datasetPathSchema,
-  condition: z.string().min(1),
+  conditions: z.array(
+    z.object({
+      source: z.string().min(1),
+      target: z.string().min(1),
+    })
+  ),
 });
 
 export const datasetSchema = z.object({

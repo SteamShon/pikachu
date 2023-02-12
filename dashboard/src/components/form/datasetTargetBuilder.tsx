@@ -9,6 +9,7 @@ import {
 import type { CubeConfig } from "@prisma/client";
 import { useEffect, useMemo, useState } from "react";
 import type {
+  Control,
   UseFieldArrayRemove,
   UseFormRegister,
   UseFormSetValue,
@@ -16,18 +17,23 @@ import type {
 import { listFoldersRecursively, loadS3 } from "../../utils/aws";
 import { fetchParquetSchema, loadDuckDB } from "../../utils/duckdb";
 import type { DatasetSchemaType } from "../schema/dataset";
+import ConditionBuilder from "./conditionBuilder";
 function DatasetTargetBuilder({
   cubeConfig,
   index,
   register,
   setValue,
   remove,
+  control,
+  sourceColumns,
 }: {
   cubeConfig: CubeConfig;
   index: number;
   register: UseFormRegister<DatasetSchemaType>;
   setValue: UseFormSetValue<DatasetSchemaType>;
   remove: UseFieldArrayRemove;
+  control: Control<DatasetSchemaType, unknown>;
+  sourceColumns: string[];
 }) {
   const [db, setDB] = useState<AsyncDuckDB | undefined>(undefined);
   const [buckets, setBuckets] = useState<string[]>([]);
@@ -190,11 +196,13 @@ function DatasetTargetBuilder({
         <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
           <dt className="text-sm font-medium text-gray-500">Condition</dt>
           <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-            <input
-              className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-              {...register(`targets.${index}.condition`)}
+            <ConditionBuilder
+              sourceOptions={sourceColumns}
+              targetOptions={columns}
+              index={index}
+              control={control}
+              setValue={setValue}
             />
-            {JSON.stringify(columns)}
           </dd>
         </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">

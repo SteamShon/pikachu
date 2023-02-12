@@ -1,9 +1,11 @@
+import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import { Autocomplete, CircularProgress, TextField } from "@mui/material";
 import type { CubeConfig } from "@prisma/client";
 import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type { TreeNode } from "../../utils/aws";
 import { listFoldersRecursively, loadS3, objectsToTree } from "../../utils/aws";
+import { fetchParquetSchema, loadDuckDB } from "../../utils/duckdb";
 import type { DatasetSchemaType } from "../schema/dataset";
 import DatasetTargetBuilder from "./datasetTargetBuilder";
 
@@ -14,6 +16,8 @@ function CubePathBuilder({
   cubeConfig: CubeConfig;
   onChange: (input: DatasetSchemaType) => void;
 }) {
+  const [db, setDB] = useState<AsyncDuckDB | undefined>(undefined);
+
   const [buckets, setBuckets] = useState<string[]>([]);
   const [bucket, setBucket] = useState<string | undefined>(undefined);
 
@@ -21,7 +25,7 @@ function CubePathBuilder({
   const [selectedPaths, setSelectedPaths] = useState<string[] | undefined>(
     undefined
   );
-
+  const [columns, setColumns] = useState<string[]>([]);
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [open, setOpen] = useState(false);
   const loading = bucket !== undefined && open && paths.length === 0;
@@ -72,7 +76,21 @@ function CubePathBuilder({
     },
     [cubeConfig]
   );
+  const loadMetadata = useMemo(
+    () => async (path: string) => {
+      const duckDB = db ? db : await loadDuckDB(cubeConfig);
+      if (!duckDB) {
+        return;
+      }
+      setDB(duckDB);
+      const rows = await fetchParquetSchema(duckDB, path);
 
+      setColumns(rows.map((row) => String(row.name)));
+    },
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cubeConfig]
+  );
   return (
     <form
       onSubmit={handleSubmit((data) => console.log(data))}
@@ -142,8 +160,13 @@ function CubePathBuilder({
                           // }}
                           onChange={(_e, vs: string[], reason) => {
                             vs.forEach((path, i) => {
+                              if (!path.endsWith(".parquet")) return;
+
                               setValue(`source.files.${i}`, path);
                             });
+                            if (vs[0]) {
+                              loadMetadata(vs[0]);
+                            }
                           }}
                           renderInput={(params) => (
                             <TextField
@@ -195,7 +218,7 @@ function CubePathBuilder({
                         files: [],
                         alias: "",
                       },
-                      condition: "",
+                      conditions: [],
                     })
                   }
                 >
@@ -209,6 +232,8 @@ function CubePathBuilder({
                     setValue={setValue}
                     register={register}
                     remove={remove}
+                    control={control}
+                    sourceColumns={columns}
                   />
                 ))}
               </dd>

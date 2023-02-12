@@ -4,6 +4,7 @@ import S3 from "aws-sdk/clients/s3";
 
 export type TreeNode = {
   name: string;
+  path: string;
   children: TreeNode[];
 };
 export function loadS3(config: CubeConfig): S3 {
@@ -45,7 +46,7 @@ export function objectsToTree({ paths }: { paths: S3Object[] }) {
 
       let temp = q.find((o) => o.name === name);
       if (!temp) {
-        q.push((temp = { name, children: [] }));
+        q.push((temp = { name, path: p.Key || "", children: [] }));
       }
 
       return temp.children;
@@ -74,29 +75,31 @@ export async function listFoldersRecursively({
   let continuationToken: string | undefined;
   const folders: S3Object[] = [];
 
-  do {
-    const response = await s3
-      .listObjectsV2({
-        Bucket: bucketName,
-        Prefix: prefix,
-        ContinuationToken: continuationToken,
-      })
-      .promise();
-    for (const item of response?.Contents || []) {
-      if (item.Key && item.Key !== prefix) {
-        folders.push(item);
+  const response = await s3
+    .listObjectsV2({
+      Bucket: bucketName,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+    })
+    .promise();
+  for (const item of response?.Contents || []) {
+    if (item.Key && item.Key !== prefix) {
+      folders.push(item);
 
-        folders.push(
-          ...(await listFoldersRecursively({
-            s3,
-            bucketName,
-            prefix: item.Key,
-          }))
-        );
-      }
+      // folders.push(
+      //   ...(await listFoldersRecursively({
+      //     s3,
+      //     bucketName,
+      //     prefix: item.Key,
+      //   }))
+      // );
     }
-    continuationToken = response?.NextContinuationToken;
-  } while (continuationToken);
+  }
+
+  // do {
+
+  //   continuationToken = response?.NextContinuationToken;
+  // } while (continuationToken);
 
   return folders;
 }

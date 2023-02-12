@@ -215,7 +215,6 @@ function CubeForm({
                       );
                     })}
                   </select>
-
                   {errors.s3Path && (
                     <p role="alert">{errors.s3Path?.message}</p>
                   )}

@@ -5,6 +5,26 @@ import { z } from "zod";
 import { cubeWithCubeConfigSchema } from "../../../components/schema/cube";
 
 export const cubeConfigRouter = createTRPCRouter({
+  getAll: protectedProcedure
+    .input(z.object({ serviceId: z.string().min(1) }))
+    .query(async ({ input, ctx }) => {
+      const cubeConfigs = await prisma.cubeConfig.findMany({
+        where: {
+          serviceId: input.serviceId,
+        },
+        include: {
+          service: true,
+          cubes: {
+            include: {
+              segments: true,
+            },
+          },
+        },
+      });
+
+      return cubeConfigs;
+    }),
+
   addCubeConfig: protectedProcedure
     .input(cubeConfigWithServiceSchema)
     .mutation(async ({ input }) => {

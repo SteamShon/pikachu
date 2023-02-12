@@ -34,6 +34,7 @@ function DatasetTargetBuilder({
   const [bucket, setBucket] = useState<string | undefined>(undefined);
   const [paths, setPaths] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
+  const [columns, setColumns] = useState<string[]>([]);
   const loading = bucket !== undefined && open && paths.length === 0;
 
   useEffect(() => {
@@ -81,7 +82,7 @@ function DatasetTargetBuilder({
       setDB(duckDB);
       const rows = await fetchParquetSchema(duckDB, path);
 
-      setMetadata(rows);
+      setColumns(rows.map((row) => String(row.name)));
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,6 +145,8 @@ function DatasetTargetBuilder({
                       // }}
                       onChange={(_e, vs: string[], reason) => {
                         vs.forEach((path, j) => {
+                          if (!path.endsWith(".parquet")) return;
+
                           setValue(`targets.${index}.target.files.${j}`, path);
                         });
                         if (vs[0]) {
@@ -184,7 +187,16 @@ function DatasetTargetBuilder({
             </div>
           </dd>
         </div>
-
+        <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt className="text-sm font-medium text-gray-500">Condition</dt>
+          <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            <input
+              className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+              {...register(`targets.${index}.condition`)}
+            />
+            {JSON.stringify(columns)}
+          </dd>
+        </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
           <Button
             type="button"

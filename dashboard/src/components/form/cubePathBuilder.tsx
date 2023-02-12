@@ -195,7 +195,7 @@ function CubePathBuilder({
                         files: [],
                         alias: "",
                       },
-                      conditions: [],
+                      condition: "",
                     })
                   }
                 >
@@ -208,7 +208,7 @@ function CubePathBuilder({
                     index={index}
                     setValue={setValue}
                     register={register}
-                    control={control}
+                    remove={remove}
                   />
                 ))}
               </dd>

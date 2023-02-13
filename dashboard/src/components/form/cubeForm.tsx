@@ -1,9 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import SendIcon from "@mui/icons-material/Send";
+import LoadingButton from "@mui/lab/LoadingButton";
 import { Button } from "@mui/material";
 import type { Cube, CubeConfig } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { unknown } from "zod";
 import {
   listFoldersRecursively,
   loadS3,
@@ -12,6 +13,7 @@ import {
 import { buildJoinSql } from "../../utils/dataset";
 import { executeQuery, loadDuckDB } from "../../utils/duckdb";
 import CustomLoadingButton from "../common/CustomLoadingButton";
+import QueryResultTable from "../common/QueryResultTable";
 import type { CubeWithCubeConfigSchemaType } from "../schema/cube";
 import { cubeWithCubeConfigSchema } from "../schema/cube";
 import type { DatasetSchemaType } from "../schema/dataset";
@@ -42,6 +44,8 @@ function CubeForm({
     undefined
   );
   const [rows, setRows] = useState<{ [x: string]: unknown }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showQueryResult, setShowQueryResult] = useState(false);
 
   const methods = useForm<CubeWithCubeConfigSchemaType>({
     resolver: zodResolver(cubeWithCubeConfigSchema),
@@ -93,6 +97,7 @@ function CubeForm({
   };
 
   const runQuery = () => {
+    setLoading(true);
     if (!selectedCubeConfig) return;
     if (!dataset) return;
 
@@ -100,8 +105,11 @@ function CubeForm({
       const db = await loadDuckDB(selectedCubeConfig);
       if (!db) return;
       const sql = `${buildJoinSql(dataset)} LIMIT 10`;
+      console.log(sql);
       const rows = await executeQuery(db, sql);
       setRows(rows);
+      setLoading(false);
+      setShowQueryResult(true);
     })();
   };
 
@@ -205,7 +213,7 @@ function CubeForm({
                   )}
                 </dd>
               </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              {/* <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">
                   S3 Buckets
                 </dt>
@@ -226,9 +234,38 @@ function CubeForm({
                     })}
                   </select>
                 </dd>
+              </div> */}
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">SQL</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <textarea
+                    className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+                    rows={5}
+                    {...register("sql")}
+                  />
+                  {dataset ? (
+                    <LoadingButton
+                      type="button"
+                      variant="contained"
+                      loadingPosition="end"
+                      endIcon={<SendIcon />}
+                      onClick={() => runQuery()}
+                      loading={loading}
+                      className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+                    >
+                      <span>Run Query</span>
+                    </LoadingButton>
+                  ) : null}
+                  <Button onClick={() => setShowQueryResult(!showQueryResult)}>
+                    Show Result
+                  </Button>
+                  {showQueryResult ? <QueryResultTable rows={rows} /> : null}
+                </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">s3Path</dt>
+                <dt className="text-sm font-medium text-gray-500">
+                  Query Editor
+                </dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   {selectedCubeConfig ? (
                     <CubePathBuilder
@@ -241,31 +278,16 @@ function CubeForm({
                   ) : null}
                 </dd>
               </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">SQL</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <textarea
-                    className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                    rows={5}
-                    {...register("sql")}
-                  />
-                  {dataset ? (
-                    <Button type="button" onClick={(e) => runQuery()}>
-                      Run Query
-                    </Button>
-                  ) : null}
-                </dd>
-              </div>
             </dl>
           </div>
         </div>
+
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
           <CustomLoadingButton
             handleSubmit={handleSubmit}
             onSubmit={onSubmit}
           />
         </div>
-        {JSON.stringify(rows)}
       </form>
     </FormProvider>
   );

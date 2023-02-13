@@ -1,16 +1,15 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import {
   Autocomplete,
   Button,
   CircularProgress,
   TextField,
 } from "@mui/material";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import type { CubeConfig } from "@prisma/client";
 import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { listFoldersRecursively, loadS3 } from "../../utils/aws";
-import { buildJoinSql, fromSql } from "../../utils/dataset";
 import { fetchParquetSchema, loadDuckDB } from "../../utils/duckdb";
 import type { DatasetSchemaType } from "../schema/dataset";
 import DatasetTargetBuilder from "./datasetTargetBuilder";
@@ -96,137 +95,107 @@ function CubePathBuilder({
     [cubeConfig]
   );
   return (
-    <form id="cubePathConfig-form">
-      <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900">
-            Dataset
-          </h3>
+    <div className="overflow-hidden bg-white shadow sm:rounded-lg">
+      <div className="border-t border-gray-200">Source</div>
+      <div className="border-t border-gray-200">
+        <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt className="text-sm font-medium text-gray-500">S3 Buckets</dt>
+          <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            <select onChange={(e) => loadPaths(e.target.value)} value={bucket}>
+              <option value="">Please choose</option>
+              {buckets.map((bucket) => {
+                return (
+                  <option key={bucket} value={bucket}>
+                    {bucket}
+                  </option>
+                );
+              })}
+            </select>
+          </dd>
         </div>
-        <div className="border-t border-gray-200">
-          <dl>
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Source</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                <div className="border-t border-gray-200">
-                  <dl>
-                    <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500">
-                        S3 Buckets
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                        <select
-                          onChange={(e) => loadPaths(e.target.value)}
-                          value={bucket}
-                        >
-                          <option value="">Please choose</option>
-                          {buckets.map((bucket) => {
-                            return (
-                              <option key={bucket} value={bucket}>
-                                {bucket}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </dd>
-                    </div>
-                    <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500">
-                        S3 Paths
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                        <Autocomplete
-                          id="path-selector"
-                          fullWidth
-                          open={open}
-                          onOpen={() => {
-                            setOpen(true);
-                          }}
-                          onClose={() => {
-                            setOpen(false);
-                          }}
-                          isOptionEqualToValue={(option, value) =>
-                            option === value
-                          }
-                          getOptionLabel={(option) => option}
-                          options={paths}
-                          loading={loading}
-                          multiple
-                          autoComplete
-                          includeInputInList
-                          filterSelectedOptions
-                          //value={selectedPaths}
-                          // onInputChange={(_event, newInputValue) => {
-                          //   setInputValue(newInputValue);
-                          // }}
-                          onChange={(_e, vs: string[], reason) => {
-                            vs.forEach((path, i) => {
-                              if (!path.endsWith(".parquet")) return;
+        <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt className="text-sm font-medium text-gray-500">S3 Paths</dt>
+          <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            <Autocomplete
+              id="path-selector"
+              fullWidth
+              open={open}
+              onOpen={() => {
+                setOpen(true);
+              }}
+              onClose={() => {
+                setOpen(false);
+              }}
+              isOptionEqualToValue={(option, value) => option === value}
+              getOptionLabel={(option) => option}
+              options={paths}
+              loading={loading}
+              multiple
+              autoComplete
+              includeInputInList
+              filterSelectedOptions
+              //value={selectedPaths}
+              // onInputChange={(_event, newInputValue) => {
+              //   setInputValue(newInputValue);
+              // }}
+              onChange={(_e, vs: string[], reason) => {
+                vs.forEach((path, i) => {
+                  if (!path.endsWith(".parquet")) return;
 
-                              setValue(`files.${i}`, path);
-                            });
-                            if (vs[0]) {
-                              loadMetadata(vs[0]);
-                            }
-                          }}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              label="S3 Paths"
-                              fullWidth
-                              InputProps={{
-                                ...params.InputProps,
-                                endAdornment: (
-                                  <>
-                                    {loading ? (
-                                      <CircularProgress
-                                        color="inherit"
-                                        size={20}
-                                      />
-                                    ) : null}
-                                    {params.InputProps.endAdornment}
-                                  </>
-                                ),
-                              }}
-                            />
-                          )}
-                        />
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-              </dd>
-            </div>
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Targets </dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                <Button
-                  type="button"
-                  onClick={() =>
-                    append({
-                      files: [],
-                      conditions: [],
-                    })
-                  }
-                  startIcon={<AddCircleOutlineIcon />}
+                  setValue(`files.${i}`, path);
+                });
+                if (vs[0]) {
+                  loadMetadata(vs[0]);
+                }
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="S3 Paths"
+                  fullWidth
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {loading ? (
+                          <CircularProgress color="inherit" size={20} />
+                        ) : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
                 />
-                {fields.map((field, index) => (
-                  <DatasetTargetBuilder
-                    key={field.id}
-                    cubeConfig={cubeConfig}
-                    index={index}
-                    setValue={setValue}
-                    register={register}
-                    remove={remove}
-                    control={control}
-                    sourceColumns={columns}
-                  />
-                ))}
-              </dd>
-            </div>
-          </dl>
+              )}
+            />
+          </dd>
         </div>
       </div>
+      <div className="border-t border-gray-200">
+        <h3>Target</h3>
+        <Button
+          type="button"
+          onClick={() =>
+            append({
+              files: [],
+              conditions: [],
+            })
+          }
+          startIcon={<AddCircleOutlineIcon />}
+        />
+        {fields.map((field, index) => (
+          <DatasetTargetBuilder
+            key={field.id}
+            cubeConfig={cubeConfig}
+            index={index}
+            setValue={setValue}
+            register={register}
+            remove={remove}
+            control={control}
+            sourceColumns={columns}
+          />
+        ))}
+      </div>
+
       <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
         <button
           type="button"
@@ -236,7 +205,7 @@ function CubePathBuilder({
           Generate SQL
         </button>
       </div>
-    </form>
+    </div>
   );
 }
 export default CubePathBuilder;

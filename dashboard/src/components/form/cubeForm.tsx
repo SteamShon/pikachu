@@ -1,13 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@mui/material";
 import type { Cube, CubeConfig } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { unknown } from "zod";
 import {
   listFoldersRecursively,
   loadS3,
   partitionBucketPrefix,
 } from "../../utils/aws";
 import { buildJoinSql } from "../../utils/dataset";
+import { executeQuery, loadDuckDB } from "../../utils/duckdb";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { CubeWithCubeConfigSchemaType } from "../schema/cube";
 import { cubeWithCubeConfigSchema } from "../schema/cube";
@@ -34,6 +37,11 @@ function CubeForm({
   const [selectedPath, setSelectedPath] = useState<string | undefined>(
     undefined
   );
+
+  const [dataset, setDataset] = useState<DatasetSchemaType | undefined>(
+    undefined
+  );
+  const [rows, setRows] = useState<{ [x: string]: unknown }[]>([]);
 
   const methods = useForm<CubeWithCubeConfigSchemaType>({
     resolver: zodResolver(cubeWithCubeConfigSchema),
@@ -82,6 +90,19 @@ function CubeForm({
 
     setSelectedCubeConfig(selected);
     return selected;
+  };
+
+  const runQuery = () => {
+    if (!selectedCubeConfig) return;
+    if (!dataset) return;
+
+    (async () => {
+      const db = await loadDuckDB(selectedCubeConfig);
+      if (!db) return;
+      const sql = `${buildJoinSql(dataset)} LIMIT 10`;
+      const rows = await executeQuery(db, sql);
+      setRows(rows);
+    })();
   };
 
   useEffect(() => {
@@ -212,9 +233,10 @@ function CubeForm({
                   {selectedCubeConfig ? (
                     <CubePathBuilder
                       cubeConfig={selectedCubeConfig}
-                      onSubmit={(data: DatasetSchemaType) =>
-                        setValue("sql", buildJoinSql(data))
-                      }
+                      onSubmit={(data: DatasetSchemaType) => {
+                        setDataset(data);
+                        setValue("sql", buildJoinSql(data));
+                      }}
                     />
                   ) : null}
                 </dd>
@@ -227,6 +249,11 @@ function CubeForm({
                     rows={5}
                     {...register("sql")}
                   />
+                  {dataset ? (
+                    <Button type="button" onClick={(e) => runQuery()}>
+                      Run Query
+                    </Button>
+                  ) : null}
                 </dd>
               </div>
             </dl>
@@ -238,6 +265,7 @@ function CubeForm({
             onSubmit={onSubmit}
           />
         </div>
+        {JSON.stringify(rows)}
       </form>
     </FormProvider>
   );

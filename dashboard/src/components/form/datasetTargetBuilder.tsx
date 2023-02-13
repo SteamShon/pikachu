@@ -153,7 +153,7 @@ function DatasetTargetBuilder({
                         vs.forEach((path, j) => {
                           if (!path.endsWith(".parquet")) return;
 
-                          setValue(`targets.${index}.target.files.${j}`, path);
+                          setValue(`targets.${index}.files.${j}`, path);
                         });
                         if (vs[0]) {
                           loadMetadata(vs[0]);
@@ -177,15 +177,6 @@ function DatasetTargetBuilder({
                           }}
                         />
                       )}
-                    />
-                  </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Alias</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                    <input
-                      className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                      {...register(`targets.${index}.target.alias`)}
                     />
                   </dd>
                 </div>

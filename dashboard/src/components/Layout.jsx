@@ -4,9 +4,9 @@ import Login from "./Login";
 import Navbar from "./Navbar";
 
 export default function Layout({ Component, pageProps: { ...pageProps } }) {
-  const { data: session } = useSession();
+  // const { data: session } = useSession();
 
-  if (!session) return <Login />;
+  // if (!session) return <Login />;
   return (
     <>
       <SnackbarProvider>

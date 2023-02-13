@@ -304,6 +304,7 @@ model Cube {
     cubeConfig   CubeConfig @relation(fields: [cubeConfigId], references: [id], onDelete: Cascade)
     cubeConfigId String
     s3Path       String
+    sql          String?
     status       String     @default("CREATED")
     segments     Segment[]
     createdAt    DateTime   @default(now())

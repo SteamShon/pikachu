@@ -6,6 +6,7 @@ export const cubeSchema = z.object({
   description: z.string().optional().nullable().default(null),
   status: z.string().min(1),
   s3Path: z.string().min(1),
+  sql: z.string().optional().nullable(),
 });
 
 export type CubeSchemaType = z.infer<typeof cubeSchema>;

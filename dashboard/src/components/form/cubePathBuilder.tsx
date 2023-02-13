@@ -1,20 +1,26 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
-import { Autocomplete, CircularProgress, TextField } from "@mui/material";
+import {
+  Autocomplete,
+  Button,
+  CircularProgress,
+  TextField,
+} from "@mui/material";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import type { CubeConfig } from "@prisma/client";
 import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import type { TreeNode } from "../../utils/aws";
-import { listFoldersRecursively, loadS3, objectsToTree } from "../../utils/aws";
+import { listFoldersRecursively, loadS3 } from "../../utils/aws";
+import { buildJoinSql, fromSql } from "../../utils/dataset";
 import { fetchParquetSchema, loadDuckDB } from "../../utils/duckdb";
 import type { DatasetSchemaType } from "../schema/dataset";
 import DatasetTargetBuilder from "./datasetTargetBuilder";
 
 function CubePathBuilder({
   cubeConfig,
-  onChange,
+  onSubmit,
 }: {
   cubeConfig: CubeConfig;
-  onChange: (input: DatasetSchemaType) => void;
+  onSubmit: (input: DatasetSchemaType) => void;
 }) {
   const [db, setDB] = useState<AsyncDuckDB | undefined>(undefined);
 
@@ -26,7 +32,6 @@ function CubePathBuilder({
     undefined
   );
   const [columns, setColumns] = useState<string[]>([]);
-  const [tree, setTree] = useState<TreeNode[]>([]);
   const [open, setOpen] = useState(false);
   const loading = bucket !== undefined && open && paths.length === 0;
 
@@ -71,7 +76,6 @@ function CubePathBuilder({
         ...new Set(folders.map((p) => `s3://${bucketName}/${p.Key}`)),
       ];
 
-      setTree(objectsToTree({ paths: folders }));
       setPaths(newPaths);
     },
     [cubeConfig]
@@ -92,10 +96,7 @@ function CubePathBuilder({
     [cubeConfig]
   );
   return (
-    <form
-      onSubmit={handleSubmit((data) => console.log(data))}
-      id="cubePathConfig-form"
-    >
+    <form id="cubePathConfig-form">
       <div className="overflow-hidden bg-white shadow sm:rounded-lg">
         <div className="px-4 py-5 sm:px-6">
           <h3 className="text-lg font-medium leading-6 text-gray-900">
@@ -162,7 +163,7 @@ function CubePathBuilder({
                             vs.forEach((path, i) => {
                               if (!path.endsWith(".parquet")) return;
 
-                              setValue(`source.files.${i}`, path);
+                              setValue(`files.${i}`, path);
                             });
                             if (vs[0]) {
                               loadMetadata(vs[0]);
@@ -192,17 +193,6 @@ function CubePathBuilder({
                         />
                       </dd>
                     </div>
-                    <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500">
-                        Alias
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                        <input
-                          className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                          {...register("source.alias")}
-                        />
-                      </dd>
-                    </div>
                   </dl>
                 </div>
               </dd>
@@ -210,20 +200,16 @@ function CubePathBuilder({
             <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt className="text-sm font-medium text-gray-500">Targets </dt>
               <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                <button
+                <Button
                   type="button"
-                  onClick={(e) =>
+                  onClick={() =>
                     append({
-                      target: {
-                        files: [],
-                        alias: "",
-                      },
+                      files: [],
                       conditions: [],
                     })
                   }
-                >
-                  Add
-                </button>
+                  startIcon={<AddCircleOutlineIcon />}
+                />
                 {fields.map((field, index) => (
                   <DatasetTargetBuilder
                     key={field.id}
@@ -242,7 +228,13 @@ function CubePathBuilder({
         </div>
       </div>
       <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-        <button>Submit</button>
+        <button
+          type="button"
+          className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+          onClick={handleSubmit(onSubmit)}
+        >
+          Generate SQL
+        </button>
       </div>
     </form>
   );

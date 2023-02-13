@@ -1,3 +1,5 @@
+import { Button } from "@mui/material";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import type { Control, UseFormSetValue } from "react-hook-form";
 import { useFieldArray } from "react-hook-form";
 import type { DatasetSchemaType } from "../schema/dataset";
@@ -20,9 +22,14 @@ function ConditionBuilder({
   });
   return (
     <>
-      <button type="button" onClick={(e) => append({ source: "", target: "" })}>
+      <button type="button" onClick={() => append({ source: "", target: "" })}>
         Add
       </button>
+      <Button
+        type="button"
+        onClick={() => append({ source: "", target: "" })}
+        startIcon={<AddCircleOutlineIcon />}
+      ></Button>
       {fields.map((field, i) => {
         return (
           <div key={field.id}>

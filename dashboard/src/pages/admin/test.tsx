@@ -1,4 +1,4 @@
-import CubePathBuilder from "../../components/form/cubePathBuilder";
+import SqlBuilder from "../../components/form/sqlBuilder";
 import { api } from "../../utils/api";
 
 function Test() {
@@ -9,7 +9,7 @@ function Test() {
   return (
     <>
       {cubeConfigs?.at(0) ? (
-        <CubePathBuilder cubeConfig={cubeConfigs.at(0)} />
+        <SqlBuilder cubeConfig={cubeConfigs.at(0)} />
       ) : null}
     </>
   );

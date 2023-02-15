@@ -1,12 +1,8 @@
-import { Button } from "@mui/material";
-import { useState } from "react";
-import type { UseFormReturn } from "react-hook-form";
-import { unknown } from "zod";
-import type { DatasetSchemaType } from "../schema/dataset";
 import SendIcon from "@mui/icons-material/Send";
 import LoadingButton from "@mui/lab/LoadingButton";
-import { executeQuery } from "../../utils/duckdb";
 import type { CubeConfig } from "@prisma/client";
+import { useState } from "react";
+import { executeQuery } from "../../utils/duckdb";
 import QueryResultTable from "../common/QueryResultTable";
 
 function SqlPreview({

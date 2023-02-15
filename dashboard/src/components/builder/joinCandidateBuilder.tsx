@@ -1,4 +1,3 @@
-import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
 import {
@@ -9,8 +8,7 @@ import {
 } from "@mui/material";
 import type { CubeConfig } from "@prisma/client";
 import type { Dispatch, SetStateAction } from "react";
-import { useEffect } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useFieldArray } from "react-hook-form";
 import {
@@ -18,7 +16,7 @@ import {
   loadS3,
   partitionBucketPrefix,
 } from "../../utils/aws";
-import { fetchParquetSchema, loadDuckDB } from "../../utils/duckdb";
+import { fetchParquetSchema } from "../../utils/duckdb";
 import type { DatasetSchemaType } from "../schema/dataset";
 import JoinConditionBuilder from "./joinConditionBuilder";
 import type { TableMetadata } from "./sqlBuilder";
@@ -38,8 +36,6 @@ function JoinCandidateBuilder({
   tableColumns: TableMetadata;
   setTableColumns: Dispatch<SetStateAction<TableMetadata>>;
 }) {
-  const [db, setDB] = useState<AsyncDuckDB | undefined>(undefined);
-  const [buckets, setBuckets] = useState<string[]>(["pikachu-dev"]);
   const [bucket, setBucket] = useState<string | undefined>(undefined);
   const [paths, setPaths] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
@@ -113,7 +109,7 @@ function JoinCandidateBuilder({
         <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
           <select onChange={(e) => loadPaths(e.target.value)} value={bucket}>
             <option value="">Please choose</option>
-            {buckets.map((bucket) => {
+            {(cubeConfig.buckets?.split(",") || []).map((bucket) => {
               return (
                 <option key={bucket} value={bucket}>
                   {bucket}

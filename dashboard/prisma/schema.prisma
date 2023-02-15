@@ -289,6 +289,7 @@ model CubeConfig {
     s3Region          String
     s3AccessKeyId     String
     s3SecretAccessKey String
+    buckets           String?
     cubes             Cube[]
     status            String   @default("CREATED")
     createdAt         DateTime @default(now())
@@ -315,7 +316,7 @@ model Cube {
 
 model Segment {
     id          String   @id @default(cuid())
-    cube        Cube     @relation(fields: [cubeId], references: [id])
+    cube        Cube     @relation(fields: [cubeId], references: [id], onDelete: Cascade)
     cubeId      String
     name        String
     description String?

@@ -18,6 +18,7 @@ function JoinConditionBuilder({
   const [condition, setCondition] = useState<ConditionSchemaType | undefined>(
     initialData
   );
+  const [sourceTables, setSourceTables] = useState<string[]>([]);
   const [sourceColumns, setSourceColumns] = useState<string[]>([]);
   const [targetColumns, setTargetColumns] = useState<string[]>([]);
 
@@ -28,36 +29,49 @@ function JoinConditionBuilder({
   }, [initialData]);
 
   useEffect(() => {
-    setTargetColumns(tableColumns[`${targetIndex}`]?.columns || []);
-  }, [tableColumns, targetIndex]);
+    const tables = initialData?.sourceTable
+      ? [initialData?.sourceTable]
+      : Object.keys(tableColumns);
+    setSourceTables(tables);
+  }, [initialData?.sourceTable, tableColumns]);
 
   useEffect(() => {
-    const columns = tableColumns[`${condition?.sourceTable || "-1"}`]?.columns;
-    console.log(columns);
-    setSourceColumns(columns || []);
-  }, [condition?.sourceTable, tableColumns]);
+    const columns = initialData?.targetColumn
+      ? [initialData?.targetColumn]
+      : tableColumns[`${targetIndex}`]?.columns || [];
+    setTargetColumns(columns);
+  }, [initialData?.targetColumn, tableColumns, targetIndex]);
 
+  useEffect(() => {
+    const columns = initialData?.sourceColumn
+      ? [initialData?.sourceColumn]
+      : tableColumns[`${condition?.sourceTable || "-1"}`]?.columns;
+    setSourceColumns(columns || []);
+  }, [condition?.sourceTable, initialData?.sourceColumn, tableColumns]);
+
+  const handleTableSourceSelect = (tableSource: string) => {
+    setCondition((prev) => {
+      if (!prev) return prev;
+
+      prev.sourceTable = tableSource;
+      return prev;
+    });
+    setValue(
+      `tables.${targetIndex}.conditions.${conditionIndex}.sourceTable`,
+      tableSource
+    );
+    setSourceColumns(tableColumns[`${tableSource}`]?.columns || []);
+  };
   return (
     <>
       <div>
         <select
           value={condition?.sourceTable}
-          onChange={(e) => {
-            setCondition((prev) => {
-              if (!prev) return prev;
-
-              prev.sourceTable = e.target.value;
-              return prev;
-            });
-            setValue(
-              `tables.${targetIndex}.conditions.${conditionIndex}.sourceTable`,
-              e.target.value
-            );
-          }}
+          onChange={(e) => handleTableSourceSelect(e.target.value)}
         >
           <option value="">Please select</option>
 
-          {Object.keys(tableColumns).map((index) => {
+          {sourceTables.map((index) => {
             return (
               <option key={index} value={index}>
                 Table {index}

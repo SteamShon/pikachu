@@ -8,6 +8,7 @@ export const cubeConfigSchema = z.object({
   s3AccessKeyId: z.string().min(1),
   s3SecretAccessKey: z.string().min(1),
   status: z.string().min(1),
+  buckets: z.string().optional().nullable(),
 });
 
 export type CubeConfigSchemaType = z.infer<typeof cubeConfigSchema>;

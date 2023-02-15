@@ -1,9 +1,7 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import * as duckdb from "@duckdb/duckdb-wasm";
 import type { CubeConfig } from "@prisma/client";
-import LRU from "lru-cache";
 import { MyCache } from "./cache";
-import { unknown } from "zod";
 
 const pool = new MyCache<CubeConfig, AsyncDuckDB | undefined>({
   max: 3, // # of items

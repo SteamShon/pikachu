@@ -65,6 +65,7 @@ function CubeForm({
           initialData={fromSql(initialData?.sql || undefined)}
           onSubmit={(data: DatasetSchemaType) => {
             setValue("sql", buildJoinSql(data));
+            setActiveStep((prev) => prev + 1);
           }}
         />
       ) : (
@@ -81,6 +82,18 @@ function CubeForm({
         />
       ) : (
         <></>
+      ),
+    },
+    {
+      label: "Save",
+      description: `Save`,
+      component: (
+        <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+          <CustomLoadingButton
+            handleSubmit={handleSubmit}
+            onSubmit={onSubmit}
+          />
+        </div>
       ),
     },
   ];
@@ -197,12 +210,6 @@ function CubeForm({
               {steps[activeStep]?.component}
             </Grid>
           </Grid>
-        </div>
-        <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <CustomLoadingButton
-            handleSubmit={handleSubmit}
-            onSubmit={onSubmit}
-          />
         </div>
       </form>
     </FormProvider>

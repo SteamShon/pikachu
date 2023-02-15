@@ -153,6 +153,22 @@ function CubeConfigForm({
                   )}
                 </dd>
               </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">
+                  Buckets (ex: pikachu-dev,pikachu-staging)
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <textarea
+                    className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+                    defaultValue={initialData?.buckets || undefined}
+                    rows={3}
+                    {...register("buckets")}
+                  />
+                  {errors.buckets && (
+                    <p role="alert">{errors.buckets?.message}</p>
+                  )}
+                </dd>
+              </div>
             </dl>
           </div>
         </div>

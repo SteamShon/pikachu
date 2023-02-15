@@ -1,8 +1,8 @@
 import { z } from "zod";
 export const conditionSchema = z.object({
   sourceTable: z.string().min(1),
-  source: z.string().min(1),
-  target: z.string().min(1),
+  sourceColumn: z.string().min(1),
+  targetColumn: z.string().min(1),
 });
 
 export const datasetSchema = z.object({

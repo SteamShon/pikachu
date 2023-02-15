@@ -5,8 +5,8 @@ export function buildJoinSql(dataset: DatasetSchemaType) {
   const targets = dataset.tables.map((target, index) => {
     const read = target.files.map((file) => `'${file}'`).join(",");
     const conditions = target.conditions.map(
-      ({ sourceTable, source, target }) => {
-        return `t_${sourceTable}.${source} = t_${index}.${target}`;
+      ({ sourceTable, sourceColumn, targetColumn }) => {
+        return `t_${sourceTable}.${sourceColumn} = t_${index}.${targetColumn}`;
       }
     );
     const conditionsClause =
@@ -33,11 +33,13 @@ export function fromSql(sql?: string): DatasetSchemaType | undefined {
     const conditions = [];
     for (const condition of match[2]?.matchAll(/\((.*)\.(.*)=(.*)\.(.*)\)/gm) ||
       []) {
-      if (condition[1] && condition[2] && condition[4]) {
+      const tokens = condition[1]?.split("_");
+      const sourceTable = tokens?.[tokens.length - 1];
+      if (sourceTable && condition[2] && condition[4]) {
         conditions.push({
-          sourceTable: condition[1],
-          source: condition[2],
-          target: condition[4],
+          sourceTable,
+          sourceColumn: condition[2],
+          targetColumn: condition[4],
         });
       }
     }

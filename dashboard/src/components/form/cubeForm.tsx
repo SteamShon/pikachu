@@ -1,9 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Grid, Step, StepButton, Stepper } from "@mui/material";
 import type { Cube, CubeConfig } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { buildJoinSql, fromSql } from "../../utils/dataset";
 import SqlBuilder from "../builder/sqlBuilder";
+import SqlPreview from "../builder/sqlPreview";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { CubeWithCubeConfigSchemaType } from "../schema/cube";
 import { cubeWithCubeConfigSchema } from "../schema/cube";
@@ -21,7 +23,7 @@ function CubeForm({
   const [selectedCubeConfig, setSelectedCubeConfig] = useState<
     CubeConfig | undefined
   >(undefined);
-
+  const [activeStep, setActiveStep] = useState(0);
   const methods = useForm<CubeWithCubeConfigSchemaType>({
     resolver: zodResolver(cubeWithCubeConfigSchema),
   });
@@ -31,6 +33,7 @@ function CubeForm({
     handleSubmit,
     reset,
     setValue,
+    getValues,
     formState: { errors },
   } = methods;
 
@@ -52,6 +55,35 @@ function CubeForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cubeConfigs, initialData, reset]);
 
+  const steps = [
+    {
+      label: "QueryBuilder",
+      description: `QueryBuilder`,
+      component: selectedCubeConfig ? (
+        <SqlBuilder
+          cubeConfig={selectedCubeConfig}
+          initialData={fromSql(initialData?.sql || undefined)}
+          onSubmit={(data: DatasetSchemaType) => {
+            setValue("sql", buildJoinSql(data));
+          }}
+        />
+      ) : (
+        <></>
+      ),
+    },
+    {
+      label: "Preview",
+      description: `Preview`,
+      component: selectedCubeConfig ? (
+        <SqlPreview
+          cubeConfig={selectedCubeConfig}
+          sql={getValues("sql") || ""}
+        />
+      ) : (
+        <></>
+      ),
+    },
+  ];
   return (
     <FormProvider {...methods}>
       <form id="cubeConfig-form">
@@ -144,17 +176,27 @@ function CubeForm({
             </dl>
           </div>
         </div>
-        <div>QueryEditor</div>
         <div>
-          {selectedCubeConfig ? (
-            <SqlBuilder
-              cubeConfig={selectedCubeConfig}
-              initialData={fromSql(initialData?.sql || undefined)}
-              onSubmit={(data: DatasetSchemaType) => {
-                setValue("sql", buildJoinSql(data));
-              }}
-            />
-          ) : null}
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Stepper nonLinear activeStep={activeStep}>
+                {steps.map((step, index) => (
+                  <Step key={step.label}>
+                    <StepButton
+                      onClick={() => {
+                        setActiveStep(index);
+                      }}
+                    >
+                      {step.label}
+                    </StepButton>
+                  </Step>
+                ))}
+              </Stepper>
+            </Grid>
+            <Grid item xs={12}>
+              {steps[activeStep]?.component}
+            </Grid>
+          </Grid>
         </div>
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
           <CustomLoadingButton

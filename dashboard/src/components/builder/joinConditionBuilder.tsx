@@ -1,10 +1,5 @@
-import AddCircleOutline from "@mui/icons-material/AddCircleOutline";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { Button } from "@mui/material";
 import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import { useFieldArray } from "react-hook-form";
-import { string } from "zod";
 import type { ConditionSchemaType, DatasetSchemaType } from "../schema/dataset";
 import type { TableMetadata } from "./sqlBuilder";
 function JoinConditionBuilder({
@@ -18,30 +13,29 @@ function JoinConditionBuilder({
   targetIndex: number;
   conditionIndex: number;
   methods: UseFormReturn<DatasetSchemaType, unknown>;
-  initialData?: DatasetSchemaType;
+  initialData?: ConditionSchemaType;
 }) {
   const [condition, setCondition] = useState<ConditionSchemaType | undefined>(
-    undefined
+    initialData
   );
-  const [sourceTables, setSourceTables] = useState<string[]>([]);
   const [sourceColumns, setSourceColumns] = useState<string[]>([]);
   const [targetColumns, setTargetColumns] = useState<string[]>([]);
 
   const { setValue } = methods;
 
   useEffect(() => {
-    const condition =
-      initialData?.tables?.[targetIndex]?.conditions?.[conditionIndex];
+    setCondition(initialData);
+  }, [initialData]);
 
-    console.log("useEffect", condition);
-    setCondition(condition);
-
-    setSourceTables(Object.keys(tableColumns));
-    setSourceColumns(
-      tableColumns[`${condition?.sourceTable || "-1"}`]?.columns || []
-    );
+  useEffect(() => {
     setTargetColumns(tableColumns[`${targetIndex}`]?.columns || []);
-  }, [conditionIndex, initialData?.tables, tableColumns, targetIndex]);
+  }, [tableColumns, targetIndex]);
+
+  useEffect(() => {
+    const columns = tableColumns[`${condition?.sourceTable || "-1"}`]?.columns;
+    console.log(columns);
+    setSourceColumns(columns || []);
+  }, [condition?.sourceTable, tableColumns]);
 
   return (
     <>
@@ -63,7 +57,7 @@ function JoinConditionBuilder({
         >
           <option value="">Please select</option>
 
-          {sourceTables.map((index) => {
+          {Object.keys(tableColumns).map((index) => {
             return (
               <option key={index} value={index}>
                 Table {index}
@@ -74,16 +68,16 @@ function JoinConditionBuilder({
       </div>
       <div>
         <select
-          value={condition?.source}
+          value={condition?.sourceColumn}
           onChange={(e) => {
             setCondition((prev) => {
               if (!prev) return prev;
 
-              prev.source = e.target.value;
+              prev.sourceColumn = e.target.value;
               return prev;
             });
             setValue(
-              `tables.${targetIndex}.conditions.${conditionIndex}.source`,
+              `tables.${targetIndex}.conditions.${conditionIndex}.sourceColumn`,
               e.target.value
             );
           }}
@@ -100,16 +94,16 @@ function JoinConditionBuilder({
       </div>
       <div>
         <select
-          value={condition?.target}
+          value={condition?.targetColumn}
           onChange={(e) => {
             setCondition((prev) => {
               if (!prev) return prev;
 
-              prev.target = e.target.value;
+              prev.targetColumn = e.target.value;
               return prev;
             });
             setValue(
-              `tables.${targetIndex}.conditions.${conditionIndex}.target`,
+              `tables.${targetIndex}.conditions.${conditionIndex}.targetColumn`,
               e.target.value
             );
           }}

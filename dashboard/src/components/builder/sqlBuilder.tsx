@@ -1,12 +1,11 @@
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import { Button } from "@mui/material";
 import type { CubeConfig } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { buildJoinSql } from "../../utils/dataset";
 import type { DatasetSchemaType } from "../schema/dataset";
 import JoinCandidateBuilder from "./joinCandidateBuilder";
-import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 export type TableMetadata = {
   [index: string]: {
     columns: string[];

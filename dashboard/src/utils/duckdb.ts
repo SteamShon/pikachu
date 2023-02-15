@@ -6,15 +6,15 @@ import { MyCache } from "./cache";
 import { unknown } from "zod";
 
 const pool = new MyCache<CubeConfig, AsyncDuckDB | undefined>({
-  max: 50, // # of items
-  maxAge: 10 * 60 * 1000, // expiration in ms (10 min)
+  max: 3, // # of items
+  ttl: 10 * 60 * 1000, // expiration in ms (10 min)
 });
 const queryCache = new MyCache<
   { cubeConfig: CubeConfig; query: string },
   Record<string, unknown>[]
 >({
   max: 50, // # of items
-  maxAge: 10 * 60 * 1000, // expiration in ms (10 min)
+  ttl: 10 * 60 * 1000, // expiration in ms (10 min)
 });
 
 async function loadDuckDBInner(

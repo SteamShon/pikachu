@@ -72,11 +72,6 @@ function JoinCandidateBuilder({
   );
   const loadMetadata = useMemo(
     () => async (path: string) => {
-      // const duckDB = db ? db : await loadDuckDB(cubeConfig);
-      // if (!duckDB) {
-      //   return;
-      // }
-      // setDB(duckDB);
       const rows = await fetchParquetSchema(cubeConfig, path);
       const columns = rows.map((row) => String(row.name));
       setTableColumns((prev) => {
@@ -96,7 +91,11 @@ function JoinCandidateBuilder({
     return partitionBucketPrefix(file).bucket;
   };
 
-  const defaultValue = { source: "", target: "", sourceTable: "-1" };
+  const defaultValue = {
+    sourceColumn: "",
+    targetColumn: "",
+    sourceTable: "-1",
+  };
 
   useEffect(() => {
     setBucket(getBucket());
@@ -204,7 +203,9 @@ function JoinCandidateBuilder({
                     targetIndex={index}
                     conditionIndex={conditionIndex}
                     methods={methods}
-                    initialData={initialData}
+                    initialData={
+                      initialData?.tables?.[index]?.conditions?.[conditionIndex]
+                    }
                   />
                   <div className="flex justify-end">
                     <Button
@@ -224,7 +225,9 @@ function JoinCandidateBuilder({
                     append(defaultValue);
                   }}
                   startIcon={<AddCircleOutlineIcon />}
-                />
+                >
+                  Add Condition
+                </Button>
               </div>
             </div>
           </dd>

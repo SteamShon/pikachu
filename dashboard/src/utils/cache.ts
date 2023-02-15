@@ -74,7 +74,7 @@ export class MyCache<K, V = unknown> {
   async set(key: K, value: Promise<V>) {
     const _key = JSON.stringify(key);
     // catch its error and delete from cache
-    Promise.resolve(value).catch((err) => this.del(key));
+    Promise.resolve(value).catch(() => this.del(key));
 
     return this.lru.set(_key, value);
   }

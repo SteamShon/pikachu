@@ -1,4 +1,3 @@
-import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import DragIndicator from "@mui/icons-material/DragIndicator";
 import SendIcon from "@mui/icons-material/Send";
 import LoadingButton from "@mui/lab/LoadingButton";
@@ -29,11 +28,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { RuleGroupType } from "react-querybuilder";
 import QueryBuilder, { formatQuery } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
-import {
-  countPopulation,
-  fetchParquetSchema,
-  loadDuckDB,
-} from "../../utils/duckdb";
+import { countPopulation, executeQuery } from "../../utils/duckdb";
 import AsyncValueEditor from "../common/AsyncValueEditor";
 
 const muiTheme = createTheme();
@@ -69,24 +64,17 @@ function SegmentQueryBuilder({
   onPopulationChange: (population: string) => void;
 }) {
   const { enqueueSnackbar } = useSnackbar();
-
-  const [db, setDB] = useState<AsyncDuckDB | undefined>(undefined);
-
-  const [metadata, setMetadata] = useState<{ [x: string]: unknown }[]>([]);
+  const [metadata, setMetadata] = useState<Record<string, unknown>[]>([]);
   const [populationLoading, setPopulationLoading] = useState(false);
 
   const loadMetadata = useMemo(
     () => async () => {
-      // const duckDB = db ? db : await loadDuckDB(cube.cubeConfig);
-      // if (!duckDB) {
-      //   enqueueSnackbar(
-      //     "can't execute load metadata since db is not initialized.",
-      //     { variant: "error" }
-      //   );
-      //   return;
-      // }
-      // setDB(duckDB);
-      const rows = await fetchParquetSchema(cube.cubeConfig, cube.s3Path);
+      if (!cube.sql) {
+        enqueueSnackbar("cube sql is empty.", { variant: "error" });
+        return;
+      }
+      const sql = `DESCRIBE ${cube.sql}`;
+      const rows = await executeQuery(cube.cubeConfig, sql);
       enqueueSnackbar("finished loading metadata", { variant: "success" });
       setMetadata(rows);
     },
@@ -100,21 +88,10 @@ function SegmentQueryBuilder({
       debounce((q?: RuleGroupType) => {
         (async () => {
           if (!q) return;
-          // const duckDB = db;
-          // if (!duckDB) {
-          //   enqueueSnackbar(
-          //     "can't fetch population since db is not initialized.",
-          //     {
-          //       variant: "error",
-          //     }
-          //   );
-          //   return;
-          // }
-
           const sql = formatQuery(q, "sql");
           const count = await countPopulation({
             cubeConfig: cube.cubeConfig,
-            path: cube.s3Path || "",
+            sql: cube.sql || "",
             where: sql,
           });
 
@@ -128,53 +105,35 @@ function SegmentQueryBuilder({
       }, 1000),
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [db]
+    []
   );
 
   useEffect(() => {
     loadMetadata();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cube.cubeConfig, cube.s3Path]);
+  }, [cube.cubeConfig, cube.sql]);
 
   const fields = (metadata || []).map((row) => {
-    const name = row.name as string;
-    const type = row.type as string;
+    const name = row.column_name as string;
+    const type = row.column_type as string;
+    let useSearch = false;
+    switch (type) {
+      case "VARCHAR":
+        useSearch = true;
+        break;
+      default:
+        useSearch = false;
+        break;
+    }
+    return { name, label: `${name}(${type})`, columnType: type, useSearch };
+    /*
+    const type = row.column_type as string;
     if (name === "payment_type") {
       return { name, label: name, useSearch: true };
     }
     return { name: name, label: name, type };
+    */
   });
-  // const getOperators = (fieldName: string): Operator[] => {
-  //   const field = fields.find((f) => f.name === fieldName);
-
-  //   if (!field) return [];
-  //   if (field.name === "payment_type") {
-  //     return [{ name: "in", label: "in" }];
-  //   }
-
-  //   switch (field.type) {
-  //     case "BOOLEAN":
-  //       return [{ name: "=", label: "=" }];
-  //     case "INT64":
-  //     case "DOUBLE":
-  //       return [
-  //         { name: "=", label: "=" },
-  //         { name: "!=", label: "!=" },
-  //         { name: "<", label: "<" },
-  //         { name: ">", label: ">" },
-  //         { name: "<=", label: "<=" },
-  //         { name: ">=", label: ">=" },
-  //         { name: "=", label: "=" },
-  //         { name: "!=", label: "!=" },
-  //         { name: "<", label: "<" },
-  //         { name: ">", label: ">" },
-  //         { name: "<=", label: "<=" },
-  //         { name: ">=", label: ">=" },
-  //       ];
-  //     default:
-  //       return [];
-  //   }
-  // };
 
   return (
     <Grid
@@ -186,7 +145,7 @@ function SegmentQueryBuilder({
     >
       <Grid item xs={12}>
         <Card>
-          <Typography>{cube.s3Path}</Typography>
+          <Typography>{cube.sql}</Typography>
         </Card>
       </Grid>
       <Grid item xs={12}>
@@ -196,7 +155,6 @@ function SegmentQueryBuilder({
               fields={fields}
               query={query || initialQuery}
               onQueryChange={onQueryChange}
-              // getOperators={getOperators}
               controlElements={{
                 valueEditor: AsyncValueEditor,
               }}

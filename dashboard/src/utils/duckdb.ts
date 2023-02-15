@@ -99,11 +99,8 @@ export async function fetchParquetSchema(
   cubeConfig: CubeConfig,
   path: string
 ): Promise<Record<string, unknown>[]> {
-  // const _path =
-  //   "https://shell.duckdb.org/data/tpch/0_01/parquet/orders.parquet";
-  const _path = path;
   const query = `
-SELECT * FROM parquet_schema('${_path}');
+SELECT * FROM parquet_schema('${path}');
   `;
 
   return executeQuery(cubeConfig, query);
@@ -111,16 +108,13 @@ SELECT * FROM parquet_schema('${_path}');
 
 export async function fetchValues(
   cubeConfig: CubeConfig,
-  path: string,
+  sql: string,
   fieldName: string,
   value?: string
 ): Promise<unknown[]> {
-  // const _path =
-  //   "https://shell.duckdb.org/data/tpch/0_01/parquet/orders.parquet";
-  const _path = path;
   const where = value ? ` WHERE ${fieldName} like '%${value}%'` : ``;
   const query = `
-SELECT distinct ${fieldName} FROM read_parquet('${_path}') ${where};
+SELECT distinct ${fieldName} FROM (${sql}) ${where};
   `;
 
   const rows = await executeQuery(cubeConfig, query);
@@ -131,13 +125,13 @@ SELECT distinct ${fieldName} FROM read_parquet('${_path}') ${where};
 
 export async function countPopulation({
   cubeConfig,
-  path,
+  sql,
   where,
   idFieldName,
   distinct,
 }: {
   cubeConfig: CubeConfig;
-  path: string;
+  sql: string;
   where?: string;
   idFieldName?: string;
   distinct?: boolean;
@@ -147,7 +141,7 @@ export async function countPopulation({
   const selectClause = `COUNT(${distinctClause} ${columnClause}) as popoulation`;
   const whereClause = where ? `WHERE ${where}` : "";
   const query = `
-SELECT ${selectClause} FROM read_parquet('${path}') ${whereClause};
+SELECT ${selectClause} FROM (${sql}) ${whereClause};
   `;
 
   const rows = await executeQuery(cubeConfig, query);

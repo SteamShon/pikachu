@@ -1,10 +1,30 @@
-import { cubeConfigWithServiceSchema } from "../../../components/schema/cubeConfig";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { prisma } from "../../db";
 import { z } from "zod";
 import { cubeWithCubeConfigSchema } from "../../../components/schema/cube";
+import { cubeConfigWithServiceSchema } from "../../../components/schema/cubeConfig";
+import { prisma } from "../../db";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const cubeConfigRouter = createTRPCRouter({
+  getAll: protectedProcedure
+    .input(z.object({ serviceId: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const cubeConfigs = await prisma.cubeConfig.findMany({
+        where: {
+          serviceId: input.serviceId,
+        },
+        include: {
+          service: true,
+          cubes: {
+            include: {
+              segments: true,
+            },
+          },
+        },
+      });
+
+      return cubeConfigs;
+    }),
+
   addCubeConfig: protectedProcedure
     .input(cubeConfigWithServiceSchema)
     .mutation(async ({ input }) => {

@@ -4215,6 +4215,11 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
+lru-cache@^7.14.1:
+  version "7.14.1"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-7.14.1.tgz#8da8d2f5f59827edb388e63e459ac23d6d408fea"
+  integrity sha512-ysxwsnTKdAx96aTRdhDOCQfDgbHnt8SK0KY8SEjO0wHinhWOFTESbjVCMPbU1uGXg/ch4lifqx0wfjOawU2+WA==
+
 material-colors@^1.2.1:
   version "1.2.6"
   resolved "https://registry.yarnpkg.com/material-colors/-/material-colors-1.2.6.tgz#6d1958871126992ceecc72f4bcc4d8f010865f46"
@@ -6193,6 +6198,11 @@ ts-interface-checker@^0.1.9:
   version "0.1.13"
   resolved "https://registry.yarnpkg.com/ts-interface-checker/-/ts-interface-checker-0.1.13.tgz#784fd3d679722bc103b1b4b8030bcddb5db2a699"
   integrity sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==
+
+ts-promise-cache@^0.9.0:
+  version "0.9.0"
+  resolved "https://registry.yarnpkg.com/ts-promise-cache/-/ts-promise-cache-0.9.0.tgz#588040ef082b266c6441a7ed514cfdcb63694721"
+  integrity sha512-9C4df+vnjDv8Vx5lwTdsdVLd85toeNb+CfwNRUmXSNVMb4E+wpMhK8sSzECbDKK6lJDMh9jwFx1oc8k+i3yikQ==
 
 tsconfig-paths@^3.14.1:
   version "3.14.1"

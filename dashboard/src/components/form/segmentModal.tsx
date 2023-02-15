@@ -1,5 +1,4 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Cube, Segment } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { cubeRouter } from "../../server/api/routers/cube";

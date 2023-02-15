@@ -45,6 +45,7 @@
     "aws-sdk": "^2.1309.0",
     "axios": "^1.3.2",
     "json-schema-editor-visual": "^2.0.0",
+    "lru-cache": "^7.14.1",
     "moment": "^2.29.4",
     "next": "13.1.1",
     "next-auth": "^4.18.7",
@@ -60,6 +61,7 @@
     "react-table": "^7.8.0",
     "sass": "^1.57.1",
     "superjson": "1.9.1",
+    "ts-promise-cache": "^0.9.0",
     "uniforms": "^3.10.2",
     "zod": "^3.20.2"
   },

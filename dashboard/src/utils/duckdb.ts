@@ -1,8 +1,23 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import * as duckdb from "@duckdb/duckdb-wasm";
 import type { CubeConfig } from "@prisma/client";
+import LRU from "lru-cache";
+import { MyCache } from "./cache";
+import { unknown } from "zod";
 
-export async function loadDuckDB(
+const pool = new MyCache<CubeConfig, AsyncDuckDB | undefined>({
+  max: 50, // # of items
+  maxAge: 10 * 60 * 1000, // expiration in ms (10 min)
+});
+const queryCache = new MyCache<
+  { cubeConfig: CubeConfig; query: string },
+  Record<string, unknown>[]
+>({
+  max: 50, // # of items
+  maxAge: 10 * 60 * 1000, // expiration in ms (10 min)
+});
+
+async function loadDuckDBInner(
   cubeConfig: CubeConfig
 ): Promise<AsyncDuckDB | undefined> {
   const allBundles = duckdb.getJsDelivrBundles();
@@ -28,24 +43,33 @@ SET s3_access_key_id='${cubeConfig.s3AccessKeyId}';
 SET s3_secret_access_key='${cubeConfig.s3SecretAccessKey}';
   `;
 
-  await executeQuery(db, setQuery);
-
+  const conn = await db.connect();
+  await conn.query(setQuery);
   console.log("duckdb: load db instance success.");
 
   return db;
 }
+export async function loadDuckDB(
+  cubeConfig: CubeConfig
+): Promise<AsyncDuckDB | undefined> {
+  return pool.get(cubeConfig, loadDuckDBInner);
+}
 
-export async function executeQuery(
-  db: AsyncDuckDB,
-  query: string
-): Promise<Record<string, unknown>[]> {
+async function executeQueryInner({
+  cubeConfig,
+  query,
+}: {
+  cubeConfig: CubeConfig;
+  query: string;
+}): Promise<Record<string, unknown>[]> {
   console.log(`duckdb: ${query}`);
+  const db = await loadDuckDB(cubeConfig);
+  if (!db) return Promise.reject(new Error("duckdb instance is not loaded."));
+
   const conn = await db.connect();
-
   const result = await conn.query(query);
-
-  return result.batches.flatMap((rows) => {
-    const buffer: Record<string, unknown>[] = [];
+  const buffer: Record<string, unknown>[] = [];
+  (result?.batches || []).forEach((rows) => {
     for (let r = 0; r < rows.numRows; r++) {
       const row = rows.get(r);
       if (!row) return {};
@@ -63,72 +87,32 @@ export async function executeQuery(
 
       buffer.push(kvs);
     }
-    return buffer;
   });
+  return buffer;
 }
-/*
-export const ParquetMetadataColumns = [
-  // "row_group_id",
-  // "row_group_num_rows",
-  // "row_group_num_columns",
-  // "row_group_bytes",
-  // "column_id",
-  // "file_offset",
 
-  "num_values",
-  "path_in_schema",
-  "type",
-
-  "stats_min",
-  "stats_max",
-  "stats_null_count",
-  "stats_distinct_count",
-  "stats_min_value",
-  "stats_max_value",
-
-  // "compression",
-  // "encodings",
-  // "index_page_offset",
-  // "dictionary_page_offset",
-  // "data_page_offset",
-
-  // "total_compressed_size",
-  // "total_uncompressed_size",
-];
-export const ParquetMetadataColumns = [
-  "column_name",
-  "column_type",
-  "min",
-  "max",
-  "approx_unique",
-  "avg",
-  "std",
-  "q25",
-  "q50",
-  "q75",
-  "count",
-  "null_percentage",
-];
-*/
-
+export async function executeQuery(
+  cubeConfig: CubeConfig,
+  query: string
+): Promise<Record<string, unknown>[]> {
+  return queryCache.get({ cubeConfig, query }, executeQueryInner);
+}
 export async function fetchParquetSchema(
-  db: AsyncDuckDB,
+  cubeConfig: CubeConfig,
   path: string
 ): Promise<Record<string, unknown>[]> {
   // const _path =
   //   "https://shell.duckdb.org/data/tpch/0_01/parquet/orders.parquet";
-  console.log(`duckdb: fetch parquet schema: ${path}`);
-
   const _path = path;
   const query = `
 SELECT * FROM parquet_schema('${_path}');
   `;
 
-  return executeQuery(db, query);
+  return executeQuery(cubeConfig, query);
 }
 
 export async function fetchValues(
-  db: AsyncDuckDB,
+  cubeConfig: CubeConfig,
   path: string,
   fieldName: string,
   value?: string
@@ -141,20 +125,20 @@ export async function fetchValues(
 SELECT distinct ${fieldName} FROM read_parquet('${_path}') ${where};
   `;
 
-  const rows = await executeQuery(db, query);
+  const rows = await executeQuery(cubeConfig, query);
   return rows.map((row) => {
     return row[`${fieldName}`];
   });
 }
 
 export async function countPopulation({
-  db,
+  cubeConfig,
   path,
   where,
   idFieldName,
   distinct,
 }: {
-  db: AsyncDuckDB;
+  cubeConfig: CubeConfig;
   path: string;
   where?: string;
   idFieldName?: string;
@@ -168,6 +152,6 @@ export async function countPopulation({
 SELECT ${selectClause} FROM read_parquet('${path}') ${whereClause};
   `;
 
-  const rows = await executeQuery(db, query);
+  const rows = await executeQuery(cubeConfig, query);
   return String(rows[0]?.popoulation);
 }

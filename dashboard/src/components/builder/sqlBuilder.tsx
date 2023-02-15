@@ -6,7 +6,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { buildJoinSql } from "../../utils/dataset";
 import type { DatasetSchemaType } from "../schema/dataset";
 import JoinCandidateBuilder from "./joinCandidateBuilder";
-
+import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 export type TableMetadata = {
   [index: string]: {
     columns: string[];
@@ -22,7 +22,10 @@ function SqlBuilder({
   onSubmit: (input: DatasetSchemaType) => void;
 }) {
   const [tableColumns, setTableColumns] = useState<TableMetadata>({});
-  const methods = useForm<DatasetSchemaType>();
+  const methods = useForm<DatasetSchemaType>({
+    defaultValues: initialData,
+    shouldUnregister: false,
+  });
   const { control, reset, handleSubmit } = methods;
   const { fields, append, remove } = useFieldArray({
     control,
@@ -36,43 +39,50 @@ function SqlBuilder({
   }, [cubeConfig, initialData, reset]);
 
   const defaultValue = { files: [], conditions: [] };
-
+  console.log(initialData);
   return (
-    <form id="sqlBuilder">
+    <>
       <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-        <div className="border-t border-gray-200">
-          <h3>
-            Target
-            <Button
-              type="button"
-              onClick={() => append(defaultValue)}
-              startIcon={<AddCircleOutlineIcon />}
-            />
-          </h3>
-        </div>
         {fields.map((field, index) => {
           return (
             <div key={field.id} className="border-t border-gray-200">
+              <div className="flex justify-center border-t border-gray-200">
+                <h3>
+                  Table {index}{" "}
+                  <Button
+                    type="button"
+                    onClick={() => remove(index)}
+                    startIcon={<HighlightOffIcon />}
+                  />
+                </h3>
+              </div>
               <JoinCandidateBuilder
                 cubeConfig={cubeConfig}
                 index={index}
                 methods={methods}
                 tableColumns={tableColumns}
                 setTableColumns={setTableColumns}
+                initialData={initialData}
               />
-              <div className="flex justify-end bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                <Button type="button" onClick={() => remove(index)}>
-                  Remove Table
-                </Button>
-              </div>
             </div>
           );
         })}
       </div>
-      <Button onClick={handleSubmit((data) => alert(buildJoinSql(data)))}>
-        Generate SQL
-      </Button>
-    </form>
+      <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            onClick={() => append(defaultValue)}
+            startIcon={<AddCircleOutlineIcon />}
+          >
+            Add Table
+          </Button>
+        </div>
+      </div>
+      <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+        <Button onClick={handleSubmit(onSubmit)}>Generate SQL</Button>
+      </div>
+    </>
   );
 }
 export default SqlBuilder;

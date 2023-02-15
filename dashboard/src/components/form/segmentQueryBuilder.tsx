@@ -77,16 +77,16 @@ function SegmentQueryBuilder({
 
   const loadMetadata = useMemo(
     () => async () => {
-      const duckDB = db ? db : await loadDuckDB(cube.cubeConfig);
-      if (!duckDB) {
-        enqueueSnackbar(
-          "can't execute load metadata since db is not initialized.",
-          { variant: "error" }
-        );
-        return;
-      }
-      setDB(duckDB);
-      const rows = await fetchParquetSchema(duckDB, cube.s3Path);
+      // const duckDB = db ? db : await loadDuckDB(cube.cubeConfig);
+      // if (!duckDB) {
+      //   enqueueSnackbar(
+      //     "can't execute load metadata since db is not initialized.",
+      //     { variant: "error" }
+      //   );
+      //   return;
+      // }
+      // setDB(duckDB);
+      const rows = await fetchParquetSchema(cube.cubeConfig, cube.s3Path);
       enqueueSnackbar("finished loading metadata", { variant: "success" });
       setMetadata(rows);
     },
@@ -100,21 +100,21 @@ function SegmentQueryBuilder({
       debounce((q?: RuleGroupType) => {
         (async () => {
           if (!q) return;
-          const duckDB = db;
-          if (!duckDB) {
-            enqueueSnackbar(
-              "can't fetch population since db is not initialized.",
-              {
-                variant: "error",
-              }
-            );
-            return;
-          }
+          // const duckDB = db;
+          // if (!duckDB) {
+          //   enqueueSnackbar(
+          //     "can't fetch population since db is not initialized.",
+          //     {
+          //       variant: "error",
+          //     }
+          //   );
+          //   return;
+          // }
 
           const sql = formatQuery(q, "sql");
           const count = await countPopulation({
-            db: duckDB,
-            path: cube.s3Path,
+            cubeConfig: cube.cubeConfig,
+            path: cube.s3Path || "",
             where: sql,
           });
 

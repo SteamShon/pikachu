@@ -4,7 +4,8 @@ import { Button } from "@mui/material";
 import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useFieldArray } from "react-hook-form";
-import type { DatasetSchemaType } from "../schema/dataset";
+import { string } from "zod";
+import type { ConditionSchemaType, DatasetSchemaType } from "../schema/dataset";
 import type { TableMetadata } from "./sqlBuilder";
 function JoinConditionBuilder({
   tableColumns,
@@ -19,109 +20,110 @@ function JoinConditionBuilder({
   methods: UseFormReturn<DatasetSchemaType, unknown>;
   initialData?: DatasetSchemaType;
 }) {
-  const [selectedTableIndex, setSelectedTableIndex] = useState<string>("-1");
+  const [condition, setCondition] = useState<ConditionSchemaType | undefined>(
+    undefined
+  );
+  const [sourceTables, setSourceTables] = useState<string[]>([]);
+  const [sourceColumns, setSourceColumns] = useState<string[]>([]);
+  const [targetColumns, setTargetColumns] = useState<string[]>([]);
+
   const { setValue } = methods;
-  {
-    /* <select
-        onChange={(e) =>
-          setSelectedTable(e.target.value);
-        }
-      >
-        <option value="">Please select</option>
-        {Object.keys(tableColumns).map((index) => {
-          return <option value={index}>{index}</option>
-        })}
-      </select>
-      <select
-        onChange={(e) =>
-          // setValue(
-          //   `tables.${targetIndex}.conditions.${conditionIndex}.source`,
-          //   e.target.value
-          // )
-        }
-      >
-        <option value="">Please select</option>
-        {sourceOptions.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <select
-        onChange={(e) =>
-          // setValue(
-          //   `targets.${targetIndex}.conditions.${conditionIndex}.target`,
-          //   e.target.value
-          // )
-        }
-      >
-        <option value="">Please select</option>
-        {targetOptions.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <Button
-        type="button"
-        onClick={() => remove(conditionIndex)}
-        startIcon={<DeleteIcon />}
-      ></Button> */
-  }
+
+  useEffect(() => {
+    const condition =
+      initialData?.tables?.[targetIndex]?.conditions?.[conditionIndex];
+
+    console.log("useEffect", condition);
+    setCondition(condition);
+
+    setSourceTables(Object.keys(tableColumns));
+    setSourceColumns(
+      tableColumns[`${condition?.sourceTable || "-1"}`]?.columns || []
+    );
+    setTargetColumns(tableColumns[`${targetIndex}`]?.columns || []);
+  }, [conditionIndex, initialData?.tables, tableColumns, targetIndex]);
+
   return (
     <>
-      <select
-        onChange={(e) => {
-          setSelectedTableIndex(e.target.value);
-          setValue(
-            `tables.${targetIndex}.conditions.${conditionIndex}.sourceTable`,
-            e.target.value
-          );
-        }}
-      >
-        <option value="">Please select</option>
-        {Object.keys(tableColumns).map((index) => {
-          return (
-            <option key={index} value={index}>
-              {index}
-            </option>
-          );
-        })}
-      </select>
-      <select
-        onChange={(e) => {
-          setValue(
-            `tables.${targetIndex}.conditions.${conditionIndex}.source`,
-            e.target.value
-          );
-        }}
-      >
-        <option value="">Please select</option>
-        {tableColumns[selectedTableIndex]?.columns.map((column) => {
-          return (
-            <option key={column} value={column}>
-              {column}
-            </option>
-          );
-        })}
-      </select>
-      <select
-        onChange={(e) => {
-          setValue(
-            `tables.${targetIndex}.conditions.${conditionIndex}.target`,
-            e.target.value
-          );
-        }}
-      >
-        <option value="">Please select</option>
-        {tableColumns[targetIndex]?.columns.map((column) => {
-          return (
-            <option key={column} value={column}>
-              {column}
-            </option>
-          );
-        })}
-      </select>
+      <div>
+        <select
+          value={condition?.sourceTable}
+          onChange={(e) => {
+            setCondition((prev) => {
+              if (!prev) return prev;
+
+              prev.sourceTable = e.target.value;
+              return prev;
+            });
+            setValue(
+              `tables.${targetIndex}.conditions.${conditionIndex}.sourceTable`,
+              e.target.value
+            );
+          }}
+        >
+          <option value="">Please select</option>
+
+          {sourceTables.map((index) => {
+            return (
+              <option key={index} value={index}>
+                Table {index}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+      <div>
+        <select
+          value={condition?.source}
+          onChange={(e) => {
+            setCondition((prev) => {
+              if (!prev) return prev;
+
+              prev.source = e.target.value;
+              return prev;
+            });
+            setValue(
+              `tables.${targetIndex}.conditions.${conditionIndex}.source`,
+              e.target.value
+            );
+          }}
+        >
+          <option value="">Please select</option>
+          {sourceColumns.map((column) => {
+            return (
+              <option key={column} value={column}>
+                {column}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+      <div>
+        <select
+          value={condition?.target}
+          onChange={(e) => {
+            setCondition((prev) => {
+              if (!prev) return prev;
+
+              prev.target = e.target.value;
+              return prev;
+            });
+            setValue(
+              `tables.${targetIndex}.conditions.${conditionIndex}.target`,
+              e.target.value
+            );
+          }}
+        >
+          <option value="">Please select</option>
+          {targetColumns.map((column) => {
+            return (
+              <option key={column} value={column}>
+                {column}
+              </option>
+            );
+          })}
+        </select>
+      </div>
     </>
   );
 }

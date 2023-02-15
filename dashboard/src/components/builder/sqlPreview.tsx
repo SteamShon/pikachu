@@ -17,7 +17,8 @@ function SqlPreview({
 
   const runQuery = async () => {
     setLoading(true);
-    const result = await executeQuery(cubeConfig, sql);
+    const withLimit = `${sql} LIMIT 100`;
+    const result = await executeQuery(cubeConfig, withLimit);
     setRows(result);
     setLoading(false);
   };

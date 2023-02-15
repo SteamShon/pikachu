@@ -68,19 +68,19 @@ function SegmentQueryBuilder({
   const [populationLoading, setPopulationLoading] = useState(false);
 
   const loadMetadata = useMemo(
-    () => async () => {
-      if (!cube.sql) {
+    () => async (inputSql: string) => {
+      if (!inputSql) {
         enqueueSnackbar("cube sql is empty.", { variant: "error" });
         return;
       }
-      const sql = `DESCRIBE ${cube.sql}`;
+      const sql = `DESCRIBE ${inputSql}`;
       const rows = await executeQuery(cube.cubeConfig, sql);
       enqueueSnackbar("finished loading metadata", { variant: "success" });
       setMetadata(rows);
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [cube.cubeConfig]
   );
 
   const fetchPopulation = useMemo(
@@ -109,7 +109,9 @@ function SegmentQueryBuilder({
   );
 
   useEffect(() => {
-    loadMetadata();
+    if (cube.sql) {
+      loadMetadata(cube.sql);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cube.cubeConfig, cube.sql]);
 

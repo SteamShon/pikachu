@@ -121,6 +121,8 @@ model PlacementGroup {
     //createdBy   User        @relation("createdPlacementGroups", fields: [creatorId], references: [id], onDelete: Cascade)
     //creatorId   String
     placements  Placement[]
+    cube        Cube?       @relation(fields: [cubeId], references: [id], onDelete: Cascade)
+    cubeId      String?
     status      String      @default("CREATED")
     createdAt   DateTime    @default(now())
     updatedAt   DateTime    @updatedAt
@@ -299,17 +301,18 @@ model CubeConfig {
 }
 
 model Cube {
-    id           String     @id @default(cuid())
-    name         String
-    description  String?
-    cubeConfig   CubeConfig @relation(fields: [cubeConfigId], references: [id], onDelete: Cascade)
-    cubeConfigId String
+    id              String           @id @default(cuid())
+    name            String
+    description     String?
+    cubeConfig      CubeConfig       @relation(fields: [cubeConfigId], references: [id], onDelete: Cascade)
+    cubeConfigId    String
     // s3Path       String?
-    sql          String?
-    status       String     @default("CREATED")
-    segments     Segment[]
-    createdAt    DateTime   @default(now())
-    updatedAt    DateTime   @updatedAt
+    sql             String?
+    status          String           @default("CREATED")
+    segments        Segment[]
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+    placementGroups PlacementGroup[]
 
     @@unique([cubeConfigId, name])
 }

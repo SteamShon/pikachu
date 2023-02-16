@@ -5,6 +5,7 @@ export const placementGroupSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional().nullable().default(null),
   status: z.string().min(1),
+  cubeId: z.string().optional().nullable(),
   // placements: z.array(placementSchema),
 });
 

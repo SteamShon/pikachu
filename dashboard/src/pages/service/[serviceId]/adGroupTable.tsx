@@ -48,22 +48,43 @@ function AdGroupTable({
     },
   });
 
-  const allCampaigns = serviceTree
-    ? Object.values(serviceTree.placementGroups).flatMap((placementGroup) => {
-        const { placements, ...placementGroupData } = placementGroup;
-        return Object.values(placements).flatMap((placement) => {
-          const { campaigns, ...placementData } = placement;
-          return Object.values(campaigns).map((campaign) => {
-            const { adGroups, ...campaignData } = campaign;
-            return {
-              ...campaignData,
-              placement: placementData,
-              placementGroup: placementGroupData,
-              adGroups,
-            };
+  const allCubes = serviceTree
+    ? Object.values(serviceTree.cubeConfigs).flatMap(
+        ({ cubes, ...cubeConfig }) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          return Object.values(cubes).map(({ segments, ...cube }) => {
+            return { ...cube, cubeConfig };
           });
-        });
-      })
+        }
+      )
+    : [];
+
+  const allCampaigns = serviceTree
+    ? Object.values(serviceTree.placementGroups).flatMap(
+        ({ placements, ...placementGroup }) => {
+          return Object.values(placements).flatMap(
+            ({ campaigns, ...placement }) => {
+              return Object.values(campaigns).map(
+                ({ adGroups, ...campaign }) => {
+                  return {
+                    ...campaign,
+                    adGroups,
+                    placement: {
+                      ...placement,
+                      placementGroup: {
+                        ...placementGroup,
+                        cube: allCubes.find(
+                          (cube) => cube.id === placementGroup.cubeId
+                        ),
+                      },
+                    },
+                  };
+                }
+              );
+            }
+          );
+        }
+      )
     : [];
 
   const campaigns =
@@ -73,22 +94,20 @@ function AdGroupTable({
           return selectedIds.includes(campaign.id);
         });
 
-  const rows = campaigns.flatMap((campaign) => {
-    const { adGroups, ...campaignData } = campaign;
+  const rows = campaigns.flatMap(({ adGroups, placement, ...campaign }) => {
     return Object.values(adGroups).map((adGroup) => {
-      return { ...adGroup, campaign: campaignData };
+      return { ...adGroup, campaign: { ...campaign, placement } };
     });
   });
 
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", flex: 1 },
-
     {
       field: "placementGroup.name",
       headerName: "PlacementGroup",
       flex: 1,
       valueGetter: (params) => {
-        return params.row.campaign.placementGroup.name;
+        return params.row.campaign.placement.placementGroup.name;
       },
     },
     {

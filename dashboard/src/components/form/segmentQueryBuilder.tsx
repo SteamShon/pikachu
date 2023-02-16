@@ -3,7 +3,6 @@ import SendIcon from "@mui/icons-material/Send";
 import LoadingButton from "@mui/lab/LoadingButton";
 import {
   Button,
-  Card,
   Checkbox,
   createTheme,
   debounce,
@@ -19,7 +18,6 @@ import {
   Switch,
   TextareaAutosize,
   ThemeProvider,
-  Typography,
 } from "@mui/material";
 import type { Cube, CubeConfig } from "@prisma/client";
 import { QueryBuilderMaterial } from "@react-querybuilder/material";
@@ -138,56 +136,61 @@ function SegmentQueryBuilder({
   });
 
   return (
-    <Grid
-      container
-      direction="row"
-      spacing={3}
-      justifyContent="flex-start"
-      // alignItems="stretch"
-    >
-      <Grid item xs={12}>
+    <>
+      {fields.length > 0 && query ? (
+        <Grid
+          container
+          direction="row"
+          spacing={3}
+          justifyContent="flex-start"
+          // alignItems="stretch"
+        >
+          {/* <Grid item xs={12}>
         <Card>
           <Typography>{cube.sql}</Typography>
         </Card>
-      </Grid>
-      <Grid item xs={12}>
-        <ThemeProvider theme={muiTheme}>
-          <QueryBuilderMaterial muiComponents={muiComponents}>
-            <QueryBuilder
-              fields={fields}
-              query={query || initialQuery}
-              onQueryChange={onQueryChange}
-              controlElements={{
-                valueEditor: AsyncValueEditor,
+      </Grid> */}
+          <Grid item xs={12}>
+            <ThemeProvider theme={muiTheme}>
+              <QueryBuilderMaterial muiComponents={muiComponents}>
+                <QueryBuilder
+                  key={cube.id}
+                  fields={fields}
+                  query={query}
+                  onQueryChange={onQueryChange}
+                  controlElements={{
+                    valueEditor: AsyncValueEditor,
+                  }}
+                  context={{ fields, cube }}
+                  controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
+                />
+              </QueryBuilderMaterial>
+            </ThemeProvider>
+          </Grid>
+          <Grid item xs={8}></Grid>
+          <Grid item xs={3}>
+            <LoadingButton
+              type="button"
+              variant="contained"
+              loadingPosition="end"
+              endIcon={<SendIcon />}
+              onClick={() => {
+                setPopulationLoading(true);
+                fetchPopulation(query);
               }}
-              context={{ fields, cube }}
-              controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
-            />
-          </QueryBuilderMaterial>
-        </ThemeProvider>
-      </Grid>
-      <Grid item xs={8}></Grid>
-      <Grid item xs={3}>
-        <LoadingButton
-          type="button"
-          variant="contained"
-          loadingPosition="end"
-          endIcon={<SendIcon />}
-          onClick={() => {
-            setPopulationLoading(true);
-            fetchPopulation(query);
-          }}
-          loading={populationLoading}
-          className="inline-flex w-full justify-end rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-        >
-          <span>Calculate Population</span>
-        </LoadingButton>
-      </Grid>
-      <Grid item xs={1}></Grid>
-      <Grid item xs={12}>
-        {query ? <pre>SQL: {formatQuery(query, "sql")}</pre> : null}
-      </Grid>
-    </Grid>
+              loading={populationLoading}
+              className="inline-flex w-full justify-end rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              <span>Calculate Population</span>
+            </LoadingButton>
+          </Grid>
+          <Grid item xs={1}></Grid>
+          <Grid item xs={12}>
+            {query ? <pre>SQL: {formatQuery(query, "sql")}</pre> : null}
+          </Grid>
+        </Grid>
+      ) : null}
+    </>
   );
 }
 

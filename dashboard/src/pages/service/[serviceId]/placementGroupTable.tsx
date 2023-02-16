@@ -18,7 +18,7 @@ function PlacementGroupTable({
   serviceTree,
   setServiceTree,
 }: {
-  service: Service;
+  service: Parameters<typeof PlacementGroupForm>[0]["services"][0];
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>

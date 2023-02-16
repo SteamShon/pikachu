@@ -263,3 +263,28 @@ export function buildCubeConfigsTree(
     })
   ) as Record<string, ReturnType<typeof buildCubeConfigTree>>;
 }
+export type ServiceCubeConfigsCubesType = Service & {
+  cubeConfigs: (CubeConfig & {
+    cubes: (Cube & { segments: Segment[] })[];
+  })[];
+};
+export function buildCubesWithPath(
+  services: ServiceCubeConfigsCubesType[]
+): (Cube & { cubeConfig: CubeConfig & { service: Service } })[] {
+  const cubes = services.flatMap(({ cubeConfigs, ...service }) => {
+    return cubeConfigs.flatMap(({ cubes, ...cubeConfig }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      return cubes.map(({ segments, ...cube }) => {
+        return {
+          ...cube,
+          cubeConfig: {
+            ...cubeConfig,
+            service,
+          },
+        };
+      });
+    });
+  });
+
+  return cubes;
+}

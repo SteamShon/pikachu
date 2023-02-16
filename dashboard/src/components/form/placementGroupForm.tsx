@@ -1,7 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { PlacementGroup, Service } from "@prisma/client";
+import type { PlacementGroup } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import type { ServiceCubeConfigsCubesType } from "../../utils/tree";
+import { buildCubesWithPath } from "../../utils/tree";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type {
   PlacementGroupSchemaType,
@@ -14,10 +16,11 @@ function PlacementGroupForm({
   initialData,
   onSubmit,
 }: {
-  services: Service[];
+  services: ServiceCubeConfigsCubesType[];
   initialData?: PlacementGroup;
   onSubmit: (input: PlacementGroupWithServiceSchemaType) => void;
 }) {
+  const allCubes = buildCubesWithPath(services);
   const methods = useForm<PlacementGroupSchemaType & { serviceId: string }>({
     resolver: zodResolver(placementGroupWithServiceSchema),
   });
@@ -105,6 +108,27 @@ function PlacementGroupForm({
                     <option value="CREATED">CREATED</option>
                     <option value="PUBLISHED">PUBLISHED</option>
                     <option value="ARCHIVED">ARCHIVED</option>
+                  </select>
+                  {errors.status && (
+                    <p role="alert">{errors.status?.message}</p>
+                  )}
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Cube</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <select
+                    {...register("cubeId")}
+                    defaultValue={initialData?.cubeId || undefined}
+                  >
+                    <option value="">Please choose</option>
+                    {allCubes.map((cube) => {
+                      return (
+                        <option key={cube.id} value={cube.id}>
+                          {cube.name}
+                        </option>
+                      );
+                    })}
                   </select>
                   {errors.status && (
                     <p role="alert">{errors.status?.message}</p>

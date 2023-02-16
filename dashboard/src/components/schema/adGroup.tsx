@@ -6,6 +6,7 @@ export const adGroupSchema = z.object({
   description: z.string().optional().nullable().default(null),
   status: z.string().min(1),
   filter: z.string().optional().nullable(),
+  population: z.string().optional().nullable(),
   // ownerId: z.string(),
   // creatorId: z.string(),
 });

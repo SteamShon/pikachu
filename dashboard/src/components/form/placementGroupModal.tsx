@@ -15,7 +15,7 @@ function PlacementGroupModal({
   setModalOpen,
   setServiceTree,
 }: {
-  services: Service[];
+  services: Parameters<typeof PlacementGroupForm>[0]["services"];
   modalOpen: boolean;
   initialData?: Parameters<typeof PlacementGroupForm>[0]["initialData"];
   setModalOpen: Dispatch<SetStateAction<boolean>>;

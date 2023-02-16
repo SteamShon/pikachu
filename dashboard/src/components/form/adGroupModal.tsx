@@ -15,7 +15,7 @@ function AdGroupModal({
   setModalOpen,
   setServiceTree,
 }: {
-  campaigns: ReturnType<typeof buildCampaignTree>[];
+  campaigns: Parameters<typeof AdGroupForm>[0]["campaigns"];
   initialData?: Parameters<typeof AdGroupForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;

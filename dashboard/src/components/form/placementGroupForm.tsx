@@ -1,48 +1,26 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type {
-  Cube,
-  CubeConfig,
-  PlacementGroup,
-  Segment,
-  Service,
-} from "@prisma/client";
+import type { PlacementGroup } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import type { ServiceCubeConfigsCubesType } from "../../utils/tree";
+import { buildCubesWithPath } from "../../utils/tree";
 import CustomLoadingButton from "../common/CustomLoadingButton";
-import { cubeConfigSchema } from "../schema/cubeConfig";
 import type {
   PlacementGroupSchemaType,
   PlacementGroupWithServiceSchemaType,
 } from "../schema/placementGroup";
 import { placementGroupWithServiceSchema } from "../schema/placementGroup";
-import { segmentSchema } from "../schema/segment";
 
 function PlacementGroupForm({
   services,
   initialData,
   onSubmit,
 }: {
-  services: (Service & {
-    cubeConfigs: (CubeConfig & {
-      cubes: (Cube & { segments: Segment[] })[];
-    })[];
-  })[];
+  services: ServiceCubeConfigsCubesType[];
   initialData?: PlacementGroup;
   onSubmit: (input: PlacementGroupWithServiceSchemaType) => void;
 }) {
-  const allCubes = services.flatMap(({ cubeConfigs, ...service }) => {
-    return cubeConfigs.flatMap(({ cubes, ...cubeConfig }) => {
-      return cubes.map(({ segments, ...cube }) => {
-        return {
-          ...cube,
-          cubeConfig: {
-            ...cubeConfig,
-            service,
-          },
-        };
-      });
-    });
-  });
+  const allCubes = buildCubesWithPath(services);
   const methods = useForm<PlacementGroupSchemaType & { serviceId: string }>({
     resolver: zodResolver(placementGroupWithServiceSchema),
   });

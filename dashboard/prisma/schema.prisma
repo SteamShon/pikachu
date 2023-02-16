@@ -210,6 +210,7 @@ model AdGroup {
     campaign    Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
     campaignId  String
     filter      String?
+    population  String?
     creatives   Creative[]
     // createdBy   User       @relation("createdAdGroups", fields: [creatorId], references: [id], onDelete: Cascade)
     // creatorId   String

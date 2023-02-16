@@ -1,37 +1,46 @@
 // import { api } from "../../utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { AdGroup, Campaign } from "@prisma/client";
-import { QueryBuilderDnD } from "@react-querybuilder/dnd";
+import type {
+  AdGroup,
+  Campaign,
+  Cube,
+  CubeConfig,
+  Placement,
+  PlacementGroup,
+} from "@prisma/client";
 import { useEffect, useState } from "react";
-import * as ReactDnD from "react-dnd";
-import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
 import { FormProvider, useForm } from "react-hook-form";
-import type { Field, RuleGroupType } from "react-querybuilder";
-import { formatQuery, parseJsonLogic, QueryBuilder } from "react-querybuilder";
+import type { RuleGroupType } from "react-querybuilder";
+import { formatQuery, parseJsonLogic } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
 import type { buildCampaignTree } from "../../utils/tree";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { AdGroupWithCampaignSchemaType } from "../schema/adGroup";
 import { adGroupWithCampaignSchema } from "../schema/adGroup";
+import SegmentQueryBuilder from "./segmentQueryBuilder";
 
 function AdGroupForm({
   campaigns,
   onSubmit,
   initialData,
 }: {
-  campaigns: ReturnType<typeof buildCampaignTree>[];
+  campaigns: (ReturnType<typeof buildCampaignTree> & {
+    placement: Placement & {
+      placementGroup: PlacementGroup & {
+        cube?: Cube & { cubeConfig: CubeConfig };
+      };
+    };
+  })[];
   onSubmit: (input: AdGroupWithCampaignSchemaType) => void;
   initialData?: AdGroup & { campaign: Campaign };
 }) {
-  const initialQuery: RuleGroupType = { combinator: "and", rules: [] };
-  const [query, setQuery] = useState(
-    initialData?.filter ? parseJsonLogic(initialData?.filter) : initialQuery
+  const [cube, setCube] = useState<
+    (Cube & { cubeConfig: CubeConfig }) | undefined
+  >(undefined);
+  const [query, setQuery] = useState<RuleGroupType | undefined>(
+    initialData?.filter ? parseJsonLogic(initialData?.filter) : undefined
   );
-  //TODO: seperate into Segment component.
-  const fields: Field[] = [
-    { name: "firstName", label: "First Name" },
-    { name: "lastName", label: "Last Name" },
-  ];
+  const [, setPopulation] = useState<string | undefined>(undefined);
 
   const methods = useForm<AdGroupWithCampaignSchemaType>({
     resolver: zodResolver(adGroupWithCampaignSchema),
@@ -50,7 +59,19 @@ function AdGroupForm({
       ...(initialData ? initialData : {}),
       campaignId: initialData?.campaign.id,
     });
-  }, [reset, initialData]);
+
+    if (initialData?.campaignId) {
+      const campaign = campaigns.find(
+        (campaign) => campaign.id === initialData?.campaignId
+      );
+
+      setCube(campaign?.placement.placementGroup.cube);
+    }
+
+    if (initialData?.filter) {
+      setQuery(parseJsonLogic(initialData?.filter));
+    }
+  }, [reset, initialData, campaigns]);
 
   return (
     <FormProvider {...methods}>
@@ -138,28 +159,42 @@ function AdGroupForm({
                     rows={3}
                     {...register("filter")}
                   />
+                  {cube ? (
+                    <SegmentQueryBuilder
+                      cube={cube}
+                      query={query}
+                      onQueryChange={(newQuery) => {
+                        setQuery(newQuery);
+                        setValue(
+                          "filter",
+                          JSON.stringify(formatQuery(newQuery, "jsonlogic"))
+                        );
+                      }}
+                      onPopulationChange={(newPopulation) => {
+                        setPopulation(newPopulation);
+                        setValue("population", newPopulation);
+                      }}
+                    />
+                  ) : null}
                   {errors.filter && (
                     <p role="alert">{errors.filter?.message}</p>
                   )}
-                  <QueryBuilderDnD
-                    dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}
-                  >
-                    <QueryBuilder
-                      fields={fields}
-                      query={query}
-                      onQueryChange={(q) => {
-                        setQuery(q);
-                        setValue(
-                          "filter",
-                          JSON.stringify(formatQuery(q, "jsonlogic"))
-                        );
-                      }}
-                      showNotToggle={true}
-                      showCombinatorsBetweenRules={true}
-                      showCloneButtons={true}
-                    />
-                  </QueryBuilderDnD>
-                  <pre>{JSON.stringify(formatQuery(query, "jsonlogic"))}</pre>
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">
+                  Population
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <input
+                    className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+                    defaultValue={initialData?.population || undefined}
+                    {...register("population")}
+                    disabled
+                  />
+                  {errors.population && (
+                    <p role="alert">{errors.population?.message}</p>
+                  )}
                 </dd>
               </div>
             </dl>

@@ -1,6 +1,12 @@
 mod db;
 
-use actix_web::{get, middleware::Logger, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    get,
+    middleware::Logger,
+    post,
+    web::{self, service},
+    App, HttpResponse, HttpServer, Responder,
+};
 use db::{service, PrismaClient};
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
@@ -15,9 +21,27 @@ use std::env;
 
 #[get("/")]
 async fn hello(client: web::Data<PrismaClient>) -> impl Responder {
-    let users = client.user().find_many(vec![]).exec().await.unwrap();
+    let services = client
+        .service()
+        .find_first(vec![])
+        .include(db::service::include!(
+            {
+                placement_groups: include {
+                    placements: include {
+                        campaigns: include {
+                            ad_groups: include {
+                                creatives
+                            }
+                        }
+                    }
+                }
+            }
+        ))
+        .exec()
+        .await
+        .unwrap();
 
-    HttpResponse::Ok().json(users)
+    HttpResponse::Ok().json(services)
 }
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

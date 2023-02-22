@@ -6,18 +6,26 @@ use actix_web::{
     App, HttpResponse, HttpServer, Responder,
 };
 use dotenv::dotenv;
-use filter::db::ad_group;
-use filter::filter::filter_ad_meta;
 use filter::filter::Context;
 use filter::filter::LocalCachedAdMeta;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct Request {
+    service_id: String,
+    placement_group_id: String,
+    user_info: serde_json::Value,
+}
 
 #[post("/")]
-async fn hello(data: web::Data<LocalCachedAdMeta>, body: web::Bytes) -> impl Responder {
-    let user_info: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    let mut ad_groups = Vec::<&ad_group::Data>::new();
-    filter_ad_meta(data.as_ref(), user_info, &mut ad_groups);
+async fn hello(data: web::Data<LocalCachedAdMeta>, request: web::Json<Request>) -> impl Responder {
+    let filtered = data.filter_ad_meta(
+        &request.service_id,
+        &request.placement_group_id,
+        &request.user_info,
+    );
 
-    HttpResponse::Ok().json(ad_groups)
+    HttpResponse::Ok().json(filtered)
 }
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -27,11 +35,15 @@ async fn main() -> std::io::Result<()> {
     let client = filter::db::new_client_with_url(&database_url)
         .await
         .unwrap();
+    let ad_meta = LocalCachedAdMeta::new();
+
     let context = Context {
         client: Arc::new(client),
     };
-    let ad_meta = web::Data::new(LocalCachedAdMeta::load(context).await);
-    HttpServer::new(move || App::new().app_data(ad_meta.clone()).service(hello))
+    ad_meta.load(context).await;
+
+    let data = web::Data::new(ad_meta);
+    HttpServer::new(move || App::new().app_data(data.clone()).service(hello))
         .bind(("127.0.0.1", 8080))?
         .run()
         .await

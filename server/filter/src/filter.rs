@@ -1,6 +1,6 @@
 use crate::db::{
-    ad_group, campaign, content, creative, cube, cube_config, placement, placement_group, service,
-    PrismaClient,
+    ad_group, campaign, content, content_type, creative, cube_config, placement, placement_group,
+    service, PrismaClient,
 };
 use fasthash::*;
 use jsonlogic_rs;
@@ -8,11 +8,10 @@ use jsonlogic_rs;
 use lru::LruCache;
 use serde::Serialize;
 use serde_json::{from_str, json, Value as JValue};
-use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::num::NonZeroUsize;
-use std::rc::Rc;
 use std::sync::Arc;
+use std::sync::Mutex;
 pub enum Error {
     InvalidFilterError(serde_json::Error),
     JsonLogicError,
@@ -22,21 +21,23 @@ pub struct Context {
 }
 
 #[derive(Debug, Serialize)]
-pub struct AdResponse {
-    pub placement_id: String,
-    pub campaign_id: String,
+pub struct Campaign {
+    pub info: campaign::Data,
     pub ad_groups: Vec<ad_group::Data>,
 }
-pub struct LocalCachedAdMeta {
-    pub cache: RefCell<LruCache<u64, RefCell<Vec<placement::Data>>>>,
+#[derive(Debug, Serialize)]
+pub struct Placement {
+    pub info: placement::Data,
+    pub content_type: content_type::Data,
+    pub campaigns: Vec<Campaign>,
 }
-unsafe impl Send for LocalCachedAdMeta {}
-unsafe impl Sync for LocalCachedAdMeta {}
-
+pub struct LocalCachedAdMeta {
+    pub cache: Mutex<LruCache<u64, Mutex<Vec<placement::Data>>>>,
+}
 impl LocalCachedAdMeta {
     pub fn new() -> LocalCachedAdMeta {
         LocalCachedAdMeta {
-            cache: RefCell::new(LruCache::new(NonZeroUsize::new(1000).unwrap())),
+            cache: Mutex::new(LruCache::new(NonZeroUsize::new(1000).unwrap())),
         }
     }
     pub fn to_cache_key(service_id: &str, placement_group_id: &str) -> u64 {
@@ -50,30 +51,31 @@ impl LocalCachedAdMeta {
             .client
             .service()
             .find_many(vec![])
-            .with(service::placement_groups::fetch(vec![]).with(
-                placement_group::placements::fetch(vec![]).with(
-                    placement::campaigns::fetch(vec![]).with(
-                        campaign::ad_groups::fetch(vec![]).with(
-                            ad_group::creatives::fetch(vec![]).with(
-                                creative::content::fetch().with(content::content_type::fetch()),
+            .with(
+                service::placement_groups::fetch(vec![]).with(
+                    placement_group::placements::fetch(vec![])
+                        .with(placement::content_type::fetch())
+                        .with(placement::campaigns::fetch(vec![]).with(
+                            campaign::ad_groups::fetch(vec![]).with(
+                                ad_group::creatives::fetch(vec![]).with(creative::content::fetch()),
                             ),
-                        ),
-                    ),
+                        )),
                 ),
-            ))
+            )
             .with(service::cube_configs::fetch(vec![]).with(cube_config::cubes::fetch(vec![])))
             .exec()
             .await
             .unwrap();
 
-        let mut cache = (&self.cache).borrow_mut();
+        let mut cache = (&self.cache).lock().unwrap();
         for service in &services {
             for placement_group in service.placement_groups().unwrap() {
                 let key = LocalCachedAdMeta::to_cache_key(&service.id, &placement_group.id);
                 let placements = placement_group.placements().unwrap();
                 let mut vec = cache
-                    .get_or_insert(key, || RefCell::new(Vec::new()))
-                    .borrow_mut();
+                    .get_or_insert(key, || Mutex::new(Vec::new()))
+                    .lock()
+                    .unwrap();
                 vec.clear();
                 for placement in placements {
                     vec.push(placement.clone());
@@ -104,32 +106,36 @@ impl LocalCachedAdMeta {
         service_id: &str,
         placement_group_id: &str,
         user_info: &JValue,
-    ) -> Vec<AdResponse> {
-        let mut ad_responses = Vec::<AdResponse>::new();
-        let mut cache = (&self.cache).borrow_mut();
+    ) -> Vec<Placement> {
+        let mut ad_responses = Vec::<Placement>::new();
+        let mut cache = (&self.cache).lock().unwrap();
         let key = LocalCachedAdMeta::to_cache_key(service_id, placement_group_id);
         let placements_opt = cache.get(&key);
         if let None = placements_opt {
             return ad_responses;
         }
-        let placements = placements_opt.unwrap().borrow();
+        let placements = placements_opt.unwrap().lock().unwrap();
         for placement in placements.iter() {
+            let mut campaigns = Vec::<Campaign>::new();
             for campaign in placement.campaigns().unwrap() {
-                let mut filtered = Vec::<ad_group::Data>::new();
-                let ad_groups = campaign.ad_groups().unwrap();
-                for ad_group in ad_groups {
+                let mut ad_groups = Vec::<ad_group::Data>::new();
+                for ad_group in campaign.ad_groups().unwrap() {
                     if let Ok(matched) = LocalCachedAdMeta::filter_ad_group(ad_group, user_info) {
                         if matched {
-                            filtered.push(ad_group.clone())
+                            ad_groups.push(ad_group.clone())
                         }
                     }
                 }
-                ad_responses.push(AdResponse {
-                    placement_id: placement.id.clone(),
-                    campaign_id: campaign.id.clone(),
-                    ad_groups: filtered,
-                });
+                campaigns.push(Campaign {
+                    info: campaign.clone(),
+                    ad_groups,
+                })
             }
+            ad_responses.push(Placement {
+                info: placement.clone(),
+                content_type: placement.content_type().unwrap().clone(),
+                campaigns,
+            })
         }
         ad_responses
     }

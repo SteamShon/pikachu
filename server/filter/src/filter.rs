@@ -9,13 +9,13 @@ pub struct FilterResult {
     filtered: bool,
 }
 
-pub type UserInfo = HashMap<String, Vec<String>>;
+pub type UserInfo = HashMap<String, HashSet<String>>;
 
-enum TargetFilter {
-    In(InFilter),
-    And(Vec<TargetFilter>),
-    Or(Vec<TargetFilter>),
-}
+//enum TargetFilter {
+//    In(InFilter),
+//    And(Vec<TargetFilter>),
+//    Or(Vec<TargetFilter>),
+//}
 
 pub trait Filter: DynClone + Debug {
     fn apply(&self, user_info: &UserInfo) -> FilterResult;
@@ -86,6 +86,27 @@ impl Filter for AndFilter {
     }
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
+struct SelectorFilter {
+    dimension: String,
+    valid_value: String,
+}
+impl Filter for SelectorFilter {
+    fn apply(&self, user_info: &UserInfo) -> FilterResult {
+        match user_info.get(&self.dimension) {
+            None => FilterResult { filtered: false },
+            Some(values) => match values.iter().find(|v| self.valid_value == **v) {
+                None => FilterResult { filtered: false },
+                Some(_) => FilterResult { filtered: true },
+            },
+        }
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct InFilter {
     dimension: String,
     valid_values: HashSet<String>,
@@ -94,10 +115,12 @@ impl Filter for InFilter {
     fn apply(&self, user_info: &UserInfo) -> FilterResult {
         match user_info.get(&self.dimension) {
             None => FilterResult { filtered: false },
-            Some(values) => match values.iter().find(|v| self.valid_values.contains(*v)) {
-                None => FilterResult { filtered: false },
-                Some(_) => FilterResult { filtered: true },
-            },
+            Some(values) => {
+                let intersection: HashSet<_> = self.valid_values.intersection(&values).collect();
+                FilterResult {
+                    filtered: !intersection.is_empty(),
+                }
+            }
         }
     }
     fn as_any(&self) -> &dyn Any {
@@ -149,6 +172,35 @@ fn flat_not(f: Box<dyn Filter>) -> Box<dyn Filter> {
                 .is_some() =>
         {
             flat_not(not_filter.field.clone())
+        }
+        _ => f,
+    }
+}
+fn explode_inner(fs: InFilter) -> OrFilter {
+    let fields = fs
+        .valid_values
+        .iter()
+        .map(|v| {
+            let filter: Box<dyn Filter> = Box::new(SelectorFilter {
+                dimension: fs.dimension.clone(),
+                valid_value: v.clone(),
+            });
+
+            filter
+        })
+        .collect::<Vec<_>>();
+
+    OrFilter { fields }
+}
+
+fn explode_in(f: Box<dyn Filter>) -> Box<dyn Filter> {
+    match f {
+        AndFilter { fields } => {
+            let filter: Box<dyn Filter> = Box::new(AndFilter {
+                fields: fields.into_iter().map(|child| explode_in(child)).collect(),
+            });
+
+            filter
         }
         _ => f,
     }

@@ -1,142 +1,373 @@
-use crate::db::{
-    ad_group, campaign, content, content_type, creative, cube_config, placement, placement_group,
-    service, PrismaClient,
+use dyn_clone::{clone_trait_object, DynClone};
+use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
+use std::{
+    any::Any,
+    collections::{HashMap, HashSet},
 };
-use fasthash::*;
-use jsonlogic_rs;
-
-use lru::LruCache;
-use serde::Serialize;
-use serde_json::{from_str, json, Value as JValue};
-use std::cell::RefCell;
-use std::num::NonZeroUsize;
-use std::sync::Arc;
-use std::sync::Mutex;
-pub enum Error {
-    InvalidFilterError(serde_json::Error),
-    JsonLogicError,
-}
-pub struct Context {
-    pub client: Arc<PrismaClient>,
+pub struct FilterResult {
+    filtered: bool,
 }
 
-#[derive(Debug, Serialize)]
-pub struct Campaign {
-    pub info: campaign::Data,
-    pub ad_groups: Vec<ad_group::Data>,
+pub type UserInfo = HashMap<String, Vec<String>>;
+
+enum TargetFilter {
+    In(InFilter),
+    And(Vec<TargetFilter>),
+    Or(Vec<TargetFilter>),
 }
-#[derive(Debug, Serialize)]
-pub struct Placement {
-    pub info: placement::Data,
-    pub content_type: content_type::Data,
-    pub campaigns: Vec<Campaign>,
+
+pub trait Filter: DynClone + Debug {
+    fn apply(&self, user_info: &UserInfo) -> FilterResult;
+    fn as_any(&self) -> &dyn Any;
 }
-pub struct LocalCachedAdMeta {
-    pub cache: Mutex<LruCache<u64, Mutex<Vec<placement::Data>>>>,
+
+clone_trait_object!(Filter);
+
+#[derive(Clone, Debug)]
+struct NotFilter {
+    field: Box<dyn Filter>,
 }
-impl LocalCachedAdMeta {
-    pub fn new() -> LocalCachedAdMeta {
-        LocalCachedAdMeta {
-            cache: Mutex::new(LruCache::new(NonZeroUsize::new(1000).unwrap())),
+impl Filter for NotFilter {
+    fn apply(&self, user_info: &UserInfo) -> FilterResult {
+        let FilterResult { filtered } = self.field.apply(&user_info);
+
+        FilterResult {
+            filtered: !filtered,
         }
     }
-    pub fn to_cache_key(service_id: &str, placement_group_id: &str) -> u64 {
-        city::hash64(format!("{}{}", service_id, placement_group_id))
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
-    // pub fn to_cache_key(service: &service::Data, placement_group: &placement_group::Data) -> u64 {
-    //     city::hash64(format!("{}{}", service.id, placement_group.id))
-    // }
-    pub async fn load(&self, ctx: Context) -> () {
-        let services: Vec<service::Data> = ctx
-            .client
-            .service()
-            .find_many(vec![])
-            .with(
-                service::placement_groups::fetch(vec![]).with(
-                    placement_group::placements::fetch(vec![])
-                        .with(placement::content_type::fetch())
-                        .with(placement::campaigns::fetch(vec![]).with(
-                            campaign::ad_groups::fetch(vec![]).with(
-                                ad_group::creatives::fetch(vec![]).with(creative::content::fetch()),
-                            ),
-                        )),
-                ),
+}
+#[derive(Clone, Debug)]
+struct OrFilter {
+    fields: Vec<Box<dyn Filter>>,
+}
+impl Filter for OrFilter {
+    fn apply(&self, user_info: &UserInfo) -> FilterResult {
+        let mut all_matched = true;
+        for filter in &self.fields {
+            let FilterResult { filtered } = filter.apply(&user_info);
+            if filtered {
+                all_matched = true;
+            }
+        }
+        FilterResult {
+            filtered: all_matched,
+        }
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+#[derive(Clone, Debug)]
+struct AndFilter {
+    fields: Vec<Box<dyn Filter>>,
+}
+impl Filter for AndFilter {
+    fn apply(&self, user_info: &UserInfo) -> FilterResult {
+        let mut all_matched = true;
+        let mut iter = self.fields.iter();
+        let mut current = iter.next();
+        while current.is_some() && all_matched {
+            let FilterResult { filtered } = (*current.unwrap()).apply(&user_info);
+
+            all_matched = filtered;
+            current = iter.next();
+        }
+        FilterResult {
+            filtered: all_matched,
+        }
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct InFilter {
+    dimension: String,
+    valid_values: HashSet<String>,
+}
+impl Filter for InFilter {
+    fn apply(&self, user_info: &UserInfo) -> FilterResult {
+        match user_info.get(&self.dimension) {
+            None => FilterResult { filtered: false },
+            Some(values) => match values.iter().find(|v| self.valid_values.contains(*v)) {
+                None => FilterResult { filtered: false },
+                Some(_) => FilterResult { filtered: true },
+            },
+        }
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+fn flat_or(f: OrFilter) -> OrFilter {
+    let (or_filters, others): (Vec<_>, Vec<_>) = f
+        .fields
+        .into_iter()
+        .partition(|f| f.as_any().downcast_ref::<OrFilter>().is_some());
+
+    let or_ls = or_filters
+        .into_iter()
+        .map(|f| flat_or((*f.as_any().downcast_ref::<OrFilter>().unwrap()).clone()))
+        .flat_map(|f| f.fields)
+        .collect::<Vec<_>>();
+
+    OrFilter {
+        fields: others.into_iter().chain(or_ls).collect(),
+    }
+}
+
+fn flat_and(f: AndFilter) -> AndFilter {
+    let (and_filters, others): (Vec<_>, Vec<_>) = f
+        .fields
+        .into_iter()
+        .partition(|f| f.as_any().downcast_ref::<AndFilter>().is_some());
+
+    let and_ls = and_filters
+        .into_iter()
+        .map(|f| flat_and((*f.as_any().downcast_ref::<AndFilter>().unwrap()).clone()))
+        .flat_map(|f| f.fields)
+        .collect::<Vec<_>>();
+
+    AndFilter {
+        fields: others.into_iter().chain(and_ls).collect(),
+    }
+}
+
+fn flat_not(f: Box<dyn Filter>) -> Box<dyn Filter> {
+    match f.as_any().downcast_ref::<NotFilter>() {
+        Some(not_filter)
+            if not_filter
+                .field
+                .as_any()
+                .downcast_ref::<NotFilter>()
+                .is_some() =>
+        {
+            flat_not(not_filter.field.clone())
+        }
+        _ => f,
+    }
+}
+
+#[cfg(test)]
+mod filter_tests {
+
+    use super::*;
+    #[test]
+    fn test_flat_or() {
+        /*
+        input:
+        Or(   //
+            Or( //
+                In("age", "10", "20"),
+                Or(   //
+                    Or( //
+                        In("gender", "M"),
+                        In("gender", "F")
+                    ),
+                    Or( //
+                        In("interests", "I1")
+                    )
+                )
             )
-            .with(service::cube_configs::fetch(vec![]).with(cube_config::cubes::fetch(vec![])))
-            .exec()
-            .await
-            .unwrap();
+        )
+        expected:
+        Or( //
+            In("age", "10", "20"),
+            In("gender", "M"),
+            In("gender", "F"),
+            In("interests", "I1")
+        )
+         */
+        let filter = OrFilter {
+            fields: vec![Box::new(OrFilter {
+                fields: vec![
+                    Box::new(InFilter {
+                        dimension: String::from("age"),
+                        valid_values: HashSet::from([String::from("10"), String::from("20")]),
+                    }),
+                    Box::new(OrFilter {
+                        fields: vec![
+                            Box::new(OrFilter {
+                                fields: vec![
+                                    Box::new(InFilter {
+                                        dimension: String::from("gender"),
+                                        valid_values: HashSet::from([String::from("M")]),
+                                    }),
+                                    Box::new(InFilter {
+                                        dimension: String::from("gender"),
+                                        valid_values: HashSet::from([String::from("F")]),
+                                    }),
+                                ],
+                            }),
+                            Box::new(OrFilter {
+                                fields: vec![Box::new(InFilter {
+                                    dimension: String::from("interests"),
+                                    valid_values: HashSet::from([String::from("I1")]),
+                                })],
+                            }),
+                        ],
+                    }),
+                ],
+            })],
+        };
 
-        let mut cache = (&self.cache).lock().unwrap();
-        for service in &services {
-            for placement_group in service.placement_groups().unwrap() {
-                let key = LocalCachedAdMeta::to_cache_key(&service.id, &placement_group.id);
-                let placements = placement_group.placements().unwrap();
-                let mut vec = cache
-                    .get_or_insert(key, || Mutex::new(Vec::new()))
-                    .lock()
-                    .unwrap();
-                vec.clear();
-                for placement in placements {
-                    vec.push(placement.clone());
-                }
-            }
-        }
+        let flat_filter = flat_or(filter);
+        println!("{:?}", flat_filter);
     }
-    fn filter_ad_group(ad_group: &ad_group::Data, user_info: &JValue) -> Result<bool, Error> {
-        match &ad_group.filter {
-            None => Ok(true),
-            Some(filter) => {
-                let rule: Result<JValue, _> = serde_json::from_str(filter);
-                match rule {
-                    Ok(logic) => {
-                        let matched = jsonlogic_rs::apply(&logic, &user_info);
-                        match matched {
-                            Ok(result) => Ok(result.as_bool().unwrap()),
-                            Err(_) => Err(Error::JsonLogicError),
+
+    #[test]
+    fn test_flat_and() {
+        /*
+        input:
+        And(   //
+          And( //
+            In("age", "10", "20"),
+            And( //
+              In("gender", "F"),
+              And( //
+                In("interests", "I1")
+              )
+            )
+          )
+        )
+        expected:
+        And( //
+            In("age", "10", "20"),
+            In("gender", "F"),
+            In("interests", "I1")
+        )
+           */
+        let filter = AndFilter {
+            fields: vec![Box::new(AndFilter {
+                fields: vec![
+                    Box::new(InFilter {
+                        dimension: String::from("age"),
+                        valid_values: HashSet::from([String::from("10"), String::from("20")]),
+                    }),
+                    Box::new(AndFilter {
+                        fields: vec![
+                            Box::new(InFilter {
+                                dimension: String::from("gender"),
+                                valid_values: HashSet::from([String::from("F")]),
+                            }),
+                            Box::new(AndFilter {
+                                fields: vec![Box::new(InFilter {
+                                    dimension: String::from("interests"),
+                                    valid_values: HashSet::from([String::from("I1")]),
+                                })],
+                            }),
+                        ],
+                    }),
+                ],
+            })],
+        };
+
+        let flat_filter = flat_and(filter);
+        println!("{:?}", flat_filter);
+    }
+    #[test]
+    fn test_flat_not() {
+        /*
+        input:
+        Not(
+            Not(
+                Not(
+                    In("age", "10", "20")
+                )
+            )
+        )
+        expected:
+        Not(
+            In("age", "10", "20")
+        )
+           */
+        let filter = Box::new(NotFilter {
+            field: Box::new(NotFilter {
+                field: Box::new(NotFilter {
+                    field: {
+                        Box::new(InFilter {
+                            dimension: String::from("interests"),
+                            valid_values: HashSet::from([String::from("I1")]),
+                        })
+                    },
+                }),
+            }),
+        });
+
+        let flat_filter = flat_not(filter);
+        println!("{:?}", flat_filter);
+    }
+    #[test]
+    fn test_in_filter() {
+        let filter_raw = r#"
+        {
+            "type": "or",
+            "fields": [
+                {
+                    "type": "in", "dimension": "age", "values": ["10", "20"]
+                }, 
+                {
+                    "type": "and", 
+                    "fields": [
+                        { 
+                            "type": "in", 
+                            "dimension": "gender", 
+                            "values": ["F"]
+                        },
+                        {
+                            "type": "in", 
+                            "dimension": "interests", 
+                            "values": ["I1", "I3"]
                         }
+                    ]
+                },
+                {
+                    "type": "not", 
+                    "field": {
+                        "type": "in",
+                        "dimension": "interests",
+                        "values": ["I3"]
                     }
-                    Err(error) => Err(Error::InvalidFilterError(error)),
-                }
-            }
+                }, 
+            ]
         }
+        "#;
+        let user_info: HashMap<String, Vec<String>> = serde_json::from_str(
+            r#"
+        {
+            "age": ["10"],
+            "gender": ["F"],
+            "interest": ["I_1", "I_2"]
+        }
+            "#,
+        )
+        .unwrap();
+
+        let in_filter = InFilter {
+            dimension: String::from("age"),
+            valid_values: HashSet::from([String::from("10")]),
+        };
+        let result = in_filter.apply(&user_info);
+
+        println!("{:?}", result.filtered)
     }
-    pub fn filter_ad_meta(
-        &self,
-        service_id: &str,
-        placement_group_id: &str,
-        user_info: &JValue,
-    ) -> Vec<Placement> {
-        let mut ad_responses = Vec::<Placement>::new();
-        let mut cache = (&self.cache).lock().unwrap();
-        let key = LocalCachedAdMeta::to_cache_key(service_id, placement_group_id);
-        let placements_opt = cache.get(&key);
-        if let None = placements_opt {
-            return ad_responses;
-        }
-        let placements = placements_opt.unwrap().lock().unwrap();
-        for placement in placements.iter() {
-            let mut campaigns = Vec::<Campaign>::new();
-            for campaign in placement.campaigns().unwrap() {
-                let mut ad_groups = Vec::<ad_group::Data>::new();
-                for ad_group in campaign.ad_groups().unwrap() {
-                    if let Ok(matched) = LocalCachedAdMeta::filter_ad_group(ad_group, user_info) {
-                        if matched {
-                            ad_groups.push(ad_group.clone())
-                        }
-                    }
-                }
-                campaigns.push(Campaign {
-                    info: campaign.clone(),
-                    ad_groups,
-                })
-            }
-            ad_responses.push(Placement {
-                info: placement.clone(),
-                content_type: placement.content_type().unwrap().clone(),
-                campaigns,
-            })
-        }
-        ad_responses
+}
+/*
+userActivities.get(dim) match {
+      case None => TargetFilterResult(false, Map.empty)
+      case Some(values) =>
+        val ls = values.filter(validValues)
+        if (ls.isEmpty) TargetFilterResult(false, Map.empty)
+        else TargetFilterResult(true, Map(dim -> ls))
     }
+ */
+pub trait Filterable {
+    fn id() -> String;
+    fn filter() -> Box<dyn Filter>;
 }

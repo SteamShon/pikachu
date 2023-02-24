@@ -6,8 +6,7 @@ use actix_web::{
     App, HttpResponse, HttpServer, Responder,
 };
 use dotenv::dotenv;
-use filter::filter::Context;
-use filter::filter::LocalCachedAdMeta;
+use filter::ad_meta::{AdMeta, Context};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -18,7 +17,7 @@ struct Request {
 }
 
 #[post("/")]
-async fn hello(data: web::Data<LocalCachedAdMeta>, request: web::Json<Request>) -> impl Responder {
+async fn hello(data: web::Data<AdMeta>, request: web::Json<Request>) -> impl Responder {
     let filtered = data.filter_ad_meta(
         &request.service_id,
         &request.placement_group_id,
@@ -35,7 +34,7 @@ async fn main() -> std::io::Result<()> {
     let client = filter::db::new_client_with_url(&database_url)
         .await
         .unwrap();
-    let ad_meta = LocalCachedAdMeta::new();
+    let ad_meta = AdMeta::new();
 
     let context = Context {
         client: Arc::new(client),

@@ -194,16 +194,158 @@ fn explode_inner(fs: InFilter) -> OrFilter {
 }
 
 fn explode_in(f: Box<dyn Filter>) -> Box<dyn Filter> {
-    match f {
-        AndFilter { fields } => {
-            let filter: Box<dyn Filter> = Box::new(AndFilter {
-                fields: fields.into_iter().map(|child| explode_in(child)).collect(),
-            });
-
-            filter
-        }
-        _ => f,
+    let and_filter = f.as_any().downcast_ref::<AndFilter>();
+    let or_filter = f.as_any().downcast_ref::<OrFilter>();
+    let not_filter = f.as_any().downcast_ref::<NotFilter>();
+    let in_filter = f.as_any().downcast_ref::<InFilter>();
+    if let Some(and) = and_filter {
+        return Box::new(AndFilter {
+            fields: and
+                .fields
+                .iter()
+                .map(|child| explode_in((*child).clone()))
+                .collect(),
+        });
     }
+    if let Some(or) = or_filter {
+        return Box::new(OrFilter {
+            fields: or
+                .fields
+                .iter()
+                .map(|child| explode_in((*child).clone()))
+                .collect(),
+        });
+    }
+    if let Some(not) = not_filter {
+        return Box::new(NotFilter {
+            field: explode_in(not.field.clone()),
+        });
+    }
+    if let Some(in_f) = in_filter {
+        return Box::new(explode_inner((*in_f).clone()));
+    }
+
+    f
+}
+
+fn flat_container(f: Box<dyn Filter>) -> Box<dyn Filter> {
+    let and_filter = f.as_any().downcast_ref::<AndFilter>();
+    let or_filter = f.as_any().downcast_ref::<OrFilter>();
+    let not_filter = f.as_any().downcast_ref::<NotFilter>();
+
+    if let Some(and) = and_filter {
+        return Box::new(flat_and(AndFilter {
+            fields: and
+                .fields
+                .iter()
+                .map(|f| flat_container((*f).clone()))
+                .collect(),
+        }));
+    }
+    if let Some(or) = or_filter {
+        return Box::new(flat_or(OrFilter {
+            fields: or
+                .fields
+                .iter()
+                .map(|f| flat_container((*f).clone()))
+                .collect(),
+        }));
+    }
+    if let Some(not) = not_filter {
+        return flat_not(Box::new(NotFilter {
+            field: flat_not(not.field.clone()),
+        }));
+    }
+
+    f
+}
+fn unwrap_one_field(f: Box<dyn Filter>) -> Box<dyn Filter> {
+    let and_filter = f.as_any().downcast_ref::<AndFilter>();
+    let or_filter = f.as_any().downcast_ref::<OrFilter>();
+    if let Some(and) = and_filter {
+        if and.fields.len() == 1 {
+            return and.fields.iter().next().unwrap().clone();
+        } else {
+            return Box::new(AndFilter {
+                fields: and
+                    .fields
+                    .iter()
+                    .map(|f| unwrap_one_field((*f).clone()))
+                    .collect(),
+            });
+        }
+    }
+    if let Some(or) = or_filter {
+        if or.fields.len() == 1 {
+            return or.fields.iter().next().unwrap().clone();
+        } else {
+            return Box::new(AndFilter {
+                fields: or
+                    .fields
+                    .iter()
+                    .map(|f| unwrap_one_field((*f).clone()))
+                    .collect(),
+            });
+        }
+    }
+
+    f
+}
+
+fn flatten(f: Box<dyn Filter>) -> Box<dyn Filter> {
+    // .and_then(flat_and_to_or_try);
+    flat_and_to_or_try(unwrap_one_field(flat_container(explode_in(f))))
+}
+
+fn flat_and_to_or_try(f: Box<dyn Filter>) -> Box<dyn Filter> {
+    let and_filter = f.as_any().downcast_ref::<AndFilter>();
+    let or_filter = f.as_any().downcast_ref::<OrFilter>();
+    let not_filter = f.as_any().downcast_ref::<NotFilter>();
+
+    if let Some(and) = and_filter {
+        let fields = and.fields.iter().map(|f| flat_and_to_or_try((*f).clone()));
+
+        let (or_filters, others): (Vec<_>, Vec<_>) =
+            fields.partition(|f| f.as_any().downcast_ref::<OrFilter>().is_some());
+
+        if or_filters.is_empty() {
+            return Box::new(AndFilter { fields: others });
+        } else {
+            let and_ls = or_filters
+                .iter()
+                .flat_map(|or| {
+                    or.as_any()
+                        .downcast_ref::<OrFilter>()
+                        .unwrap()
+                        .fields
+                        .iter()
+                        .map(|f| {
+                            flatten(Box::new(AndFilter {
+                                fields: others.iter().chain([f]).cloned().collect(),
+                            }))
+                        })
+                })
+                .collect();
+
+            return flatten(Box::new(OrFilter { fields: and_ls }));
+        }
+    }
+    if let Some(or) = or_filter {
+        return Box::new(OrFilter {
+            fields: or
+                .fields
+                .iter()
+                .map(|f| flat_and_to_or_try((*f).clone()))
+                .collect(),
+        });
+    }
+    if let Some(not) = not_filter {
+        return Box::new(NotFilter {
+            field: flat_and_to_or_try(not.field.clone()),
+        });
+    }
+
+    f
 }
 
 #[cfg(test)]
@@ -390,7 +532,7 @@ mod filter_tests {
             ]
         }
         "#;
-        let user_info: HashMap<String, Vec<String>> = serde_json::from_str(
+        let user_info: HashMap<String, HashSet<String>> = serde_json::from_str(
             r#"
         {
             "age": ["10"],
@@ -409,17 +551,4 @@ mod filter_tests {
 
         println!("{:?}", result.filtered)
     }
-}
-/*
-userActivities.get(dim) match {
-      case None => TargetFilterResult(false, Map.empty)
-      case Some(values) =>
-        val ls = values.filter(validValues)
-        if (ls.isEmpty) TargetFilterResult(false, Map.empty)
-        else TargetFilterResult(true, Map(dim -> ls))
-    }
- */
-pub trait Filterable {
-    fn id() -> String;
-    fn filter() -> Box<dyn Filter>;
 }

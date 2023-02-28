@@ -9,546 +9,194 @@ pub struct FilterResult {
     filtered: bool,
 }
 
+#[derive(Clone, Debug)]
+pub struct DimValue {
+    dimension: String,
+    value: String,
+}
 pub type UserInfo = HashMap<String, HashSet<String>>;
 
-//enum TargetFilter {
-//    In(InFilter),
-//    And(Vec<TargetFilter>),
-//    Or(Vec<TargetFilter>),
-//}
+enum TargetFilter {
+    In {
+        dimension: String,
+        valid_values: HashSet<String>,
+    },
+    Select {
+        dimension: String,
+        valid_value: String,
+    },
+    And {
+        fields: Vec<TargetFilter>,
+    },
+    Or {
+        fields: Vec<TargetFilter>,
+    },
+    Not {
+        field: Box<TargetFilter>,
+    },
+}
 
-pub trait Filter: DynClone + Debug {
+pub trait Filter {
     fn apply(&self, user_info: &UserInfo) -> FilterResult;
-    fn as_any(&self) -> &dyn Any;
 }
 
-clone_trait_object!(Filter);
+fn explode<T: Clone>(ls_of_ls: &[Vec<T>], prev: &[T]) -> Vec<Vec<T>> {
+    if ls_of_ls.is_empty() {
+        vec![prev.to_vec()]
+    } else {
+        let head = &ls_of_ls[0];
+        let rest = head
+            .iter()
+            .flat_map(|s| {
+                let next_prev: Vec<T> = prev.iter().chain([s]).cloned().collect();
 
-#[derive(Clone, Debug)]
-struct NotFilter {
-    field: Box<dyn Filter>,
+                explode(&ls_of_ls[1..], &next_prev[..])
+            })
+            .collect::<Vec<Vec<T>>>();
+        rest
+    }
 }
-impl Filter for NotFilter {
-    fn apply(&self, user_info: &UserInfo) -> FilterResult {
-        let FilterResult { filtered } = self.field.apply(&user_info);
 
-        FilterResult {
-            filtered: !filtered,
+fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
+    let kv_delimiter = ".";
+    let dim_value_delimiter = "_";
+    let not_delimiter = "^";
+    match current_filter {
+        TargetFilter::Select {
+            dimension,
+            valid_value,
+        } => {
+            let dvs = vec![vec![format!(
+                "{dimension}{kv_delimiter}{value}",
+                dimension = dimension,
+                value = valid_value,
+            )]];
+            println!("Select: {:?}", dvs);
+            dvs
         }
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-#[derive(Clone, Debug)]
-struct OrFilter {
-    fields: Vec<Box<dyn Filter>>,
-}
-impl Filter for OrFilter {
-    fn apply(&self, user_info: &UserInfo) -> FilterResult {
-        let mut all_matched = true;
-        for filter in &self.fields {
-            let FilterResult { filtered } = filter.apply(&user_info);
-            if filtered {
-                all_matched = true;
-            }
-        }
-        FilterResult {
-            filtered: all_matched,
-        }
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-#[derive(Clone, Debug)]
-struct AndFilter {
-    fields: Vec<Box<dyn Filter>>,
-}
-impl Filter for AndFilter {
-    fn apply(&self, user_info: &UserInfo) -> FilterResult {
-        let mut all_matched = true;
-        let mut iter = self.fields.iter();
-        let mut current = iter.next();
-        while current.is_some() && all_matched {
-            let FilterResult { filtered } = (*current.unwrap()).apply(&user_info);
-
-            all_matched = filtered;
-            current = iter.next();
-        }
-        FilterResult {
-            filtered: all_matched,
-        }
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct SelectorFilter {
-    dimension: String,
-    valid_value: String,
-}
-impl Filter for SelectorFilter {
-    fn apply(&self, user_info: &UserInfo) -> FilterResult {
-        match user_info.get(&self.dimension) {
-            None => FilterResult { filtered: false },
-            Some(values) => match values.iter().find(|v| self.valid_value == **v) {
-                None => FilterResult { filtered: false },
-                Some(_) => FilterResult { filtered: true },
-            },
-        }
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct InFilter {
-    dimension: String,
-    valid_values: HashSet<String>,
-}
-impl Filter for InFilter {
-    fn apply(&self, user_info: &UserInfo) -> FilterResult {
-        match user_info.get(&self.dimension) {
-            None => FilterResult { filtered: false },
-            Some(values) => {
-                let intersection: HashSet<_> = self.valid_values.intersection(&values).collect();
-                FilterResult {
-                    filtered: !intersection.is_empty(),
-                }
-            }
-        }
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
-fn flat_or(f: OrFilter) -> OrFilter {
-    let (or_filters, others): (Vec<_>, Vec<_>) = f
-        .fields
-        .into_iter()
-        .partition(|f| f.as_any().downcast_ref::<OrFilter>().is_some());
-
-    let or_ls = or_filters
-        .into_iter()
-        .map(|f| flat_or((*f.as_any().downcast_ref::<OrFilter>().unwrap()).clone()))
-        .flat_map(|f| f.fields)
-        .collect::<Vec<_>>();
-
-    OrFilter {
-        fields: others.into_iter().chain(or_ls).collect(),
-    }
-}
-
-fn flat_and(f: AndFilter) -> AndFilter {
-    let (and_filters, others): (Vec<_>, Vec<_>) = f
-        .fields
-        .into_iter()
-        .partition(|f| f.as_any().downcast_ref::<AndFilter>().is_some());
-
-    let and_ls = and_filters
-        .into_iter()
-        .map(|f| flat_and((*f.as_any().downcast_ref::<AndFilter>().unwrap()).clone()))
-        .flat_map(|f| f.fields)
-        .collect::<Vec<_>>();
-
-    AndFilter {
-        fields: others.into_iter().chain(and_ls).collect(),
-    }
-}
-
-fn flat_not(f: Box<dyn Filter>) -> Box<dyn Filter> {
-    match f.as_any().downcast_ref::<NotFilter>() {
-        Some(not_filter)
-            if not_filter
-                .field
-                .as_any()
-                .downcast_ref::<NotFilter>()
-                .is_some() =>
-        {
-            flat_not(not_filter.field.clone())
-        }
-        _ => f,
-    }
-}
-fn explode_inner(fs: InFilter) -> OrFilter {
-    let fields = fs
-        .valid_values
-        .iter()
-        .map(|v| {
-            let filter: Box<dyn Filter> = Box::new(SelectorFilter {
-                dimension: fs.dimension.clone(),
-                valid_value: v.clone(),
-            });
-
-            filter
-        })
-        .collect::<Vec<_>>();
-
-    OrFilter { fields }
-}
-
-fn explode_in(f: Box<dyn Filter>) -> Box<dyn Filter> {
-    let and_filter = f.as_any().downcast_ref::<AndFilter>();
-    let or_filter = f.as_any().downcast_ref::<OrFilter>();
-    let not_filter = f.as_any().downcast_ref::<NotFilter>();
-    let in_filter = f.as_any().downcast_ref::<InFilter>();
-    if let Some(and) = and_filter {
-        return Box::new(AndFilter {
-            fields: and
-                .fields
+        TargetFilter::In {
+            dimension,
+            valid_values,
+        } => {
+            let dvs = vec![valid_values
                 .iter()
-                .map(|child| explode_in((*child).clone()))
-                .collect(),
-        });
-    }
-    if let Some(or) = or_filter {
-        return Box::new(OrFilter {
-            fields: or
-                .fields
-                .iter()
-                .map(|child| explode_in((*child).clone()))
-                .collect(),
-        });
-    }
-    if let Some(not) = not_filter {
-        return Box::new(NotFilter {
-            field: explode_in(not.field.clone()),
-        });
-    }
-    if let Some(in_f) = in_filter {
-        return Box::new(explode_inner((*in_f).clone()));
-    }
-
-    f
-}
-
-fn flat_container(f: Box<dyn Filter>) -> Box<dyn Filter> {
-    let and_filter = f.as_any().downcast_ref::<AndFilter>();
-    let or_filter = f.as_any().downcast_ref::<OrFilter>();
-    let not_filter = f.as_any().downcast_ref::<NotFilter>();
-
-    if let Some(and) = and_filter {
-        return Box::new(flat_and(AndFilter {
-            fields: and
-                .fields
-                .iter()
-                .map(|f| flat_container((*f).clone()))
-                .collect(),
-        }));
-    }
-    if let Some(or) = or_filter {
-        return Box::new(flat_or(OrFilter {
-            fields: or
-                .fields
-                .iter()
-                .map(|f| flat_container((*f).clone()))
-                .collect(),
-        }));
-    }
-    if let Some(not) = not_filter {
-        return flat_not(Box::new(NotFilter {
-            field: flat_not(not.field.clone()),
-        }));
-    }
-
-    f
-}
-fn unwrap_one_field(f: Box<dyn Filter>) -> Box<dyn Filter> {
-    let and_filter = f.as_any().downcast_ref::<AndFilter>();
-    let or_filter = f.as_any().downcast_ref::<OrFilter>();
-    if let Some(and) = and_filter {
-        if and.fields.len() == 1 {
-            return and.fields.iter().next().unwrap().clone();
-        } else {
-            return Box::new(AndFilter {
-                fields: and
-                    .fields
-                    .iter()
-                    .map(|f| unwrap_one_field((*f).clone()))
-                    .collect(),
-            });
+                .map(|v| {
+                    format!(
+                        "{dimension}{kv_delimiter}{value}",
+                        dimension = dimension,
+                        value = v
+                    )
+                })
+                .collect()];
+            println!("In: {:?}", dvs);
+            dvs
         }
-    }
-    if let Some(or) = or_filter {
-        if or.fields.len() == 1 {
-            return or.fields.iter().next().unwrap().clone();
-        } else {
-            return Box::new(AndFilter {
-                fields: or
-                    .fields
-                    .iter()
-                    .map(|f| unwrap_one_field((*f).clone()))
-                    .collect(),
-            });
-        }
-    }
-
-    f
-}
-
-fn flatten(f: Box<dyn Filter>) -> Box<dyn Filter> {
-    // .and_then(flat_and_to_or_try);
-    flat_and_to_or_try(unwrap_one_field(flat_container(explode_in(f))))
-}
-
-fn flat_and_to_or_try(f: Box<dyn Filter>) -> Box<dyn Filter> {
-    let and_filter = f.as_any().downcast_ref::<AndFilter>();
-    let or_filter = f.as_any().downcast_ref::<OrFilter>();
-    let not_filter = f.as_any().downcast_ref::<NotFilter>();
-
-    if let Some(and) = and_filter {
-        let fields = and.fields.iter().map(|f| flat_and_to_or_try((*f).clone()));
-
-        let (or_filters, others): (Vec<_>, Vec<_>) =
-            fields.partition(|f| f.as_any().downcast_ref::<OrFilter>().is_some());
-
-        if or_filters.is_empty() {
-            return Box::new(AndFilter { fields: others });
-        } else {
-            let and_ls = or_filters
+        TargetFilter::And { fields } => {
+            let childrens: Vec<Vec<String>> = fields
                 .iter()
-                .flat_map(|or| {
-                    or.as_any()
-                        .downcast_ref::<OrFilter>()
-                        .unwrap()
-                        .fields
-                        .iter()
-                        .map(|f| {
-                            flatten(Box::new(AndFilter {
-                                fields: others.iter().chain([f]).cloned().collect(),
-                            }))
-                        })
+                .flat_map(|field| build_target_keys(field))
+                .collect();
+            let dvs = explode(&childrens, &vec![])
+                .iter()
+                .map(|ls| vec![ls.join(dim_value_delimiter)])
+                .collect();
+            println!("And: {:?}", dvs);
+            dvs
+        }
+        TargetFilter::Or { fields } => {
+            let childrens: Vec<String> = fields
+                .iter()
+                .flat_map(|field| build_target_keys(field))
+                .flatten()
+                .collect();
+            let dvs = vec![childrens];
+            println!("Or: {:?}", dvs);
+            dvs
+        }
+        TargetFilter::Not { field } => {
+            let child = build_target_keys(field);
+            let dvs = child
+                .iter()
+                .map(|vs| {
+                    vs.iter()
+                        .map(|v| format!("not{not_delimiter}{value}", value = v))
+                        .collect()
                 })
                 .collect();
-
-            return flatten(Box::new(OrFilter { fields: and_ls }));
+            dvs
         }
     }
-    if let Some(or) = or_filter {
-        return Box::new(OrFilter {
-            fields: or
-                .fields
-                .iter()
-                .map(|f| flat_and_to_or_try((*f).clone()))
-                .collect(),
-        });
-    }
-    if let Some(not) = not_filter {
-        return Box::new(NotFilter {
-            field: flat_and_to_or_try(not.field.clone()),
-        });
-    }
-
-    f
 }
 
 #[cfg(test)]
-mod filter_tests {
+mod tests {
+    use prisma_client_rust::query_core::In;
 
     use super::*;
-    #[test]
-    fn test_flat_or() {
-        /*
-        input:
-        Or(   //
-            Or( //
-                In("age", "10", "20"),
-                Or(   //
-                    Or( //
-                        In("gender", "M"),
-                        In("gender", "F")
-                    ),
-                    Or( //
-                        In("interests", "I1")
-                    )
-                )
-            )
-        )
-        expected:
-        Or( //
-            In("age", "10", "20"),
-            In("gender", "M"),
-            In("gender", "F"),
-            In("interests", "I1")
-        )
-         */
-        let filter = OrFilter {
-            fields: vec![Box::new(OrFilter {
-                fields: vec![
-                    Box::new(InFilter {
-                        dimension: String::from("age"),
-                        valid_values: HashSet::from([String::from("10"), String::from("20")]),
-                    }),
-                    Box::new(OrFilter {
-                        fields: vec![
-                            Box::new(OrFilter {
-                                fields: vec![
-                                    Box::new(InFilter {
-                                        dimension: String::from("gender"),
-                                        valid_values: HashSet::from([String::from("M")]),
-                                    }),
-                                    Box::new(InFilter {
-                                        dimension: String::from("gender"),
-                                        valid_values: HashSet::from([String::from("F")]),
-                                    }),
-                                ],
-                            }),
-                            Box::new(OrFilter {
-                                fields: vec![Box::new(InFilter {
-                                    dimension: String::from("interests"),
-                                    valid_values: HashSet::from([String::from("I1")]),
-                                })],
-                            }),
-                        ],
-                    }),
-                ],
-            })],
-        };
-
-        let flat_filter = flat_or(filter);
-        println!("{:?}", flat_filter);
-    }
 
     #[test]
-    fn test_flat_and() {
-        /*
-        input:
-        And(   //
-          And( //
-            In("age", "10", "20"),
-            And( //
-              In("gender", "F"),
-              And( //
-                In("interests", "I1")
-              )
-            )
-          )
-        )
-        expected:
-        And( //
-            In("age", "10", "20"),
-            In("gender", "F"),
-            In("interests", "I1")
-        )
-           */
-        let filter = AndFilter {
-            fields: vec![Box::new(AndFilter {
-                fields: vec![
-                    Box::new(InFilter {
-                        dimension: String::from("age"),
-                        valid_values: HashSet::from([String::from("10"), String::from("20")]),
-                    }),
-                    Box::new(AndFilter {
-                        fields: vec![
-                            Box::new(InFilter {
-                                dimension: String::from("gender"),
-                                valid_values: HashSet::from([String::from("F")]),
-                            }),
-                            Box::new(AndFilter {
-                                fields: vec![Box::new(InFilter {
-                                    dimension: String::from("interests"),
-                                    valid_values: HashSet::from([String::from("I1")]),
-                                })],
-                            }),
-                        ],
-                    }),
-                ],
-            })],
-        };
+    fn test_explode() {
+        let input = vec![vec![1, 2, 3], vec![4, 5], vec![6]];
+        let expected_output = vec![
+            vec![1, 4, 6],
+            vec![1, 5, 6],
+            vec![2, 4, 6],
+            vec![2, 5, 6],
+            vec![3, 4, 6],
+            vec![3, 5, 6],
+        ];
 
-        let flat_filter = flat_and(filter);
-        println!("{:?}", flat_filter);
+        assert_eq!(explode(&input, &vec![][..]), expected_output);
     }
     #[test]
-    fn test_flat_not() {
-        /*
-        input:
-        Not(
-            Not(
-                Not(
-                    In("age", "10", "20")
-                )
-            )
-        )
-        expected:
-        Not(
-            In("age", "10", "20")
-        )
-           */
-        let filter = Box::new(NotFilter {
-            field: Box::new(NotFilter {
-                field: Box::new(NotFilter {
-                    field: {
-                        Box::new(InFilter {
-                            dimension: String::from("interests"),
-                            valid_values: HashSet::from([String::from("I1")]),
-                        })
-                    },
-                }),
-            }),
-        });
+    fn test_extract_dim_values() {
+        use TargetFilter::*;
 
-        let flat_filter = flat_not(filter);
-        println!("{:?}", flat_filter);
-    }
-    #[test]
-    fn test_in_filter() {
-        let filter_raw = r#"
-        {
-            "type": "or",
-            "fields": [
-                {
-                    "type": "in", "dimension": "age", "values": ["10", "20"]
-                }, 
-                {
-                    "type": "and", 
-                    "fields": [
-                        { 
-                            "type": "in", 
-                            "dimension": "gender", 
-                            "values": ["F"]
+        let input = And {
+            fields: vec![
+                Or {
+                    fields: vec![
+                        Select {
+                            dimension: String::from("age"),
+                            valid_value: String::from("10"),
                         },
-                        {
-                            "type": "in", 
-                            "dimension": "interests", 
-                            "values": ["I1", "I3"]
-                        }
-                    ]
+                        And {
+                            fields: vec![
+                                In {
+                                    dimension: String::from("age"),
+                                    valid_values: HashSet::from([
+                                        String::from("20"),
+                                        String::from("30"),
+                                    ]),
+                                },
+                                Select {
+                                    dimension: String::from("gender"),
+                                    valid_value: String::from("F"),
+                                },
+                            ],
+                        },
+                    ],
                 },
-                {
-                    "type": "not", 
-                    "field": {
-                        "type": "in",
-                        "dimension": "interests",
-                        "values": ["I3"]
-                    }
-                }, 
-            ]
-        }
-        "#;
-        let user_info: HashMap<String, HashSet<String>> = serde_json::from_str(
-            r#"
-        {
-            "age": ["10"],
-            "gender": ["F"],
-            "interest": ["I_1", "I_2"]
-        }
-            "#,
-        )
-        .unwrap();
-
-        let in_filter = InFilter {
-            dimension: String::from("age"),
-            valid_values: HashSet::from([String::from("10")]),
+                Not {
+                    field: Box::new(In {
+                        dimension: String::from("like"),
+                        valid_values: HashSet::from([String::from("soccor")]),
+                    }),
+                },
+            ],
         };
-        let result = in_filter.apply(&user_info);
+        let expected_output = vec![
+            vec![1, 4, 6],
+            vec![1, 5, 6],
+            vec![2, 4, 6],
+            vec![2, 5, 6],
+            vec![3, 4, 6],
+            vec![3, 5, 6],
+        ];
+        let output = build_target_keys(&input);
 
-        println!("{:?}", result.filtered)
+        for dvs in output {
+            println!("{:?}", dvs)
+        }
     }
 }

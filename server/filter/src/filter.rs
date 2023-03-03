@@ -1,18 +1,37 @@
+use fasthash::city;
+use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct DimValue {
-    dimension: String,
-    value: String,
-    is_not: bool,
+    pub dimension: String,
+    pub value: String,
+    pub is_not: bool,
+}
+impl DimValue {
+    pub fn new(dim: &str, value: &str, is_not: bool) -> Self {
+        DimValue {
+            dimension: String::from(dim),
+            value: String::from(value),
+            is_not,
+        }
+    }
+    pub fn to_hash(&self) -> u64 {
+        city::hash64(format!(
+            "{is_not}.{dimension}.{value}",
+            is_not = self.is_not,
+            dimension = self.dimension,
+            value = self.value
+        ))
+    }
 }
 pub type UserInfo = HashMap<String, HashSet<String>>;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TargetKey {
-    dim_values: Vec<DimValue>,
+    pub dim_values: Vec<DimValue>,
 }
 #[derive(Debug, PartialEq, Eq)]
 pub enum TargetFilter {
@@ -58,10 +77,13 @@ where
     }
 }
 pub fn build_target_keys(current_filter: &TargetFilter) -> Vec<TargetKey> {
-    build_target_keys_inner(current_filter)
+    let mut target_keys: Vec<TargetKey> = build_target_keys_inner(current_filter)
         .into_iter()
         .flatten()
-        .collect()
+        .collect();
+
+    target_keys.sort();
+    target_keys
 }
 
 fn build_target_keys_inner(current_filter: &TargetFilter) -> Vec<Vec<TargetKey>> {

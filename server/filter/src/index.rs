@@ -16,25 +16,24 @@ pub struct FilterIndex {
 }
 
 impl FilterIndex {
+    fn debug_index(binding: &MutexGuard<LruCache<DimValue, HashSet<String>>>) -> serde_json::Value {
+        let mut index = HashMap::new();
+        for (dim_value, ids) in binding.iter() {
+            let mut sorted_ids = Vec::from_iter(ids.iter());
+            sorted_ids.sort();
+
+            index.insert(dim_value.debug(), sorted_ids);
+        }
+        json!(index)
+    }
     fn debug(&self) -> serde_json::Value {
-        let mut true_index = Vec::new();
-        let mut false_index = Vec::new();
-        for (dim_value, ids) in self.true_index.lock().unwrap().iter() {
-            true_index.push(json!({
-                "dim_value": json!(dim_value),
-                "ids": json!(ids),
-            }));
-        }
-        for (dim_value, ids) in self.false_index.lock().unwrap().iter() {
-            false_index.push(json!({
-                "dim_value": json!(dim_value),
-                "ids": json!(ids),
-            }));
-        }
+        let true_binding = self.true_index.lock().unwrap();
+        let false_binding = self.false_index.lock().unwrap();
+
         json!({
             "all_dimensions": json!(self.all_dimensions),
-            "true_index": json!(true_index),
-            "false_index": json!(false_index)
+            "true_index": Self::debug_index(&true_binding),
+            "false_index": Self::debug_index(&false_binding)
         })
     }
     fn build_all_dimensions<F>(filters: &Vec<F>) -> HashSet<String>

@@ -123,25 +123,11 @@ fn test_build_target_keys_filter_1() {
         String::from("age.20_AND_NOT_interests.L2,L3"),
     ]];
     */
-    let mut expected_output = vec![
+    let expected_output = vec![
         TargetKey {
             dim_values: vec![DimValue {
                 dimension: String::from("age"),
                 value: String::from("10"),
-                is_not: false,
-            }],
-        },
-        TargetKey {
-            dim_values: vec![DimValue {
-                dimension: String::from("age"),
-                value: String::from("20"),
-                is_not: false,
-            }],
-        },
-        TargetKey {
-            dim_values: vec![DimValue {
-                dimension: String::from("gender"),
-                value: String::from("F"),
                 is_not: false,
             }],
         },
@@ -160,6 +146,13 @@ fn test_build_target_keys_filter_1() {
             ],
         },
         TargetKey {
+            dim_values: vec![DimValue {
+                dimension: String::from("age"),
+                value: String::from("20"),
+                is_not: false,
+            }],
+        },
+        TargetKey {
             dim_values: vec![
                 DimValue {
                     dimension: String::from("age"),
@@ -173,12 +166,16 @@ fn test_build_target_keys_filter_1() {
                 },
             ],
         },
+        TargetKey {
+            dim_values: vec![DimValue {
+                dimension: String::from("gender"),
+                value: String::from("F"),
+                is_not: false,
+            }],
+        },
     ];
 
-    let mut output = build_target_keys(&FILTER_1);
-
-    output.sort();
-    expected_output.sort();
+    let output = build_target_keys(&FILTER_1);
 
     println!("{:?}", output);
     for (a, b) in output.iter().zip(expected_output.iter()) {
@@ -187,8 +184,8 @@ fn test_build_target_keys_filter_1() {
 }
 #[test]
 fn test_build_target_keys_filter_2() {
-    let mut output = build_target_keys(&FILTER_2);
-    let mut expected_output = vec![
+    let output = build_target_keys(&FILTER_2);
+    let expected_output = vec![
         TargetKey {
             dim_values: vec![DimValue {
                 dimension: String::from("age"),
@@ -197,11 +194,49 @@ fn test_build_target_keys_filter_2() {
             }],
         },
         TargetKey {
+            dim_values: vec![
+                DimValue {
+                    dimension: String::from("age"),
+                    value: String::from("10"),
+                    is_not: false,
+                },
+                DimValue {
+                    dimension: String::from("gender"),
+                    value: String::from("F"),
+                    is_not: false,
+                },
+                DimValue {
+                    dimension: String::from("interests"),
+                    value: String::from("L2,L3"),
+                    is_not: true,
+                },
+            ],
+        },
+        TargetKey {
             dim_values: vec![DimValue {
                 dimension: String::from("age"),
                 value: String::from("20"),
                 is_not: false,
             }],
+        },
+        TargetKey {
+            dim_values: vec![
+                DimValue {
+                    dimension: String::from("age"),
+                    value: String::from("20"),
+                    is_not: false,
+                },
+                DimValue {
+                    dimension: String::from("gender"),
+                    value: String::from("F"),
+                    is_not: false,
+                },
+                DimValue {
+                    dimension: String::from("interests"),
+                    value: String::from("L2,L3"),
+                    is_not: true,
+                },
+            ],
         },
         TargetKey {
             dim_values: vec![
@@ -217,48 +252,7 @@ fn test_build_target_keys_filter_2() {
                 },
             ],
         },
-        TargetKey {
-            dim_values: vec![
-                DimValue {
-                    dimension: String::from("gender"),
-                    value: String::from("F"),
-                    is_not: false,
-                },
-                DimValue {
-                    dimension: String::from("age"),
-                    value: String::from("10"),
-                    is_not: false,
-                },
-                DimValue {
-                    dimension: String::from("interests"),
-                    value: String::from("L2,L3"),
-                    is_not: true,
-                },
-            ],
-        },
-        TargetKey {
-            dim_values: vec![
-                DimValue {
-                    dimension: String::from("gender"),
-                    value: String::from("F"),
-                    is_not: false,
-                },
-                DimValue {
-                    dimension: String::from("age"),
-                    value: String::from("20"),
-                    is_not: false,
-                },
-                DimValue {
-                    dimension: String::from("interests"),
-                    value: String::from("L2,L3"),
-                    is_not: true,
-                },
-            ],
-        },
     ];
-
-    output.sort();
-    expected_output.sort();
 
     println!("{:?}", output);
     for (a, b) in output.iter().zip(expected_output.iter()) {

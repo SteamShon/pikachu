@@ -11,6 +11,14 @@ pub struct DimValue {
     pub is_not: bool,
 }
 impl DimValue {
+    pub fn debug(&self) -> String {
+        format!(
+            "{is_not}.{dimension}.{value}",
+            is_not = self.is_not,
+            dimension = self.dimension,
+            value = self.value
+        )
+    }
     pub fn new(dim: &str, value: &str, is_not: bool) -> Self {
         DimValue {
             dimension: String::from(dim),
@@ -127,11 +135,11 @@ fn build_target_keys_inner(current_filter: &TargetFilter) -> Vec<Vec<TargetKey>>
             let dvs = explode(&childrens, &vec![])
                 .iter()
                 .map(|ls| {
-                    let dim_values: Vec<DimValue> = ls
+                    let mut dim_values: Vec<DimValue> = ls
                         .iter()
                         .flat_map(|target_key| target_key.dim_values.clone())
                         .collect();
-
+                    dim_values.sort();
                     vec![TargetKey { dim_values }]
                 })
                 .collect();
@@ -139,11 +147,12 @@ fn build_target_keys_inner(current_filter: &TargetFilter) -> Vec<Vec<TargetKey>>
             dvs
         }
         TargetFilter::Or { fields } => {
-            let childrens: Vec<TargetKey> = fields
+            let mut childrens: Vec<TargetKey> = fields
                 .iter()
                 .flat_map(|field| build_target_keys_inner(field))
                 .flatten()
                 .collect();
+            childrens.sort();
             let dvs = vec![childrens];
             // println!("Or: {:?}", dvs);
             dvs
@@ -155,7 +164,7 @@ fn build_target_keys_inner(current_filter: &TargetFilter) -> Vec<Vec<TargetKey>>
                 .map(|vs| {
                     vs.iter()
                         .map(|v| {
-                            let dim_values: Vec<DimValue> = v
+                            let mut dim_values: Vec<DimValue> = v
                                 .dim_values
                                 .iter()
                                 .map(|dv| DimValue {
@@ -164,7 +173,7 @@ fn build_target_keys_inner(current_filter: &TargetFilter) -> Vec<Vec<TargetKey>>
                                     is_not: !dv.is_not,
                                 })
                                 .collect();
-
+                            dim_values.sort();
                             TargetKey { dim_values }
                         })
                         .collect()

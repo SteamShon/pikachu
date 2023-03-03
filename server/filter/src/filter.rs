@@ -1,21 +1,20 @@
-use dyn_clone::{clone_trait_object, DynClone};
-use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
-use std::{
-    any::Any,
-    collections::{HashMap, HashSet},
-};
-pub struct FilterResult {
-    filtered: bool,
-}
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DimValue {
     dimension: String,
     value: String,
+    is_not: bool,
 }
 pub type UserInfo = HashMap<String, HashSet<String>>;
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TargetKey {
+    dim_values: Vec<DimValue>,
+}
+#[derive(Debug, PartialEq, Eq)]
 pub enum TargetFilter {
     In {
         dimension: String,
@@ -35,12 +34,14 @@ pub enum TargetFilter {
         field: Box<TargetFilter>,
     },
 }
-
 pub trait Filter {
-    fn apply(&self, user_info: &UserInfo) -> FilterResult;
+    fn apply(&self, user_info: &UserInfo) -> bool;
 }
 
-fn explode<T: Clone>(ls_of_ls: &[Vec<T>], prev: &[T]) -> Vec<Vec<T>> {
+fn explode<T>(ls_of_ls: &[Vec<T>], prev: &[T]) -> Vec<Vec<T>>
+where
+    T: Clone,
+{
     if ls_of_ls.is_empty() {
         vec![prev.to_vec()]
     } else {
@@ -56,24 +57,26 @@ fn explode<T: Clone>(ls_of_ls: &[Vec<T>], prev: &[T]) -> Vec<Vec<T>> {
         rest
     }
 }
+pub fn build_target_keys(current_filter: &TargetFilter) -> Vec<TargetKey> {
+    build_target_keys_inner(current_filter)
+        .into_iter()
+        .flatten()
+        .collect()
+}
 
-pub fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
-    // let kv_delimiter = ".";
-    // let dim_value_delimiter = "_";
-    // let not_prefix = "!";
-    let kv_delimiter = ".";
-    let dim_value_delimiter = "_AND_";
-    let not_prefix = "NOT_";
+fn build_target_keys_inner(current_filter: &TargetFilter) -> Vec<Vec<TargetKey>> {
     match current_filter {
         TargetFilter::Select {
             dimension,
             valid_value,
         } => {
-            let dvs = vec![vec![format!(
-                "{dimension}{kv_delimiter}{value}",
-                dimension = dimension,
-                value = valid_value,
-            )]];
+            let dvs = vec![vec![TargetKey {
+                dim_values: vec![DimValue {
+                    dimension: dimension.to_string(),
+                    value: valid_value.to_string(),
+                    is_not: false,
+                }],
+            }]];
             // println!("Select: {:?}", dvs);
             dvs
         }
@@ -83,33 +86,40 @@ pub fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
         } => {
             let dvs = vec![valid_values
                 .iter()
-                .map(|v| {
-                    format!(
-                        "{dimension}{kv_delimiter}{value}",
-                        dimension = dimension,
-                        value = v
-                    )
+                .map(|v| TargetKey {
+                    dim_values: vec![DimValue {
+                        dimension: dimension.to_string(),
+                        value: v.to_string(),
+                        is_not: false,
+                    }],
                 })
                 .collect()];
             // println!("In: {:?}", dvs);
             dvs
         }
         TargetFilter::And { fields } => {
-            let childrens: Vec<Vec<String>> = fields
+            let childrens: Vec<Vec<TargetKey>> = fields
                 .iter()
-                .flat_map(|field| build_target_keys(field))
+                .flat_map(|field| build_target_keys_inner(field))
                 .collect();
             let dvs = explode(&childrens, &vec![])
                 .iter()
-                .map(|ls| vec![ls.join(dim_value_delimiter)])
+                .map(|ls| {
+                    let dim_values: Vec<DimValue> = ls
+                        .iter()
+                        .flat_map(|target_key| target_key.dim_values.clone())
+                        .collect();
+
+                    vec![TargetKey { dim_values }]
+                })
                 .collect();
             // println!("And: {:?}", dvs);
             dvs
         }
         TargetFilter::Or { fields } => {
-            let childrens: Vec<String> = fields
+            let childrens: Vec<TargetKey> = fields
                 .iter()
-                .flat_map(|field| build_target_keys(field))
+                .flat_map(|field| build_target_keys_inner(field))
                 .flatten()
                 .collect();
             let dvs = vec![childrens];
@@ -117,12 +127,24 @@ pub fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
             dvs
         }
         TargetFilter::Not { field } => {
-            let child = build_target_keys(field);
+            let child = build_target_keys_inner(field);
             let dvs = child
                 .iter()
                 .map(|vs| {
                     vs.iter()
-                        .map(|v| format!("{not_prefix}{value}", value = v))
+                        .map(|v| {
+                            let dim_values: Vec<DimValue> = v
+                                .dim_values
+                                .iter()
+                                .map(|dv| DimValue {
+                                    dimension: dv.dimension.to_string(),
+                                    value: dv.value.to_string(),
+                                    is_not: !dv.is_not,
+                                })
+                                .collect();
+
+                            TargetKey { dim_values }
+                        })
                         .collect()
                 })
                 .collect();
@@ -130,6 +152,7 @@ pub fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
         }
     }
 }
+
 fn traverse<F>(filter: &TargetFilter, f: &mut F) -> ()
 where
     F: FnMut(&TargetFilter) -> (),
@@ -161,6 +184,7 @@ where
         }
     }
 }
+
 pub fn extract_dimensions(filter: &TargetFilter) -> HashSet<String> {
     let mut dimensions = HashSet::<String>::new();
 
@@ -182,6 +206,100 @@ pub fn extract_dimensions(filter: &TargetFilter) -> HashSet<String> {
 
     traverse(filter, &mut op);
     dimensions
+}
+
+impl TargetFilter {
+    pub fn to_json(filter: &TargetFilter) -> serde_json::Value {
+        match filter {
+            TargetFilter::In {
+                dimension,
+                valid_values,
+            } => json!({
+                "type": "in",
+                "dimension": dimension,
+                "values": valid_values,
+            }),
+            TargetFilter::Select {
+                dimension,
+                valid_value,
+            } => {
+                json!({
+                    "type": "select",
+                    "dimension": dimension,
+                    "value": valid_value,
+                })
+            }
+            TargetFilter::And { fields } => {
+                let fields: Vec<_> = fields.iter().map(|f| TargetFilter::to_json(f)).collect();
+                json!({
+                    "type": "and",
+                    "fields": fields
+                })
+            }
+            TargetFilter::Or { fields } => {
+                let fields: Vec<_> = fields.iter().map(|f| TargetFilter::to_json(f)).collect();
+                json!({
+                    "type": "or",
+                    "fields": fields
+                })
+            }
+            TargetFilter::Not { field } => {
+                json!({
+                    "type": "not",
+                    "field": TargetFilter::to_json(field)
+                })
+            }
+        }
+    }
+    pub fn from(value: &Value) -> Option<Self> {
+        match value["type"].as_str() {
+            None => None,
+            Some(t) => match t {
+                "in" => {
+                    let dimension = value["dimension"].as_str()?.to_string();
+                    let mut valid_values = HashSet::new();
+                    for value in value["values"].as_array()? {
+                        for v in value.as_str() {
+                            valid_values.insert(v.to_string());
+                        }
+                    }
+
+                    Some(TargetFilter::In {
+                        dimension,
+                        valid_values,
+                    })
+                }
+                "select" => {
+                    let dimension = value["dimension"].as_str()?.to_string();
+                    let valid_value = value["value"].as_str()?.to_string();
+                    Some(TargetFilter::Select {
+                        dimension,
+                        valid_value,
+                    })
+                }
+                "and" => {
+                    let fields: Vec<TargetFilter> = value["fields"]
+                        .as_array()?
+                        .iter()
+                        .flat_map(|field| TargetFilter::from(field))
+                        .collect();
+                    Some(TargetFilter::And { fields })
+                }
+                "or" => {
+                    let fields: Vec<TargetFilter> = value["fields"]
+                        .as_array()?
+                        .iter()
+                        .flat_map(|field| TargetFilter::from(field))
+                        .collect();
+                    Some(TargetFilter::Or { fields })
+                }
+                "not" => Some(TargetFilter::Not {
+                    field: Box::new(TargetFilter::from(&value["field"])?),
+                }),
+                _ => None,
+            },
+        }
+    }
 }
 
 #[cfg(test)]

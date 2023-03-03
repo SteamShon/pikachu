@@ -140,16 +140,13 @@ fn test_filter_1_expected_true_index(id: &str) -> serde_json::Value {
                 format!("{id}_{seq}", id = id, seq = "0"),
                 format!("{id}_{seq}", id = id, seq = "2")
             ],
-    })
-}
-fn test_filter_1_expected_false_index(id: &str) -> serde_json::Value {
-    json!({
         DimValue::new("interests", "L2,L3", true).debug():
             vec![
                 format!("{id}", id = id),
             ],
     })
 }
+
 #[test]
 fn test_filter_1_index() {
     let filter = test_filter_1("AD_1");
@@ -162,11 +159,8 @@ fn test_filter_1_index() {
     let filter_index = FilterIndex::new(&filters);
     let id = &filters[0].id;
     let expected_true_index = test_filter_1_expected_true_index(id);
-    let true_index_debug = FilterIndex::debug_index(&filter_index.true_index.lock().unwrap());
+    let true_index_debug = FilterIndex::debug_index(&filter_index.index.lock().unwrap());
     assert_eq!(true_index_debug, expected_true_index);
-    let false_index_debug = FilterIndex::debug_index(&filter_index.false_index.lock().unwrap());
-    let expected_false_index = test_filter_1_expected_false_index(id);
-    assert_eq!(false_index_debug, expected_false_index);
 }
 #[test]
 fn test_new_filter_index() {

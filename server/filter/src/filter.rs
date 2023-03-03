@@ -16,7 +16,7 @@ pub struct DimValue {
 }
 pub type UserInfo = HashMap<String, HashSet<String>>;
 
-enum TargetFilter {
+pub enum TargetFilter {
     In {
         dimension: String,
         valid_values: HashSet<String>,
@@ -57,10 +57,13 @@ fn explode<T: Clone>(ls_of_ls: &[Vec<T>], prev: &[T]) -> Vec<Vec<T>> {
     }
 }
 
-fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
+pub fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
+    // let kv_delimiter = ".";
+    // let dim_value_delimiter = "_";
+    // let not_prefix = "!";
     let kv_delimiter = ".";
-    let dim_value_delimiter = "_";
-    let not_delimiter = "^";
+    let dim_value_delimiter = "_AND_";
+    let not_prefix = "NOT_";
     match current_filter {
         TargetFilter::Select {
             dimension,
@@ -71,7 +74,7 @@ fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
                 dimension = dimension,
                 value = valid_value,
             )]];
-            println!("Select: {:?}", dvs);
+            // println!("Select: {:?}", dvs);
             dvs
         }
         TargetFilter::In {
@@ -88,7 +91,7 @@ fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
                     )
                 })
                 .collect()];
-            println!("In: {:?}", dvs);
+            // println!("In: {:?}", dvs);
             dvs
         }
         TargetFilter::And { fields } => {
@@ -100,7 +103,7 @@ fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
                 .iter()
                 .map(|ls| vec![ls.join(dim_value_delimiter)])
                 .collect();
-            println!("And: {:?}", dvs);
+            // println!("And: {:?}", dvs);
             dvs
         }
         TargetFilter::Or { fields } => {
@@ -110,7 +113,7 @@ fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
                 .flatten()
                 .collect();
             let dvs = vec![childrens];
-            println!("Or: {:?}", dvs);
+            // println!("Or: {:?}", dvs);
             dvs
         }
         TargetFilter::Not { field } => {
@@ -119,7 +122,7 @@ fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
                 .iter()
                 .map(|vs| {
                     vs.iter()
-                        .map(|v| format!("not{not_delimiter}{value}", value = v))
+                        .map(|v| format!("{not_prefix}{value}", value = v))
                         .collect()
                 })
                 .collect();
@@ -127,76 +130,60 @@ fn build_target_keys(current_filter: &TargetFilter) -> Vec<Vec<String>> {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use prisma_client_rust::query_core::In;
-
-    use super::*;
-
-    #[test]
-    fn test_explode() {
-        let input = vec![vec![1, 2, 3], vec![4, 5], vec![6]];
-        let expected_output = vec![
-            vec![1, 4, 6],
-            vec![1, 5, 6],
-            vec![2, 4, 6],
-            vec![2, 5, 6],
-            vec![3, 4, 6],
-            vec![3, 5, 6],
-        ];
-
-        assert_eq!(explode(&input, &vec![][..]), expected_output);
-    }
-    #[test]
-    fn test_extract_dim_values() {
-        use TargetFilter::*;
-
-        let input = And {
-            fields: vec![
-                Or {
-                    fields: vec![
-                        Select {
-                            dimension: String::from("age"),
-                            valid_value: String::from("10"),
-                        },
-                        And {
-                            fields: vec![
-                                In {
-                                    dimension: String::from("age"),
-                                    valid_values: HashSet::from([
-                                        String::from("20"),
-                                        String::from("30"),
-                                    ]),
-                                },
-                                Select {
-                                    dimension: String::from("gender"),
-                                    valid_value: String::from("F"),
-                                },
-                            ],
-                        },
-                    ],
-                },
-                Not {
-                    field: Box::new(In {
-                        dimension: String::from("like"),
-                        valid_values: HashSet::from([String::from("soccor")]),
-                    }),
-                },
-            ],
-        };
-        let expected_output = vec![
-            vec![1, 4, 6],
-            vec![1, 5, 6],
-            vec![2, 4, 6],
-            vec![2, 5, 6],
-            vec![3, 4, 6],
-            vec![3, 5, 6],
-        ];
-        let output = build_target_keys(&input);
-
-        for dvs in output {
-            println!("{:?}", dvs)
+fn traverse<F>(filter: &TargetFilter, f: &mut F) -> ()
+where
+    F: FnMut(&TargetFilter) -> (),
+{
+    match filter {
+        TargetFilter::In {
+            dimension: _,
+            valid_values: _,
+        } => f(filter),
+        TargetFilter::Select {
+            dimension: _,
+            valid_value: _,
+        } => f(filter),
+        TargetFilter::And { fields } => {
+            f(filter);
+            for field in fields {
+                traverse(field, f);
+            }
+        }
+        TargetFilter::Or { fields } => {
+            f(filter);
+            for field in fields {
+                traverse(field, f);
+            }
+        }
+        TargetFilter::Not { field } => {
+            f(filter);
+            traverse(field, f);
         }
     }
 }
+pub fn extract_dimensions(filter: &TargetFilter) -> HashSet<String> {
+    let mut dimensions = HashSet::<String>::new();
+
+    let mut op = |current_filter: &TargetFilter| match current_filter {
+        TargetFilter::In {
+            dimension,
+            valid_values: _,
+        } => {
+            dimensions.insert(dimension.clone());
+        }
+        TargetFilter::Select {
+            dimension,
+            valid_value: _,
+        } => {
+            dimensions.insert(dimension.clone());
+        }
+        _ => (),
+    };
+
+    traverse(filter, &mut op);
+    dimensions
+}
+
+#[cfg(test)]
+#[path = "./filter_test.rs"]
+mod filter_test;

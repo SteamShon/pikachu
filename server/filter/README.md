@@ -1,7 +1,5 @@
 # Goal
 
-This library provide following features.
-
 Given set of entity(Filter) which has combinations of predicates,
 
 1. Provide indexing set of filters into embedded inverted index data structure.
@@ -9,7 +7,9 @@ Given set of entity(Filter) which has combinations of predicates,
 
 ## Example Filter
 
-Example of combination of predicates.
+1. TargetFilter
+
+- combination of predicates.
 
 ```text
 Or {
@@ -29,83 +29,169 @@ Or {
 }
 ```
 
-The library provide following trait so user can attach filter on their own entity(ex: Product, Video, NewsArticle, Song,...) by implementing `Filterable` trait.
+- json Serialize/Deserialize example.
+
+```
+{
+    "type": "or",
+    "fields": [
+        {
+            "type": "in",
+            "dimension": "age",
+            "values": ["10", "20"]
+        },
+        {
+            "type": "and",
+            "fields": [
+                {
+                    "type": "in",
+                    "dimension": "gender",
+                    "values": ["F"]
+                },
+                {
+                    "type": "or",
+                    "fields": [
+                        {
+                            "type": "in",
+                            "dimension": "interests",
+                            "values": ["L1"]
+                        },
+                        {
+                            "type": "and",
+                            "fields": [
+                                {
+                                    "type": "in",
+                                    "dimension": "age",
+                                    "values": ["10", "20"]
+                                },
+                                {
+                                    "type": "not",
+                                    "field": {
+                                        "type": "in",
+                                        "dimension": "interests",
+                                        "values": ["L2,L3"]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+2. Filter
+
+- Any any entity(ex: Product, Video, NewsArticle, Song,...) that implement `Filterable` trait
+- By implementing `Filterable` trait, entities can be indexed and searched.
 
 ```text
 //library
 pub trait Filterable {
     fn id(&self): String;
-    fn filter(&self): Filter;
+    fn filter(&self): TargetFilter;
 }
 //client
 impl Filterable for MyNewsArticle {
     fn id(&self): String {
         String::from(self.uuid)
     }
-    fn filter(&self): Fitler {
-        Filter::from(self.filter_raw_string)
+    fn filter(&self): TargetFilter {
+        TargetFilter::from(self.filter_raw_string)
     }
-}
-
-// example
-Ad_1: {
-    id: "Ad_1", // any unique id to identify your entity.
-    filter:
-        Or {
-            In("age", "10", "20"),
-            And (
-                In ("gender", "F")
-                Or (
-                    In ("interests", "L1")
-                    And (
-                        In ("age", "10", "20"),
-                        Not (
-                            In ("interests", "L2,L3")
-                        )
-                    )
-                )
-            )
-        }
 }
 ```
 
-## Explanation for an example
+- example
 
-Followings are an step-by-step explanations on what actually goes on under the hood.
+```js
+{
+    "id": "AD_1",
+    "filter": {
+        "type": "or",
+        "fields": [
+            {
+                "type": "in",
+                "dimension": "age",
+                "values": ["10", "20"]
+            },
+            {
+                "type": "and",
+                "fields": [
+                    {
+                        "type": "in",
+                        "dimension": "gender",
+                        "values": ["F"]
+                    },
+                    {
+                        "type": "or",
+                        "fields": [
+                            {
+                                "type": "in",
+                                "dimension": "interests",
+                                "values": ["L1"]
+                            },
+                            {
+                                "type": "and",
+                                "fields": [
+                                    {
+                                        "type": "in",
+                                        "dimension": "age",
+                                        "values": ["10", "20"]
+                                    },
+                                    {
+                                        "type": "not",
+                                        "field": {
+                                            "type": "in",
+                                            "dimension": "interests",
+                                            "values": ["L2,L3"]
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
 
-Assume we only have one Filter.
+## step-by-step explanation with example
 
-````text
-Ad_1: {
-    id: "ad_1", // any unique id to identify your entity.
-    filter: ```
-        Or {
-            In("age", "10", "20"),
+Assume we only have one Filter which has "AD_1" as id, and following TargetFilter.
+
+```text
+Or {
+    In("age", "10", "20"),
+    And (
+        In ("gender", "F")
+        Or (
+            In ("interests", "L1")
             And (
-                In ("gender", "F")
-                Or (
-                    In ("interests", "L1")
-                    And (
-                        In ("age", "10", "20"),
-                        Not (
-                            In ("interests", "L2,L3")
-                        )
-                    )
+                In ("age", "10", "20"),
+                Not (
+                    In ("interests", "L2,L3")
                 )
             )
-        }```
+        )
+    )
 }
+```
 
-### 1. all_dimensions: Set<String>
+### 1. all_dimensions
 
 - Iterate through all filters and create a set of all dimensions used in the current registered filteres universe, called all_dimensions
 - since our example only have one filter, following is what all_dimension looks like.
 
 ```text
 all_dimensions: ["age", "gender", "interests"]
-````
+```
 
-### 2. target_keys: Set<String>
+### 2. target_keys
 
 - Determine the combination of conditions (target_keys) that must match for each filter.
 - single predicate consists of dim and value joined with "." as delimiter.
@@ -114,15 +200,15 @@ all_dimensions: ["age", "gender", "interests"]
 
 ```text
 target_keys = [
-    "age.20", // OR
     "age.10", // OR
+    "age.10_AND_gender.F_NOT_interests.L2,L3" // OR
+    "age.20", // OR
+    "age.20_AND_gender.F_NOT_interests.L2,L3", // OR
     "gender.F_AND_interests.L1", // OR
-    "gender.F_AND_age.20_AND_NOT_interests.L2,L3", // OR
-    "gender.F_AND_age.10_AND_NOT_interests.L2,L3" // OR
 ]
 ```
 
-### 3. build true_index/false_index to help fast search.
+### 3. true_index/false_index
 
 - true_index to gernerate positive candidates and false_index to generate negative candidates.
 - Once positive/negative candidates built, matched filters are simply positive set - negative set.
@@ -136,28 +222,28 @@ Followings are notes on build index.
 
 ```text
 target_keys = [
-    ["age.20", "gender.empty", "interests.empty"], // ad_1_0
-    ["age.10", "gender.empty", "interests.empty"], // ad_1_1
-    ["age.empty", "gender.F", "interests.L1"], // ad_1_2
-    ["age.20", "gender.F", "NOT_interests.L2,L3"], // ad_1_3
-    ["age.10", "gender.F", "NOT_interests.L2,L3"], // ad_1_4
+    ["age.10", "gender.empty", "interests.empty"],  // ad_1_0
+    ["age.10", "gender.F", "NOT_interests.L2,L3"],  // ad_1_1
+    ["age.20", "gender.empty", "interests.empty"],  // ad_1_2
+    ["age.20", "gender.F", "NOT_interests.L2,L3"],  // ad_1_3
+    ["age.empty", "gender.F", "interests.L1"],      // ad_1_4
 ]
 
 true_index = {
-    "age.20": ["ad_1_0", "ad_1_3"],
-    "gender.empty": ["ad_1_0", "ad_1_1"],
-    "interests.empty": ["ad_1_0", "ad_1_1"],
-    "age.10": ["ad_1_1", "ad_1_4"],
-    "age.empty": ["ad_1_2"],
-    "gender.F": ["ad_1_2", "ad_1_3", "ad_1_4"],
-    "interests.L1": ["ad_1_2"],
+    "age.empty": ["ad_1_4"],
+    "age.10": ["ad_1_0", "ad_1_1"],
+    "age.20": ["ad_1_2", "ad_1_3"],
+    "gender.empty": ["ad_1_0", "ad_1_2"],
+    "gender.F": ["ad_1_1", "ad_1_3", "ad_1_4"],
+    "interests.empty": ["ad_1_0", "ad_1_2"],
+    "interests.L1": ["ad_1_4"],
 }
 false_index = {
-    "interests.L2,L3": ["ad_1_3", "ad_1_4"]
+    "interests.L2,L3": ["ad_1_1", "ad_1_3"]
 }
 ```
 
-### 4. build user_meta for search
+### 4. user_meta for search
 
 - Combine user_info with all_dimensions to create keys for index lookup, called user_meta.
 - If user provided data missing dimensions, then pad Set("empty") as value for these dimensions.
@@ -182,7 +268,7 @@ user_meta = {
 }
 ```
 
-### 5. search true_index/false_index for given user_meta.
+### 5. search true_index/false_index for given user_meta
 
 #### positive candidates
 
@@ -197,16 +283,16 @@ Once finshing with generating candidates for all dimension, intersect those sets
 
 ```text
 true_index = {
-    "age.20": ["ad_1_0", "ad_1_3"],
-    "gender.empty": ["ad_1_0", "ad_1_1"],
-    "interests.empty": ["ad_1_0", "ad_1_1"],
-    "age.10": ["ad_1_1", "ad_1_4"],
-    "age.empty": ["ad_1_2"],
-    "gender.F": ["ad_1_2", "ad_1_3", "ad_1_4"],
-    "interests.L1": ["ad_1_2"],
+    "age.empty": ["ad_1_4"],
+    "age.10": ["ad_1_0", "ad_1_1"],
+    "age.20": ["ad_1_2", "ad_1_3"],
+    "gender.empty": ["ad_1_0", "ad_1_2"],
+    "gender.F": ["ad_1_1", "ad_1_3", "ad_1_4"],
+    "interests.empty": ["ad_1_0", "ad_1_2"],
+    "interests.L1": ["ad_1_4"],
 }
 false_index = {
-    "interests.L2,L3": ["ad_1_3", "AD_1_4"]
+    "interests.L2,L3": ["ad_1_1", "ad_1_3"]
 }
 user_meta = {
     "age": ["10"],
@@ -214,11 +300,11 @@ user_meta = {
     "interests": ["empty"],
 }
 ads_for_true_index = [
-    "age.empty" | "age.10" -> ["ad_1_2"] | ["ad_1_1", "ad_1_4"] = ["ad_1_1", "ad_1_2", "ad_1_4"]
-    "gender.empty" -> ["ad_1_0", "ad_1_1"]
-    "interests.empty" -> ["ad_1_0", "ad_1_1"]
+    "age.empty" | "age.10" -> ["ad_1_4"] | ["ad_1_0", "ad_1_1"] = ["ad_1_0", "ad_1_1", "ad_1_4"]
+    "gender.empty" -> ["ad_1_0", "ad_1_2"]
+    "interests.empty" -> ["ad_1_0", "ad_1_2"]
 ]
-matched_ads_for_true_index = ["ad_1_1"] = ["ad_1"]
+matched_ads_for_true_index = ["ad_1_0"] = ["ad_1"]
 ```
 
 #### negative candidates
@@ -244,18 +330,28 @@ results = matched_ads_for_true_index - matched_ads_for_false_index = ["ad_1"] - 
 
 ### More example cases for search.
 
+#### index state
+
 ```text
+target_keys = [
+    ["age.10", "gender.empty", "interests.empty"],  // ad_1_0
+    ["age.10", "gender.F", "NOT_interests.L2,L3"],  // ad_1_1
+    ["age.20", "gender.empty", "interests.empty"],  // ad_1_2
+    ["age.20", "gender.F", "NOT_interests.L2,L3"],  // ad_1_3
+    ["age.empty", "gender.F", "interests.L1"],      // ad_1_4
+]
+
 true_index = {
-    "age.20": ["ad_1_0", "ad_1_3"],
-    "gender.empty": ["ad_1_0", "ad_1_1"],
-    "interests.empty": ["ad_1_0", "ad_1_1"],
-    "age.10": ["ad_1_1", "ad_1_4"],
-    "age.empty": ["ad_1_2"],
-    "gender.F": ["ad_1_2", "ad_1_3", "ad_1_4"],
-    "interests.L1": ["ad_1_2"],
+    "age.empty": ["ad_1_4"],
+    "age.10": ["ad_1_0", "ad_1_1"],
+    "age.20": ["ad_1_2", "ad_1_3"],
+    "gender.empty": ["ad_1_0", "ad_1_2"],
+    "gender.F": ["ad_1_1", "ad_1_3", "ad_1_4"],
+    "interests.empty": ["ad_1_0", "ad_1_2"],
+    "interests.L1": ["ad_1_4"],
 }
 false_index = {
-    "interests.L2,L3": ["ad_1_3", "AD_1_4"]
+    "interests.L2,L3": ["ad_1_1", "ad_1_3"]
 }
 ```
 
@@ -269,11 +365,11 @@ user_meta = {
 }
 
 ads_for_true_index = [
-    "age.empty" -> ["ad_1_2"]
+    "age.empty" -> ["ad_1_4"]
     "gender.F" | "gender.empty" ->
-        ["ad_1_2", "ad_1_3", "ad_1_4"] | ["ad_1_0", "ad_1_1"] =
+        ["ad_1_1", "ad_1_3", "ad_1_4"] | ["ad_1_0", "ad_1_2"] =
         ["ad_1_0", "ad_1_1", "ad_1_2", "ad_1_3", "ad_1_4"]
-    "interests.empty" -> ["ad_1_0", "ad_1_1"]
+    "interests.empty" -> ["ad_1_0", "ad_1_2"]
 ]
 
 matched_ads_for_true_index = []
@@ -297,18 +393,20 @@ user_meta = {
 }
 
 ads_for_true_index = [
-    "age.empty" | "age.10" -> ["ad_1_2"] | ["ad_1_1", "ad_1_4"] = ["ad_1_1", "ad_1_2", "ad_1_4"]
+    "age.empty" | "age.10" ->
+        ["ad_1_4"] | ["ad_1_0", "ad_1_1"] =
+        ["ad_1_0", "ad_1_1", "ad_1_4"]
     "gender.empty" | "gender.F" ->
-        ["ad_1_0", "ad_1_1"] |
-        ["ad_1_2", "ad_1_3", "ad_1_4"] =
+        ["ad_1_0", "ad_1_2"] |
+        ["ad_1_1", "ad_1_3", "ad_1_4"] =
         ["ad_1_0", "ad_1_1", "ad_1_2", "ad_1_3", "ad_1_4"]
     "interests.empty" | "interests.L1" ->
-        ["ad_1_0", "ad_1_1"] |
-        ["ad_1_2"] =
-        ["ad_1_0", "ad_1_1", "ad_1_2"]
+        ["ad_1_0", "ad_1_2"] |
+        ["ad_1_4"] =
+        ["ad_1_0", "ad_1_2", "ad_1_4"]
 ]
 
-matched_ads_for_true_index = ["ad_1_1", "ad_1_2"]
+matched_ads_for_true_index = ["ad_1_0", "ad_1_4"]
 
 ads_for_false_index = [
     "age.10" -> []
@@ -318,7 +416,8 @@ ads_for_false_index = [
 
 matched_ads_for_false_index = []
 
-results = matched_ads_for_true_index - matched_ads_for_false_index = ["ad_1_1", "ad_1_2"] - [] = ["ad_1_1", "ad_1_2"]
+results = matched_ads_for_true_index - matched_ads_for_false_index =
+    ["ad_1_0", "ad_1_4"] - [] = ["ad_1_0", "ad_1_4"]
 ```
 
 #### case 3: Although there is a match for the age.20 condition, it will not be displayed due to age.20_AND_gender.F_AND_NOT_interests.L2,L3 and age.10_AND_gender.F_AND_NOT_interests.L2,L3 conditions
@@ -331,14 +430,17 @@ user_meta = {
 }
 
 ads_for_true_index = [
-    "age.empty" | "age.20" -> ["ad_1_2"] | ["ad_1_0", "ad_1_3"] = ["ad_1_0", "ad_1_2", "ad_1_3"]
+    "age.empty" | "age.20" ->
+        ["ad_1_4"] | ["ad_1_2", "ad_1_3"] =
+        ["ad_1_2", "ad_1_3", "ad_1_4"]
     "gender.empty" | "gender.F" ->
-        ["ad_1_0", "ad_1_1"] | ["ad_1_2", "ad_1_3", "ad_1_4"] =
+        ["ad_1_0", "ad_1_2"] | ["ad_1_1", "ad_1_3", "ad_1_4"] =
         ["ad_1_0", "ad_1_1", "ad_1_2", "ad_1_3", "ad_1_4"]
-    "interests.empty" | "interests.L2,L3" -> ["ad_1_0", "ad_1_1"] | [] = ["ad_1_0", "ad_1_1"]
+    "interests.empty" | "interests.L2,L3" ->
+        ["ad_1_0", "ad_1_2"] | [] = ["ad_1_0", "ad_1_2"]
 ]
 
-matched_ads_for_true_index = ["ad_1_0"]
+matched_ads_for_true_index = ["ad_1_2"]
 
 ads_for_false_index = [
     "age.20" -> []
@@ -349,7 +451,7 @@ ads_for_false_index = [
 matched_ads_for_false_index = ["ad_1_3", "AD_1_4"]
 
 results = matched_ads_for_true_index - matched_ads_for_false_index =
-    ["ad_1_0"] - ["ad_1_3", "AD_1_4"] =
+    ["ad_1_2"] - ["ad_1_3", "AD_1_4"] =
     ["ad_1"] - ["ad_1"] = []
 ```
 
@@ -363,14 +465,17 @@ user_meta = {
 }
 
 ads_for_true_index = [
-    "age.empty" | "age.20" -> ["ad_1_2"] | ["ad_1_0", "ad_1_3"] = ["ad_1_0", "ad_1_2", "ad_1_3"]
+    "age.empty" | "age.20" ->
+        ["ad_1_4"] | ["ad_1_2", "ad_1_3"] =
+        ["ad_1_2", "ad_1_3", "ad_1_4"]
     "gender.empty" | "gender.F" ->
-        ["ad_1_0", "ad_1_1"] | ["ad_1_2", "ad_1_3", "ad_1_4"] =
+        ["ad_1_0", "ad_1_2"] | ["ad_1_1", "ad_1_3", "ad_1_4"] =
         ["ad_1_0", "ad_1_1", "ad_1_2", "ad_1_3", "ad_1_4"]
-    "interests.empty" | "interests.L1" | "interests.L2,L3" -> ["ad_1_0", "ad_1_1"] | ["ad_1_2"] | [] = ["ad_1_0", "ad_1_1", "ad_1_2"]
+    "interests.empty" | "interests.L1" | "interests.L2,L3" ->
+        ["ad_1_0", "ad_1_2"] | ["ad_1_4"]| [] = ["ad_1_0", "ad_1_2", "ad_1_4"]
 ]
 
-matched_ads_for_true_index = ["ad_1_0", "ad_1_2"]
+matched_ads_for_true_index = ["ad_1_2", "ad_1_4"]
 
 ads_for_false_index = [
     "age.20" -> []
@@ -382,6 +487,6 @@ ads_for_false_index = [
 matched_ads_for_false_index = ["ad_1_3", "AD_1_4"]
 
 results = matched_ads_for_true_index - matched_ads_for_false_index =
-    ["ad_1_0", "ad_1_2"] - ["ad_1_3", "AD_1_4"] =
+    ["ad_1_2", "ad_1_4"] - ["ad_1_3", "AD_1_4"] =
     ["ad_1"] - ["ad_1"] = []
 ```

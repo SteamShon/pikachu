@@ -8,6 +8,7 @@ use crate::db::{
 use filter::filter::{TargetFilter, UserInfo};
 use filter::filterable::Filterable;
 use filter::index::FilterIndex;
+use serde::Serialize;
 
 impl Filterable for ad_group::Data {
     fn id(&self) -> String {
@@ -23,6 +24,13 @@ impl Filterable for ad_group::Data {
             }
         }
     }
+}
+
+#[derive(Serialize)]
+pub struct SearchResult {
+    pub matched_ads: Vec<ad_group::Data>,
+    // pub grouped: HashMap<String, HashMap<String, HashMap<String, ad_group::Data>>>,
+    pub non_filter_ads: Vec<ad_group::Data>,
 }
 
 #[derive(Debug)]
@@ -66,7 +74,8 @@ impl AdState {
 
                             let new_ad_group = ad_group::Data {
                                 campaign: Some(Box::new(new_campaign)),
-                                filter: Some(String::from(r#"
+                                filter: Some(String::from(
+                                    r#"
                                     {
                                         "type": "and", 
                                         "fields": [
@@ -75,7 +84,8 @@ impl AdState {
                                             {"type": "in", "dimension": "l_returnflag", "values": ["N"]}
                                         ]
                                     }
-                                "#)),
+                                "#,
+                                )),
                                 ..ad_group.clone()
                             };
                             ad_group_meta.insert(ad_group.id.clone(), new_ad_group);
@@ -139,19 +149,39 @@ impl AdState {
         service_id: &str,
         placement_group_id: &str,
         user_info_json: &serde_json::Value,
-    ) -> Vec<ad_group::Data> {
+    ) -> SearchResult {
         let user_info = Self::parse_user_info(user_info_json).unwrap();
-        println!("{:?}", user_info);
-        
-        let mut matched_ad_ids = Vec::new();
-        for matched_ad_id in self.filter_index.search(&user_info) {
-            for ad_meta in self.ad_group_meta.get(&matched_ad_id) {
+        let matched_ids = self.filter_index.search(&user_info);
+        let matched_ads =
+            Self::transform_ids_to_ads(&self.ad_group_meta, placement_group_id, matched_ids.iter());
+        let non_filter_ads = Self::transform_ids_to_ads(
+            &self.ad_group_meta,
+            placement_group_id,
+            self.filter_index.non_filter_ids.iter(),
+        );
+
+        SearchResult {
+            matched_ads,
+            non_filter_ads,
+        }
+    }
+    fn transform_ids_to_ads<'a, I>(
+        id_meta_map: &HashMap<String, ad_group::Data>,
+        placement_group_id: &str,
+        ids: I,
+    ) -> Vec<ad_group::Data>
+    where
+        I: Iterator<Item = &'a String>,
+    {
+        let mut ads = Vec::new();
+        for id in ids {
+            for ad_meta in id_meta_map.get(id) {
                 for campaign in ad_meta.campaign.iter() {
                     for placement in campaign.placement.iter() {
                         for placement_group in placement.placement_group.iter() {
                             match placement_group {
                                 Some(pg) if pg.id == placement_group_id => {
-                                    matched_ad_ids.push(ad_meta.clone());
+                                    ads.push(ad_meta.clone());
                                 }
                                 _ => {}
                             }
@@ -160,6 +190,39 @@ impl AdState {
                 }
             }
         }
-        matched_ad_ids
+        ads
+    }
+    fn transform_ids_to_ads_grouped<'a, I>(
+        id_meta_map: &HashMap<String, ad_group::Data>,
+        placement_group_id: &str,
+        ids: I,
+    ) -> HashMap<String, HashMap<String, HashMap<String, ad_group::Data>>>
+    where
+        I: Iterator<Item = &'a String>,
+    {
+        let mut ads = HashMap::new();
+
+        for id in ids {
+            for ad_meta in id_meta_map.get(id) {
+                for campaign in ad_meta.campaign.iter() {
+                    for placement in campaign.placement.iter() {
+                        for placement_group in placement.placement_group.iter() {
+                            match placement_group {
+                                Some(pg) if pg.id == placement_group_id => {
+                                    ads.entry(placement.id.clone())
+                                        .or_insert_with(|| HashMap::new())
+                                        .entry(campaign.id.clone())
+                                        .or_insert_with(|| HashMap::new())
+                                        .entry(ad_meta.id.clone())
+                                        .or_insert_with(|| ad_meta.clone());
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        ads
     }
 }

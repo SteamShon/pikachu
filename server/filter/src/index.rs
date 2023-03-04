@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::num::NonZeroUsize;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use lru::LruCache;
 use serde_json::json;
@@ -12,6 +12,7 @@ use crate::filterable::Filterable;
 pub struct FilterIndex {
     pub all_dimensions: HashSet<String>,
     pub index: Mutex<LruCache<DimValue, HashSet<String>>>,
+    pub non_filter_ids: Arc<HashSet<String>>,
 }
 
 impl FilterIndex {
@@ -25,12 +26,13 @@ impl FilterIndex {
         }
         json!(index)
     }
-    fn debug(&self) -> serde_json::Value {
+    pub fn debug(&self) -> serde_json::Value {
         let true_binding = self.index.lock().unwrap();
 
         json!({
             "all_dimensions": json!(self.all_dimensions),
             "index": Self::debug_index(&true_binding),
+            "non_filter_ids": json!(self.non_filter_ids.as_ref()),
         })
     }
     fn build_all_dimensions<F>(filters: &Vec<F>) -> HashSet<String>
@@ -46,14 +48,18 @@ impl FilterIndex {
         dimensions
     }
 
-    fn new<F>(filters: &Vec<F>) -> FilterIndex
+    pub fn new<F>(filters: &Vec<F>) -> FilterIndex
     where
         F: Filterable,
     {
         let all_dimensions = Self::build_all_dimensions(filters);
         let mut current_index = LruCache::new(NonZeroUsize::new(100000).unwrap());
+        let mut non_filter_ids = HashSet::new();
 
         for filter in filters {
+            if let None = filter.filter() {
+                non_filter_ids.insert(filter.id().clone());
+            }
             for target_filter in filter.filter() {
                 let target_keys = build_target_keys(&target_filter);
 
@@ -85,6 +91,7 @@ impl FilterIndex {
         FilterIndex {
             all_dimensions,
             index: Mutex::new(current_index),
+            non_filter_ids: Arc::new(non_filter_ids),
         }
     }
 
@@ -112,12 +119,15 @@ impl FilterIndex {
                 }
             }
         }
+        //println!("{:?} {:?} candidates {:?}", is_not, dimension, union);
         union
     }
     fn to_ids(internal_ids: &HashSet<String>) -> HashSet<String> {
         let mut ids = HashSet::new();
         for internal_id in internal_ids {
-            ids.insert(internal_id.clone());
+            for id in internal_id.split("_").nth(0) {
+                ids.insert(String::from(id));
+            }
         }
         ids
     }
@@ -139,13 +149,15 @@ impl FilterIndex {
                 .unwrap_or(dim_candidates);
             positive_candidates = Some(intersections);
         }
+
+        //println!("positive candidates: {:?}", positive_candidates);
         positive_candidates
     }
     fn search_negative_ids(&self, user_info: &UserInfo) -> HashSet<String> {
         let mut index = self.index.lock().unwrap();
         let mut union: HashSet<String> = HashSet::new();
 
-        for (dim, values) in user_info {
+        for (dim, _values) in user_info {
             let dim_candidates =
                 Self::generate_dimension_candidates(user_info, dim, &mut index, true);
             union.extend(dim_candidates);
@@ -153,13 +165,14 @@ impl FilterIndex {
 
         union
     }
-    fn search(&self, user_info: &UserInfo) -> HashSet<String> {
+    pub fn search(&self, user_info: &UserInfo) -> HashSet<String> {
         let positive_candidates = self.search_positive_internal_ids(user_info);
         let negative_candidates = self.search_negative_ids(user_info);
 
         let matched_ids =
             &Self::to_ids(&positive_candidates.unwrap_or(HashSet::new())) - &negative_candidates;
 
+        //println!("index search: {:?}", matched_ids);
         matched_ids
     }
 }

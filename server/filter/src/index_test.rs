@@ -9,8 +9,8 @@ struct TestFilter {
     filter: String,
 }
 impl Filterable for TestFilter {
-    fn id(&self) -> &str {
-        &self.id
+    fn id(&self) -> String {
+        String::from(&self.id)
     }
 
     fn filter(&self) -> Option<TargetFilter> {

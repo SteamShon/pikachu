@@ -20,7 +20,8 @@ impl Filterable for ad_group::Data {
             None => None,
             Some(s) => {
                 let value: serde_json::Value = serde_json::from_str(&s).ok()?;
-                TargetFilter::from(&value)
+                //TargetFilter::from(&value)
+                TargetFilter::from_jsonlogic(&value)
             }
         }
     }

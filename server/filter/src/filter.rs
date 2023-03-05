@@ -261,14 +261,14 @@ impl TargetFilter {
                 })
             }
             TargetFilter::And { fields } => {
-                let fields: Vec<_> = fields.iter().map(|f| TargetFilter::to_json(f)).collect();
+                let fields: Vec<_> = fields.iter().map(|f| Self::to_json(f)).collect();
                 json!({
                     "type": "and",
                     "fields": fields
                 })
             }
             TargetFilter::Or { fields } => {
-                let fields: Vec<_> = fields.iter().map(|f| TargetFilter::to_json(f)).collect();
+                let fields: Vec<_> = fields.iter().map(|f| Self::to_json(f)).collect();
                 json!({
                     "type": "or",
                     "fields": fields
@@ -277,10 +277,74 @@ impl TargetFilter {
             TargetFilter::Not { field } => {
                 json!({
                     "type": "not",
-                    "field": TargetFilter::to_json(field)
+                    "field": Self::to_json(field)
                 })
             }
         }
+    }
+    pub fn to_jsonlogic(filter: &TargetFilter) -> serde_json::Value {
+        match filter {
+            TargetFilter::In {
+                dimension,
+                valid_values,
+            } => json!({
+                "in": [{"var": dimension}, valid_values]
+            }),
+            TargetFilter::Select {
+                dimension,
+                valid_value,
+            } => {
+                json!({
+                    "==": [{"var": dimension}, valid_value]
+                })
+            }
+            TargetFilter::And { fields } => {
+                let fields: Vec<_> = fields.iter().map(|f| Self::to_jsonlogic(f)).collect();
+                json!({ "and": fields })
+            }
+            TargetFilter::Or { fields } => {
+                let fields: Vec<_> = fields.iter().map(|f| Self::to_jsonlogic(f)).collect();
+                json!({ "or": fields })
+            }
+            TargetFilter::Not { field } => {
+                json!({ "!": Self::to_jsonlogic(field) })
+            }
+        }
+    }
+    pub fn from_jsonlogic(value: &Value) -> Option<Self> {
+        if !&value["!"].is_null() {
+            let field = Box::new(Self::from_jsonlogic(&value["!"])?);
+            return Some(TargetFilter::Not { field });
+        }
+        if let Value::Array(childrens) = &value["and"] {
+            let fields: Vec<TargetFilter> = childrens
+                .iter()
+                .flat_map(|child| Self::from_jsonlogic(child))
+                .collect();
+            return Some(TargetFilter::And { fields });
+        }
+        if let Value::Array(childrens) = &value["or"] {
+            let fields: Vec<TargetFilter> = childrens
+                .iter()
+                .flat_map(|child| Self::from_jsonlogic(child))
+                .collect();
+            return Some(TargetFilter::Or { fields });
+        }
+        if let Value::Array(op_values) = &value["in"] {
+            let dimension = String::from(op_values[0]["var"].as_str()?);
+            let valid_values: HashSet<String> = op_values[1]
+                .as_array()?
+                .iter()
+                .flat_map(|v| v.as_str())
+                .map(|v| String::from(v))
+                .collect();
+            return Some(TargetFilter::In {
+                dimension,
+                valid_values,
+            });
+        }
+
+        None
     }
     pub fn from(value: &Value) -> Option<Self> {
         match value["type"].as_str() {

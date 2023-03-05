@@ -320,3 +320,32 @@ fn test_target_filter_from_raw_string() {
     println!("{:?}", value);
     assert_eq!(deserialized_filter, deserialized_filter_after);
 }
+#[test]
+fn test_jsonlogic_serde() {
+    let raw_str = r#"
+    {
+        "or": [
+            {"in": [{"var": "age"}, ["10", "20"]]},
+            {"and": [
+                {"in": [{"var": "gender"}, ["F"]]},
+                {"or": [
+                    {"in": [{"var": "interests"}, ["L1"]]},
+                    {"and": [
+                        {"in": [{"var": "age"}, ["10", "20"]]},
+                        {"!": {"in": [{"var": "interests"}, ["L2,L3"]]}}
+                    ]}
+                ]}
+            ]}
+        ]
+    }
+    "#;
+    let value: Value = serde_json::from_str(raw_str).unwrap();
+    let deserialized_filter = TargetFilter::from_jsonlogic(&value).unwrap();
+    let serialized_filter = TargetFilter::to_jsonlogic(&deserialized_filter);
+    let deserialized_filter_after = TargetFilter::from_jsonlogic(&serialized_filter).unwrap();
+
+    println!("{:?}", deserialized_filter);
+    println!("{:?}", serialized_filter);
+    println!("{:?}", value);
+    assert_eq!(deserialized_filter, deserialized_filter_after);
+}

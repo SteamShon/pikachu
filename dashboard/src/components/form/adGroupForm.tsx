@@ -9,7 +9,7 @@ import type {
   PlacementGroup,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm } from "react-hook-form";
 import type { RuleGroupType } from "react-querybuilder";
 import { formatQuery, parseJsonLogic } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
@@ -37,16 +37,13 @@ function AdGroupForm({
   const [cube, setCube] = useState<
     (Cube & { cubeConfig: CubeConfig }) | undefined
   >(undefined);
-  const [query, setQuery] = useState<RuleGroupType | undefined>(
-    initialData?.filter ? parseJsonLogic(initialData?.filter) : undefined
-  );
-  const [, setPopulation] = useState<string | undefined>(undefined);
 
   const methods = useForm<AdGroupWithCampaignSchemaType>({
     resolver: zodResolver(adGroupWithCampaignSchema),
   });
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -66,10 +63,6 @@ function AdGroupForm({
       );
 
       setCube(campaign?.placement.placementGroup.cube);
-    }
-
-    if (initialData?.filter) {
-      setQuery(parseJsonLogic(initialData?.filter));
     }
   }, [reset, initialData, campaigns]);
 
@@ -91,6 +84,13 @@ function AdGroupForm({
                     {...register("campaignId")}
                     defaultValue={initialData?.campaignId}
                     disabled={initialData ? true : false}
+                    onChange={(e) => {
+                      setCube(
+                        campaigns.find(
+                          (campaign) => campaign.id === e.target.value
+                        )?.placement.placementGroup.cube
+                      );
+                    }}
                   >
                     <option value="">Please choose</option>
                     {campaigns.map((campaign) => {
@@ -160,20 +160,28 @@ function AdGroupForm({
                     {...register("filter")}
                   />
                   {cube ? (
-                    <SegmentQueryBuilder
-                      cube={cube}
-                      query={query}
-                      onQueryChange={(newQuery) => {
-                        setQuery(newQuery);
-                        setValue(
-                          "filter",
-                          JSON.stringify(formatQuery(newQuery, "jsonlogic"))
-                        );
-                      }}
-                      onPopulationChange={(newPopulation) => {
-                        setPopulation(newPopulation);
-                        setValue("population", newPopulation);
-                      }}
+                    <Controller
+                      control={control}
+                      name="filter"
+                      render={({}) => (
+                        <SegmentQueryBuilder
+                          cube={cube}
+                          initialQuery={
+                            initialData?.filter
+                              ? parseJsonLogic(initialData?.filter)
+                              : undefined
+                          }
+                          onQueryChange={(newQuery) => {
+                            setValue(
+                              "filter",
+                              JSON.stringify(formatQuery(newQuery, "jsonlogic"))
+                            );
+                          }}
+                          onPopulationChange={(newPopulation) => {
+                            setValue("population", newPopulation);
+                          }}
+                        />
+                      )}
                     />
                   ) : null}
                   {errors.filter && (

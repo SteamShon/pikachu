@@ -25,7 +25,6 @@ struct Request {
     placement_group_id: String,
     user_info: Value,
 }
-
 #[post("/")]
 async fn hello(data: web::Data<AdState>, request: web::Json<Request>) -> impl Responder {
     let matched_ad_groups = data.search(

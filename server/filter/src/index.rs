@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -10,9 +11,9 @@ use crate::filterable::Filterable;
 
 #[derive(Debug)]
 pub struct FilterIndex {
-    pub all_dimensions: HashSet<String>,
+    pub all_dimensions: Mutex<HashSet<String>>,
     pub index: Mutex<LruCache<DimValue, HashSet<String>>>,
-    pub non_filter_ids: Arc<HashSet<String>>,
+    pub non_filter_ids: Mutex<HashSet<String>>,
 }
 
 impl FilterIndex {
@@ -32,7 +33,7 @@ impl FilterIndex {
         json!({
             "all_dimensions": json!(self.all_dimensions),
             "index": Self::debug_index(&true_binding),
-            "non_filter_ids": json!(self.non_filter_ids.as_ref()),
+            "non_filter_ids": json!(self.non_filter_ids.borrow()),
         })
     }
     fn build_all_dimensions<F>(filters: &Vec<F>) -> HashSet<String>
@@ -47,8 +48,13 @@ impl FilterIndex {
         }
         dimensions
     }
-
-    pub fn new<F>(filters: &Vec<F>) -> FilterIndex
+    fn build_index<F>(
+        filters: &Vec<F>,
+    ) -> (
+        HashSet<String>,
+        LruCache<DimValue, HashSet<String>>,
+        HashSet<String>,
+    )
     where
         F: Filterable,
     {
@@ -88,10 +94,34 @@ impl FilterIndex {
                 }
             }
         }
+
+        (all_dimensions, current_index, non_filter_ids)
+    }
+    pub fn update<F>(&mut self, filters: &Vec<F>) -> ()
+    where
+        F: Filterable,
+    {
+        let (all_dimensions, current_index, non_filter_ids) = Self::build_index(filters);
+        self.all_dimensions.lock().unwrap().extend(all_dimensions);
+
+        let mut index = self.index.lock().unwrap();
+        for (dim_value, ids) in current_index {
+            let current = index.get_or_insert_mut(dim_value, || HashSet::new());
+            current.extend(ids);
+        }
+
+        self.non_filter_ids.lock().unwrap().extend(non_filter_ids);
+    }
+
+    pub fn new<F>(filters: &Vec<F>) -> FilterIndex
+    where
+        F: Filterable,
+    {
+        let (all_dimensions, current_index, non_filter_ids) = Self::build_index(filters);
         FilterIndex {
-            all_dimensions,
+            all_dimensions: Mutex::new(all_dimensions),
             index: Mutex::new(current_index),
-            non_filter_ids: Arc::new(non_filter_ids),
+            non_filter_ids: Mutex::new(non_filter_ids),
         }
     }
 
@@ -132,10 +162,11 @@ impl FilterIndex {
         ids
     }
     fn search_positive_internal_ids(&self, user_info: &UserInfo) -> Option<HashSet<String>> {
+        let all_dimensions = self.all_dimensions.lock().unwrap();
         let mut true_index = self.index.lock().unwrap();
         let mut positive_candidates: Option<HashSet<String>> = None;
 
-        for dimension in &self.all_dimensions {
+        for dimension in all_dimensions.iter() {
             let dim_candidates =
                 Self::generate_dimension_candidates(user_info, dimension, &mut true_index, false);
             let intersections = positive_candidates

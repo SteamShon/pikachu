@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
@@ -149,7 +150,7 @@ impl AdState {
         let non_filter_ads = Self::transform_ids_to_ads_grouped(
             &self.ad_group_meta,
             placement_group_id,
-            self.filter_index.non_filter_ids.iter(),
+            self.filter_index.non_filter_ids.lock().unwrap().iter(),
         );
 
         SearchResult {

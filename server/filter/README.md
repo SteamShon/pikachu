@@ -29,55 +29,22 @@ Or {
 }
 ```
 
-- json Serialize/Deserialize example.
+- jsonlogic Serialize/Deserialize example.
 
 ```
 {
-    "type": "or",
-    "fields": [
-        {
-            "type": "in",
-            "dimension": "age",
-            "values": ["10", "20"]
-        },
-        {
-            "type": "and",
-            "fields": [
-                {
-                    "type": "in",
-                    "dimension": "gender",
-                    "values": ["F"]
-                },
-                {
-                    "type": "or",
-                    "fields": [
-                        {
-                            "type": "in",
-                            "dimension": "interests",
-                            "values": ["L1"]
-                        },
-                        {
-                            "type": "and",
-                            "fields": [
-                                {
-                                    "type": "in",
-                                    "dimension": "age",
-                                    "values": ["10", "20"]
-                                },
-                                {
-                                    "type": "not",
-                                    "field": {
-                                        "type": "in",
-                                        "dimension": "interests",
-                                        "values": ["L2,L3"]
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
+    "or": [
+        {"in": [{"var": "age"}, ["10", "20"]]},
+        {"and": [
+            {"in": [{"var": "gender"}, ["F"]]},
+            {"or": [
+                {"in": [{"var": "interests"}, ["L1"]]},
+                {"and": [
+                    {"in": [{"var": "age"}, ["10", "20"]]},
+                    {"!": {"in": [{"var": "interests"}, ["L2,L3"]]}}
+                ]}
+            ]}
+        ]}
     ]
 }
 ```
@@ -110,51 +77,18 @@ impl Filterable for MyNewsArticle {
 {
     "id": "AD_1",
     "filter": {
-        "type": "or",
-        "fields": [
-            {
-                "type": "in",
-                "dimension": "age",
-                "values": ["10", "20"]
-            },
-            {
-                "type": "and",
-                "fields": [
-                    {
-                        "type": "in",
-                        "dimension": "gender",
-                        "values": ["F"]
-                    },
-                    {
-                        "type": "or",
-                        "fields": [
-                            {
-                                "type": "in",
-                                "dimension": "interests",
-                                "values": ["L1"]
-                            },
-                            {
-                                "type": "and",
-                                "fields": [
-                                    {
-                                        "type": "in",
-                                        "dimension": "age",
-                                        "values": ["10", "20"]
-                                    },
-                                    {
-                                        "type": "not",
-                                        "field": {
-                                            "type": "in",
-                                            "dimension": "interests",
-                                            "values": ["L2,L3"]
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            }
+        "or": [
+            {"in": [{"var": "age"}, ["10", "20"]]},
+            {"and": [
+                {"in": [{"var": "gender"}, ["F"]]},
+                {"or": [
+                    {"in": [{"var": "interests"}, ["L1"]]},
+                    {"and": [
+                        {"in": [{"var": "age"}, ["10", "20"]]},
+                        {"!": {"in": [{"var": "interests"}, ["L2,L3"]]}}
+                    ]}
+                ]}
+            ]}
         ]
     }
 }

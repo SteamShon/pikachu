@@ -47,21 +47,25 @@ const muiComponents = {
   TextareaAutosize,
 };
 
-const initialQuery: RuleGroupType = { combinator: "and", rules: [] };
+// const initialQuery: RuleGroupType = { combinator: "and", rules: [] };
 
 function SegmentQueryBuilder({
   cube,
-  query,
+  initialQuery,
   onQueryChange,
   onPopulationChange,
 }: {
   cube: Cube & { cubeConfig: CubeConfig };
-  query?: RuleGroupType;
+  initialQuery?: RuleGroupType;
   population?: string;
   onQueryChange: (newQuery: RuleGroupType) => void;
   onPopulationChange: (population: string) => void;
 }) {
   const { enqueueSnackbar } = useSnackbar();
+  const [query, setQuery] = useState<RuleGroupType>({
+    combinator: "and",
+    rules: [],
+  });
   const [metadata, setMetadata] = useState<Record<string, unknown>[]>([]);
   const [populationLoading, setPopulationLoading] = useState(false);
 
@@ -116,15 +120,15 @@ function SegmentQueryBuilder({
   const fields = (metadata || []).map((row) => {
     const name = row.column_name as string;
     const type = row.column_type as string;
-    let useSearch = false;
-    switch (type) {
-      case "VARCHAR":
-        useSearch = true;
-        break;
-      default:
-        useSearch = false;
-        break;
-    }
+    const useSearch = true;
+    // switch (type) {
+    //   case "VARCHAR":
+    //     useSearch = true;
+    //     break;
+    //   default:
+    //     useSearch = false;
+    //     break;
+    // }
     return { name, label: `${name}(${type})`, columnType: type, useSearch };
     /*
     const type = row.column_type as string;
@@ -135,6 +139,10 @@ function SegmentQueryBuilder({
     */
   });
 
+  const operators = [
+    { name: "in", label: "in" },
+    { name: "notIn", label: "not in" },
+  ];
   return (
     <>
       {fields.length > 0 && query ? (
@@ -157,12 +165,16 @@ function SegmentQueryBuilder({
                   key={cube.id}
                   fields={fields}
                   query={query}
-                  onQueryChange={onQueryChange}
+                  onQueryChange={(newQuery) => {
+                    setQuery(newQuery);
+                    onQueryChange(newQuery);
+                  }}
                   controlElements={{
                     valueEditor: AsyncValueEditor,
                   }}
                   context={{ fields, cube }}
                   controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
+                  operators={operators}
                 />
               </QueryBuilderMaterial>
             </ThemeProvider>

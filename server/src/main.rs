@@ -5,6 +5,7 @@ use std::{
     collections::{HashMap, HashSet},
     env,
     sync::{Arc, Mutex},
+    time::Duration,
 };
 
 use actix_cors::Cors;
@@ -26,6 +27,27 @@ struct Request {
     service_id: String,
     placement_group_id: String,
     user_info: Value,
+}
+pub async fn long_running_task(data: web::Data<Mutex<AdState>>, client: web::Data<PrismaClient>) {
+    let new_client = client.into_inner();
+
+    loop {
+        let mut ad_state = data.lock().unwrap();
+        ad_state.load(new_client.clone()).await;
+
+        tokio::time::sleep(Duration::from_secs(10)).await;
+    }
+}
+#[post("/update_ad_meta")]
+async fn update_ad_meta(
+    data: web::Data<Mutex<AdState>>,
+    client: web::Data<PrismaClient>,
+    // request: web::Json<placement_group::Data>,
+) -> impl Responder {
+    let mut ad_state = data.lock().unwrap();
+    ad_state.load(client.into_inner()).await;
+
+    HttpResponse::Ok().json(true)
 }
 #[post("/update_placement_groups")]
 async fn update_placement_groups(
@@ -58,7 +80,10 @@ async fn main() -> std::io::Result<()> {
     let database_url = env::var("DATABASE_URL").unwrap();
     let prisma = db::new_client_with_url(&database_url).await.unwrap();
     let client = web::Data::new(prisma);
-    let ad_state = web::Data::new(Mutex::new(AdState::init()));
+    let state = AdState::default();
+    let ad_state = web::Data::new(Mutex::new(state));
+
+    //tokio::spawn(async move { long_running_task(ad_state.clone(), client.clone()).await });
 
     HttpServer::new(move || {
         let cors = Cors::default();
@@ -69,6 +94,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(client.clone())
             .service(search)
             .service(update_placement_groups)
+            .service(update_ad_meta)
             .wrap(cors)
             .wrap(logger)
     })

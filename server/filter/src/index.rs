@@ -15,7 +15,15 @@ pub struct FilterIndex {
     pub index: Mutex<LruCache<DimValue, HashSet<String>>>,
     pub non_filter_ids: Mutex<HashSet<String>>,
 }
-
+impl Default for FilterIndex {
+    fn default() -> Self {
+        Self {
+            all_dimensions: Default::default(),
+            index: Mutex::new(LruCache::new(NonZeroUsize::new(100000).unwrap())),
+            non_filter_ids: Default::default(),
+        }
+    }
+}
 impl FilterIndex {
     fn debug_index(binding: &MutexGuard<LruCache<DimValue, HashSet<String>>>) -> serde_json::Value {
         let mut index = HashMap::new();

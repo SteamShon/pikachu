@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Cube, CubeConfig, Segment } from "@prisma/client";
 import { useEffect, useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm } from "react-hook-form";
 import type { RuleGroupType } from "react-querybuilder";
 import { formatQuery, parseSQL } from "react-querybuilder";
 import CustomLoadingButton from "../common/CustomLoadingButton";
@@ -19,12 +19,11 @@ function SegmentForm({
   initialData?: Segment;
 }) {
   const [cube, setCube] = useState<typeof cubes[0] | undefined>(undefined);
-  const [query, setQuery] = useState<RuleGroupType | undefined>(undefined);
-  const [, setPopulation] = useState<string | undefined>(undefined);
   const methods = useForm<SegmentWithCubeSchemaType>({
     resolver: zodResolver(segmentWithCubeSchema),
   });
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -36,9 +35,6 @@ function SegmentForm({
     reset(initialData);
     if (initialData) {
       setCube(cubes.find((cube) => cube.id === initialData?.cubeId));
-    }
-    if (initialData?.where) {
-      setQuery(parseSQL(initialData.where));
     }
   }, [reset, initialData, cubes]);
 
@@ -126,17 +122,25 @@ function SegmentForm({
                 <dt className="text-sm font-medium text-gray-500">Where</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   {cube ? (
-                    <SegmentQueryBuilder
-                      cube={cube}
-                      query={query}
-                      onQueryChange={(newQuery) => {
-                        setQuery(newQuery);
-                        setValue("where", formatQuery(newQuery, "sql"));
-                      }}
-                      onPopulationChange={(newPopulation) => {
-                        setPopulation(newPopulation);
-                        setValue("population", newPopulation);
-                      }}
+                    <Controller
+                      control={control}
+                      name="where"
+                      render={({}) => (
+                        <SegmentQueryBuilder
+                          cube={cube}
+                          initialQuery={
+                            initialData?.where
+                              ? parseSQL(initialData?.where)
+                              : undefined
+                          }
+                          onQueryChange={(newQuery) => {
+                            setValue("where", formatQuery(newQuery, "sql"));
+                          }}
+                          onPopulationChange={(newPopulation) => {
+                            setValue("population", newPopulation);
+                          }}
+                        />
+                      )}
                     />
                   ) : null}
                   {errors.where && <p role="alert">{errors.where?.message}</p>}

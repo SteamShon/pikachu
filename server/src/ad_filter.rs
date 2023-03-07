@@ -42,6 +42,8 @@ pub struct UpdateInfo {
     pub placements: DateTime<FixedOffset>,
     pub campaigns: DateTime<FixedOffset>,
     pub ad_groups: DateTime<FixedOffset>,
+    pub creatives: DateTime<FixedOffset>,
+    pub contents: DateTime<FixedOffset>,
 }
 impl Default for UpdateInfo {
     fn default() -> Self {
@@ -51,6 +53,8 @@ impl Default for UpdateInfo {
             placements: Default::default(),
             campaigns: Default::default(),
             ad_groups: Default::default(),
+            creatives: Default::default(),
+            contents: Default::default(),
         }
     }
 }
@@ -61,10 +65,9 @@ pub struct AdState {
     pub placements: HashMap<String, placement::Data>,
     pub campaigns: HashMap<String, campaign::Data>,
     pub ad_groups: HashMap<String, ad_group::Data>,
-
+    pub creatives: HashMap<String, HashMap<String, creative::Data>>,
+    pub contents: HashMap<String, content::Data>,
     pub update_info: UpdateInfo,
-
-    //pub ad_group_meta: HashMap<String, ad_group::Data>,
     pub filter_index: FilterIndex,
 }
 impl Default for AdState {
@@ -75,11 +78,14 @@ impl Default for AdState {
             placements: Default::default(),
             campaigns: Default::default(),
             ad_groups: Default::default(),
+            creatives: Default::default(),
+            contents: Default::default(),
             update_info: Default::default(),
             filter_index: Default::default(),
         }
     }
 }
+
 impl AdState {
     pub async fn fetch_services(
         client: Arc<PrismaClient>,
@@ -140,7 +146,30 @@ impl AdState {
             .ad_group()
             .find_many(vec![ad_group::updated_at::gt(last_updated_at)])
             .order_by(ad_group::updated_at::order(Direction::Desc))
-            .with(ad_group::creatives::fetch(vec![]).with(creative::content::fetch()))
+            .exec()
+            .await
+            .unwrap()
+    }
+    pub async fn fetch_creatives(
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> Vec<creative::Data> {
+        client
+            .creative()
+            .find_many(vec![creative::updated_at::gt(last_updated_at)])
+            .order_by(creative::updated_at::order(Direction::Desc))
+            .exec()
+            .await
+            .unwrap()
+    }
+    pub async fn fetch_contents(
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> Vec<content::Data> {
+        client
+            .content()
+            .find_many(vec![content::updated_at::gt(last_updated_at)])
+            .order_by(content::updated_at::order(Direction::Desc))
             .exec()
             .await
             .unwrap()
@@ -200,6 +229,31 @@ impl AdState {
         }
         filter_index.update(new_ad_groups);
     }
+    pub fn update_creatives(&mut self, new_creatives: &Vec<creative::Data>) -> () {
+        let creatives = &mut self.creatives;
+        for latest_updated_creative in new_creatives.first() {
+            let update_info = &mut self.update_info;
+            update_info.creatives = latest_updated_creative.updated_at;
+        }
+        for creative in new_creatives {
+            creatives
+                .entry(creative.ad_group_id.clone())
+                .or_insert_with(|| HashMap::new())
+                .entry(creative.id.clone())
+                .or_insert_with(|| creative.clone());
+        }
+    }
+    pub fn update_contents(&mut self, new_contents: &Vec<content::Data>) -> () {
+        let contents = &mut self.contents;
+        for latest_updated_content in new_contents.first() {
+            let update_info = &mut self.update_info;
+            update_info.contents = latest_updated_content.updated_at;
+        }
+        for content in new_contents {
+            contents.insert(content.id.clone(), content.clone());
+        }
+    }
+
     pub async fn fetch_and_update_services(
         &mut self,
         client: Arc<PrismaClient>,
@@ -252,6 +306,26 @@ impl AdState {
         println!("[new_ad_groups]: {:?}", new_ad_groups.len());
         self.update_ad_groups(new_ad_groups);
     }
+    pub async fn fetch_and_update_creatives(
+        &mut self,
+        client: Arc<PrismaClient>,
+        last_updated_at: Option<DateTime<FixedOffset>>,
+    ) -> () {
+        let last_updated_at_value = last_updated_at.unwrap_or(self.update_info.creatives);
+        let new_creatives = &Self::fetch_creatives(client, last_updated_at_value).await;
+        println!("[new_creatives]: {:?}", new_creatives.len());
+        self.update_creatives(new_creatives);
+    }
+    pub async fn fetch_and_update_contents(
+        &mut self,
+        client: Arc<PrismaClient>,
+        last_updated_at: Option<DateTime<FixedOffset>>,
+    ) -> () {
+        let last_updated_at_value = last_updated_at.unwrap_or(self.update_info.contents);
+        let new_contents = &Self::fetch_contents(client, last_updated_at_value).await;
+        println!("[new_creatives]: {:?}", new_contents.len());
+        self.update_contents(new_contents);
+    }
     pub fn init() -> AdState {
         AdState::default()
     }
@@ -262,6 +336,8 @@ impl AdState {
         self.fetch_and_update_placements(client.clone(), None).await;
         self.fetch_and_update_campaigns(client.clone(), None).await;
         self.fetch_and_update_ad_groups(client.clone(), None).await;
+        self.fetch_and_update_creatives(client.clone(), None).await;
+        self.fetch_and_update_contents(client.clone(), None).await;
     }
     fn parse_user_info(value: &serde_json::Value) -> Option<UserInfo> {
         let mut user_info = HashMap::new();
@@ -328,16 +404,17 @@ impl AdState {
     }
     fn build_placement_tree(
         &self,
-        ids_with_meta: HashMap<String, HashMap<String, Vec<ad_group::Data>>>,
+        meta_tree: &HashMap<String, HashMap<String, Vec<ad_group::Data>>>,
     ) -> Vec<placement::Data> {
         let mut ads = Vec::<placement::Data>::new();
         let placements = &self.placements;
         let campaigns = &self.campaigns;
+        let ad_groups = &self.ad_groups;
 
-        for (placement_id, campaign_id_ad_groups) in ids_with_meta {
-            for placement in placements.get(&placement_id) {
+        for (placement_id, campaign_tree) in meta_tree {
+            for placement in placements.get(placement_id) {
                 let mut new_campaigns = Vec::new();
-                for (campaign_id, ad_groups) in campaign_id_ad_groups.iter() {
+                for (campaign_id, ad_groups) in campaign_tree.iter() {
                     new_campaigns.push(campaign::Data {
                         ad_groups: Some(ad_groups.clone()),
                         placement: None,
@@ -362,24 +439,45 @@ impl AdState {
     where
         I: Iterator<Item = &'a String>,
     {
-        let mut tree = HashMap::<String, HashMap<String, Vec<ad_group::Data>>>::new();
+        let mut tree = HashMap::new();
 
         let placements = &self.placements;
         let campaigns = &self.campaigns;
         let ad_groups = &self.ad_groups;
+        let creatives = &self.creatives;
+        let contents = &self.contents;
+
+        let mut new_ad_groups = Vec::new();
 
         for id in ids {
             for ad_group in ad_groups.get(id) {
-                for campaign in campaigns.get(&ad_group.campaign_id) {
-                    for placement in placements.get(&campaign.placement_id) {
-                        for current_placement_group_id in placement.placement_group_id.iter() {
-                            if current_placement_group_id == placement_group_id {
-                                tree.entry(placement.id.clone())
-                                    .or_insert_with(|| HashMap::new())
-                                    .entry(campaign.id.clone())
-                                    .or_insert_with(|| Vec::new())
-                                    .push(ad_group.clone());
-                            }
+                let mut new_creatives = Vec::new();
+                let empty = HashMap::new();
+                let creatives_in_ad_group = creatives.get(&ad_group.id.clone()).unwrap_or(&empty);
+                for (_creative_id, creative) in creatives_in_ad_group.iter() {
+                    for content in contents.get(&creative.content_id.clone()) {
+                        new_creatives.push(creative::Data {
+                            content: Some(Box::new(content.clone())),
+                            ..creative.clone()
+                        });
+                    }
+                }
+                new_ad_groups.push(ad_group::Data {
+                    creatives: Some(new_creatives),
+                    ..ad_group.clone()
+                })
+            }
+        }
+        for ad_group in new_ad_groups.iter() {
+            for campaign in campaigns.get(&ad_group.campaign_id) {
+                for placement in placements.get(&campaign.placement_id) {
+                    for current_placement_group_id in placement.placement_group_id.iter() {
+                        if current_placement_group_id == placement_group_id {
+                            tree.entry(placement.id.clone())
+                                .or_insert_with(|| HashMap::new())
+                                .entry(campaign.id.clone())
+                                .or_insert_with(|| Vec::new())
+                                .push(ad_group.clone())
                         }
                     }
                 }
@@ -397,8 +495,8 @@ impl AdState {
     where
         I: Iterator<Item = &'a String>,
     {
-        let ids_with_meta = self.merge_ids_with_ad_metas(placement_group_id, ids);
+        let meta_tree = self.merge_ids_with_ad_metas(placement_group_id, ids);
 
-        self.build_placement_tree(ids_with_meta)
+        self.build_placement_tree(&meta_tree)
     }
 }

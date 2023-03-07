@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
@@ -9,6 +8,8 @@ use crate::db::{
 use filter::filter::{TargetFilter, UserInfo};
 use filter::filterable::Filterable;
 use filter::index::FilterIndex;
+use prisma_client_rust::chrono::{DateTime, FixedOffset, TimeZone, Utc};
+use prisma_client_rust::Direction;
 use serde::Serialize;
 
 impl Filterable for ad_group::Data {
@@ -34,9 +35,19 @@ pub struct SearchResult {
     // pub grouped: HashMap<String, HashMap<String, HashMap<String, ad_group::Data>>>,
     pub non_filter_ads: Vec<placement::Data>,
 }
-
+#[derive(Debug)]
+pub struct UpdateInfo {
+    pub placement_groups: DateTime<FixedOffset>,
+}
 #[derive(Debug)]
 pub struct AdState {
+    pub placement_groups: Mutex<HashMap<String, placement_group::Data>>,
+    pub placements: Mutex<HashMap<String, placement::Data>>,
+    pub campaigns: Mutex<HashMap<String, campaign::Data>>,
+    pub ad_groups: Mutex<HashMap<String, ad_group::Data>>,
+
+    pub update_info: Mutex<UpdateInfo>,
+
     pub ad_group_meta: HashMap<String, ad_group::Data>,
     pub filter_index: FilterIndex,
 }
@@ -73,22 +84,165 @@ impl AdState {
                                 ad_groups: None,
                                 ..campaign.clone()
                             };
-
                             let new_ad_group = ad_group::Data {
                                 campaign: Some(Box::new(new_campaign)),
                                 ..ad_group.clone()
                             };
-                            ad_group_meta.insert(ad_group.id.clone(), new_ad_group);
+                            ad_group_meta
+                                .entry(ad_group.id.clone())
+                                .or_insert_with(|| new_ad_group);
                         }
                     }
                 }
             }
         }
+
         ad_group_meta
     }
-
-    pub async fn new(client: Arc<PrismaClient>) -> AdState {
-        let services: Vec<service::Data> = client
+    async fn fetch_placement_groups(
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> Vec<placement_group::Data> {
+        client
+            .placement_group()
+            //.find_many(vec![])
+            .find_many(vec![placement_group::updated_at::gt(last_updated_at)])
+            .order_by(placement_group::updated_at::order(Direction::Desc))
+            .exec()
+            .await
+            .unwrap()
+    }
+    pub fn update_placement_groups(
+        &mut self,
+        new_placement_groups: &Vec<placement_group::Data>,
+    ) -> () {
+        let mut placement_groups = self.placement_groups.lock().unwrap();
+        for latest_updated_placement_group in new_placement_groups.first() {
+            let mut update_info = self.update_info.lock().unwrap();
+            update_info.placement_groups = latest_updated_placement_group.updated_at;
+        }
+        for placement_group in new_placement_groups {
+            placement_groups.insert(placement_group.id.clone(), placement_group.clone());
+        }
+    }
+    pub async fn fetch_and_update_placement_groups(
+        &mut self,
+        client: Arc<PrismaClient>,
+        last_updated_at: Option<DateTime<FixedOffset>>,
+    ) -> () {
+        let last_updated_at_value =
+            last_updated_at.unwrap_or(self.update_info.lock().unwrap().placement_groups);
+        let new_placement_groups =
+            &Self::fetch_placement_groups(client, last_updated_at_value).await;
+        println!("[new_placement_groups]: {:?}", new_placement_groups.len());
+        self.update_placement_groups(new_placement_groups);
+    }
+    pub async fn fetch_placements(
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> Vec<placement::Data> {
+        client
+            .placement()
+            .find_many(vec![placement::updated_at::gt(last_updated_at)])
+            .with(placement::content_type::fetch())
+            .exec()
+            .await
+            .unwrap()
+    }
+    pub fn update_placements(&mut self, new_placements: &Vec<placement::Data>) -> () {
+        let placements = &mut self.placements.lock().unwrap();
+        // for newst_placement in new_placements.first() {
+        //     let mut last_updated_at = self.placements_last_updated_at;
+        //     last_updated_at = Mutex::new(newst_placement.updated_at.clone());
+        // }
+        for placement in new_placements {
+            placements
+                .entry(placement.id.clone())
+                .or_insert_with(|| placement.clone());
+        }
+    }
+    pub async fn fetch_and_update_placements(
+        &mut self,
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> () {
+        let placements = &Self::fetch_placements(client, last_updated_at).await;
+        self.update_placements(placements);
+    }
+    pub async fn fetch_campaigns(
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> Vec<campaign::Data> {
+        client
+            .campaign()
+            .find_many(vec![campaign::updated_at::gt(last_updated_at)])
+            .exec()
+            .await
+            .unwrap()
+    }
+    pub fn update_campaigns(&mut self, new_campaigns: &Vec<campaign::Data>) -> () {
+        let campaigns = &mut self.campaigns.lock().unwrap();
+        // for newst_campaign in new_campaigns.first() {
+        //     let mut last_updated_at = self.campaigns_last_updated_at;
+        //     last_updated_at = Mutex::new(newst_campaign.updated_at.clone());
+        // }
+        for campaign in new_campaigns {
+            campaigns
+                .entry(campaign.id.clone())
+                .or_insert_with(|| campaign.clone());
+        }
+    }
+    pub async fn fetch_and_update_campaigns(
+        &mut self,
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> () {
+        let campaigns = Self::fetch_campaigns(client, last_updated_at).await;
+        self.update_campaigns(&campaigns);
+    }
+    pub async fn fetch_ad_groups(
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> Vec<ad_group::Data> {
+        client
+            .ad_group()
+            .find_many(vec![ad_group::updated_at::gt(last_updated_at)])
+            .with(ad_group::creatives::fetch(vec![]).with(creative::content::fetch()))
+            .exec()
+            .await
+            .unwrap()
+    }
+    pub fn update_ad_groups(&mut self, new_ad_groups: &Vec<ad_group::Data>) -> () {
+        let ad_groups = &mut self.ad_groups.lock().unwrap();
+        // for newst_ad_group in new_ad_groups.first() {
+        //     let mut last_updated_at = &self.ad_groups_last_updated_at;
+        //     *last_updated_at = newst_ad_group.updated_at.clone();
+        // }
+        for ad_group in new_ad_groups {
+            ad_groups
+                .entry(ad_group.id.clone())
+                .or_insert_with(|| ad_group.clone());
+        }
+    }
+    pub async fn fetch_and_update_ad_groups(
+        &mut self,
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> () {
+        let ad_groups = Self::fetch_ad_groups(client, last_updated_at).await;
+        self.update_ad_groups(&ad_groups);
+    }
+    pub async fn fetch_services(
+        client: &PrismaClient,
+        // last_updated_at: DateTime<FixedOffset>,
+    ) -> Vec<service::Data> {
+        // client
+        //     .service()
+        //     .find_many(vec![service::updated_at::gt(last_updated_at)])
+        //     .exec()
+        //     .await
+        //     .unwrap()
+        client
             .service()
             .find_many(vec![])
             .with(
@@ -105,7 +259,32 @@ impl AdState {
             .with(service::cube_configs::fetch(vec![]).with(cube_config::cubes::fetch(vec![])))
             .exec()
             .await
-            .unwrap();
+            .unwrap()
+    }
+    // pub async fn update(&mut self, client: Arc<PrismaClient>) -> () {
+    //     let last_updated_at: DateTime<FixedOffset> =
+    //         DateTime::<Utc>::MIN_UTC.with_timezone(&FixedOffset::east_opt(0).unwrap());
+    //     let services: Vec<service::Data> = Self::fetch_services(client, last_updated_at).await;
+    // }
+    pub fn init() -> AdState {
+        let last_updated_at = Utc
+            .with_ymd_and_hms(2000, 1, 1, 0, 0, 0)
+            .unwrap()
+            .with_timezone(&FixedOffset::east_opt(3600 * 9).unwrap());
+        AdState {
+            placement_groups: Mutex::new(HashMap::new()),
+            placements: Mutex::new(HashMap::new()),
+            campaigns: Mutex::new(HashMap::new()),
+            ad_groups: Mutex::new(HashMap::new()),
+            update_info: Mutex::new(UpdateInfo {
+                placement_groups: last_updated_at,
+            }),
+            ad_group_meta: HashMap::new(),
+            filter_index: FilterIndex::new::<ad_group::Data>(&vec![]),
+        }
+    }
+    pub async fn new(client: &PrismaClient) -> AdState {
+        let services: Vec<service::Data> = Self::fetch_services(client).await;
 
         println!("AdState: fetched {:?}", services.len());
 
@@ -114,8 +293,16 @@ impl AdState {
         let filter_index = FilterIndex::new(&filters);
 
         println!("Index: {:?}", filter_index.debug());
-
+        let last_updated_at =
+            DateTime::<Utc>::MIN_UTC.with_timezone(&FixedOffset::east_opt(0).unwrap());
         AdState {
+            placement_groups: Mutex::new(HashMap::new()),
+            placements: Mutex::new(HashMap::new()),
+            campaigns: Mutex::new(HashMap::new()),
+            ad_groups: Mutex::new(HashMap::new()),
+            update_info: Mutex::new(UpdateInfo {
+                placement_groups: last_updated_at,
+            }),
             ad_group_meta,
             filter_index,
         }

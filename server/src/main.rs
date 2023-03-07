@@ -4,20 +4,22 @@ pub mod db;
 use std::{
     collections::{HashMap, HashSet},
     env,
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
+use actix_cors::Cors;
 use actix_web::{
-    get, post,
+    middleware::Logger,
+    post,
     web::{self},
     App, HttpResponse, HttpServer, Responder,
 };
+use db::PrismaClient;
 use dotenv::dotenv;
-use filter::filter::UserInfo;
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::ad_filter::AdState;
+use crate::{ad_filter::AdState, db::placement_group};
 
 #[derive(Deserialize)]
 struct Request {
@@ -25,9 +27,22 @@ struct Request {
     placement_group_id: String,
     user_info: Value,
 }
-#[post("/")]
-async fn hello(data: web::Data<AdState>, request: web::Json<Request>) -> impl Responder {
-    let matched_ad_groups = data.search(
+#[post("/update_placement_groups")]
+async fn update_placement_groups(
+    data: web::Data<Mutex<AdState>>,
+    client: web::Data<PrismaClient>,
+    // request: web::Json<placement_group::Data>,
+) -> impl Responder {
+    let mut ad_state = data.lock().unwrap();
+    ad_state
+        .fetch_and_update_placement_groups(client.into_inner(), None)
+        .await;
+
+    HttpResponse::Ok().json(true)
+}
+#[post("/search")]
+async fn search(data: web::Data<Mutex<AdState>>, request: web::Json<Request>) -> impl Responder {
+    let matched_ad_groups = data.lock().unwrap().search(
         &request.service_id,
         &request.placement_group_id,
         &request.user_info,
@@ -37,31 +52,27 @@ async fn hello(data: web::Data<AdState>, request: web::Json<Request>) -> impl Re
 }
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init();
     dotenv().ok();
+
     let database_url = env::var("DATABASE_URL").unwrap();
-    println!("DATABASE_URL: {}", database_url);
-    let client = db::new_client_with_url(&database_url).await.unwrap();
-    let ad_state = AdState::new(Arc::new(client)).await;
-    let data = web::Data::new(ad_state);
-    HttpServer::new(move || App::new().app_data(data.clone()).service(hello))
-        .bind(("127.0.0.1", 8080))?
-        .run()
-        .await
+    let prisma = db::new_client_with_url(&database_url).await.unwrap();
+    let client = web::Data::new(prisma);
+    let ad_state = web::Data::new(Mutex::new(AdState::init()));
+
+    HttpServer::new(move || {
+        let cors = Cors::default();
+        let logger = Logger::default();
+
+        App::new()
+            .app_data(ad_state.clone())
+            .app_data(client.clone())
+            .service(search)
+            .service(update_placement_groups)
+            .wrap(cors)
+            .wrap(logger)
+    })
+    .bind(("127.0.0.1", 8080))?
+    .run()
+    .await
 }
-
-//     let client = web::Data::new(db::new_client_with_url(&database_url).await.unwrap());
-//     println!("Running");
-
-//     HttpServer::new(move || {
-//         let logger = Logger::default();
-
-//         App::new()
-//             // .app_data(client.clone())
-//             .wrap(logger)
-//             .service(hello)
-//             .service(get_users)
-//     })
-//     .bind(("127.0.0.1", 8000))?
-//     .run()
-//     .await
-// }

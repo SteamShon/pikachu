@@ -47,7 +47,7 @@ const muiComponents = {
   TextareaAutosize,
 };
 
-// const initialQuery: RuleGroupType = { combinator: "and", rules: [] };
+const emptyQuery: RuleGroupType = { combinator: "and", rules: [] };
 
 function SegmentQueryBuilder({
   cube,
@@ -62,10 +62,8 @@ function SegmentQueryBuilder({
   onPopulationChange: (population: string) => void;
 }) {
   const { enqueueSnackbar } = useSnackbar();
-  const [query, setQuery] = useState<RuleGroupType>({
-    combinator: "and",
-    rules: [],
-  });
+  const [query, setQuery] = useState<RuleGroupType>(initialQuery || emptyQuery);
+  const [, setPopulation] = useState<string | undefined>(undefined);
   const [metadata, setMetadata] = useState<Record<string, unknown>[]>([]);
   const [populationLoading, setPopulationLoading] = useState(false);
 
@@ -102,6 +100,7 @@ function SegmentQueryBuilder({
           });
 
           setPopulationLoading(false);
+          setPopulation(count);
           onPopulationChange(count);
         })();
       }, 1000),

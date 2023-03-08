@@ -2,7 +2,11 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+    // Corresponds to the cargo alias created earlier
+    provider = "cargo prisma"
+    // The location to generate the client. Is relative to the position of the schema
+    output   = "../src/db.rs"
+    //module_path = "db"
 }
 
 datasource db {
@@ -18,6 +22,12 @@ datasource db {
 // generator erd {
 //     provider = "prisma-erd-generator"
 // }
+
+model Example {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
 
 // Necessary for Next auth
 model Account {
@@ -93,7 +103,6 @@ model Service {
     cubeConfigs     CubeConfig[]
 
     @@unique([name])
-    @@index(fields: [updatedAt])
 }
 
 model UsersOnServices {
@@ -125,7 +134,6 @@ model PlacementGroup {
     // userId      String?
 
     @@unique([serviceId, name])
-    @@index(fields: [updatedAt])
 }
 
 model Placement {
@@ -145,7 +153,6 @@ model Placement {
     updatedAt               DateTime                  @updatedAt
 
     @@unique([placementGroupId, name])
-    @@index(fields: [updatedAt])
 }
 
 model ContentType {
@@ -166,7 +173,6 @@ model ContentType {
     updatedAt     DateTime    @updatedAt
 
     @@unique([serviceId, name])
-    @@index(fields: [updatedAt])
 }
 
 model AdvertisersOnPlacements {
@@ -199,7 +205,6 @@ model Campaign {
     updatedAt   DateTime  @updatedAt
 
     @@unique([placementId, name])
-    @@index(fields: [updatedAt])
 }
 
 model AdGroup {
@@ -218,7 +223,6 @@ model AdGroup {
     updatedAt   DateTime   @updatedAt
 
     @@unique([campaignId, name])
-    @@index(fields: [updatedAt])
 }
 
 model Creative {
@@ -236,7 +240,6 @@ model Creative {
     updatedAt   DateTime @updatedAt
 
     @@unique([adGroupId, name])
-    @@index(fields: [updatedAt])
 }
 
 model Content {
@@ -255,7 +258,6 @@ model Content {
     userId        String?
 
     @@unique([contentTypeId, name])
-    @@index(fields: [updatedAt])
 }
 
 model Customset {

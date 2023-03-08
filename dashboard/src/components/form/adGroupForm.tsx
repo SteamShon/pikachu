@@ -38,8 +38,6 @@ function AdGroupForm({
     (Cube & { cubeConfig: CubeConfig }) | undefined
   >(undefined);
 
-  const [, setPopulation] = useState<string | undefined>(undefined);
-
   const methods = useForm<AdGroupWithCampaignSchemaType>({
     resolver: zodResolver(adGroupWithCampaignSchema),
   });
@@ -180,7 +178,6 @@ function AdGroupForm({
                             );
                           }}
                           onPopulationChange={(newPopulation) => {
-                            setPopulation(newPopulation);
                             setValue("population", newPopulation);
                           }}
                         />

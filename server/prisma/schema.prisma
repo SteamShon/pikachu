@@ -2,7 +2,11 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+    // Corresponds to the cargo alias created earlier
+    provider = "cargo prisma"
+    // The location to generate the client. Is relative to the position of the schema
+    output   = "../src/db.rs"
+    //module_path = "db"
 }
 
 datasource db {
@@ -18,6 +22,12 @@ datasource db {
 // generator erd {
 //     provider = "prisma-erd-generator"
 // }
+
+model Example {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
 
 // Necessary for Next auth
 model Account {

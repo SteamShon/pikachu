@@ -29,12 +29,17 @@ struct Request {
     placement_group_id: String,
     user_info: Value,
 }
-pub async fn long_running_task(data: web::Data<Mutex<AdState>>, client: web::Data<PrismaClient>) {
+
+pub async fn load_ad_meta(
+    data: web::Data<Mutex<AdState>>,
+    client: web::Data<PrismaClient>,
+    ad_meta_sync_period_millis: u64,
+) {
+    let mut interval = time::interval(Duration::from_millis(ad_meta_sync_period_millis));
     loop {
+        interval.tick().await;
         let mut ad_state = data.lock().await;
         ad_state.load(client.clone().into_inner()).await;
-
-        tokio::time::sleep(Duration::from_secs(60)).await;
     }
 }
 #[post("/update_ad_meta")]
@@ -64,6 +69,10 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").unwrap();
+    let ad_meta_sync_period_millis = env::var("AD_META_SYNC_PERIOD_MILLIS")
+        .unwrap_or(String::from("60000"))
+        .parse::<u64>()
+        .unwrap();
 
     let prisma = Arc::new(db::new_client_with_url(&database_url).await.unwrap());
     let client = web::Data::from(prisma);
@@ -71,7 +80,16 @@ async fn main() -> std::io::Result<()> {
     let state = Arc::new(Mutex::new(AdState::default()));
     let ad_state = web::Data::from(state);
 
-    tokio::spawn(long_running_task(ad_state.clone(), client.clone()));
+    let rt = Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    rt.spawn(load_ad_meta(
+        ad_state.clone(),
+        client.clone(),
+        ad_meta_sync_period_millis,
+    ));
 
     HttpServer::new(move || {
         let cors = Cors::permissive();

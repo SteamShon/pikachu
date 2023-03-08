@@ -1,14 +1,5 @@
 pub mod ad_filter;
 pub mod db;
-use std::{
-    collections::{HashMap, HashSet},
-    env,
-    sync::Arc,
-    thread,
-    time::Duration,
-};
-use tokio::sync::Mutex;
-
 use actix_cors::Cors;
 use actix_web::{
     middleware::Logger,
@@ -20,8 +11,10 @@ use db::PrismaClient;
 use dotenv::dotenv;
 use serde::Deserialize;
 use serde_json::Value;
+use std::{env, sync::Arc, time::Duration};
+use tokio::{runtime::Builder, sync::Mutex, time};
 
-use crate::{ad_filter::AdState, db::placement_group};
+use crate::ad_filter::AdState;
 
 #[derive(Deserialize)]
 struct Request {
@@ -81,7 +74,7 @@ async fn main() -> std::io::Result<()> {
     let ad_state = web::Data::from(state);
 
     let rt = Builder::new_multi_thread()
-        .worker_threads(1)
+        .worker_threads(4)
         .enable_all()
         .build()
         .unwrap();

@@ -74,7 +74,7 @@ async fn search(data: web::Data<Mutex<AdState>>, request: web::Json<Request>) ->
 }
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    env_logger::init();
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").unwrap();
@@ -86,7 +86,7 @@ async fn main() -> std::io::Result<()> {
     //tokio::spawn(async move { long_running_task(ad_state.clone(), client.clone()).await });
 
     HttpServer::new(move || {
-        let cors = Cors::default();
+        let cors = Cors::permissive();
         let logger = Logger::default();
 
         App::new()

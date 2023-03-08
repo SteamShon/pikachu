@@ -4,7 +4,6 @@ import { contentTypeRouter } from "./routers/contentType";
 import { cubeRouter } from "./routers/cube";
 import { cubeConfigRouter } from "./routers/cubeConfig";
 import { customsetRouter } from "./routers/customset";
-import { exampleRouter } from "./routers/example";
 import { placementRouter } from "./routers/placement";
 import { placementGroupRouter } from "./routers/placementGroup";
 import { serviceRouter } from "./routers/service";
@@ -18,7 +17,6 @@ import { createTRPCRouter } from "./trpc";
  * All routers added in /api/routers should be manually added here
  */
 export const appRouter = createTRPCRouter({
-  example: exampleRouter,
   customset: customsetRouter,
   user: userRouter,
   campaign: campaignRouter,

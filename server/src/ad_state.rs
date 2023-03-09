@@ -2,13 +2,13 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::db::{
-    ad_group, campaign, content, content_type, creative, cube, cube_config, placement,
-    placement_group, service, PrismaClient,
+    ad_group, campaign, content, creative, cube_config, placement, placement_group, service,
+    PrismaClient,
 };
 use filter::filter::{TargetFilter, UserInfo};
 use filter::filterable::Filterable;
 use filter::index::FilterIndex;
-use prisma_client_rust::chrono::{DateTime, FixedOffset, TimeZone, Utc};
+use prisma_client_rust::chrono::{DateTime, FixedOffset};
 use prisma_client_rust::Direction;
 use serde::Serialize;
 
@@ -378,33 +378,6 @@ impl AdState {
             non_filter_ads,
         }
     }
-    fn transform_ids_to_ads<'a, I>(
-        id_meta_map: &HashMap<String, ad_group::Data>,
-        placement_group_id: &str,
-        ids: I,
-    ) -> Vec<ad_group::Data>
-    where
-        I: Iterator<Item = &'a String>,
-    {
-        let mut ads = Vec::new();
-        for id in ids {
-            for ad_meta in id_meta_map.get(id) {
-                for campaign in ad_meta.campaign.iter() {
-                    for placement in campaign.placement.iter() {
-                        for placement_group in placement.placement_group.iter() {
-                            match placement_group {
-                                Some(pg) if pg.id == placement_group_id => {
-                                    ads.push(ad_meta.clone());
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        ads
-    }
     fn build_placement_tree(
         &self,
         meta_tree: &HashMap<String, HashMap<String, Vec<ad_group::Data>>>,
@@ -412,7 +385,6 @@ impl AdState {
         let mut ads = Vec::<placement::Data>::new();
         let placements = &self.placements;
         let campaigns = &self.campaigns;
-        let ad_groups = &self.ad_groups;
 
         for (placement_id, campaign_tree) in meta_tree {
             for placement in placements.get(placement_id) {

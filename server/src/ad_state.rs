@@ -35,7 +35,7 @@ pub struct SearchResult {
     // pub grouped: HashMap<String, HashMap<String, HashMap<String, ad_group::Data>>>,
     pub non_filter_ads: Vec<placement::Data>,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UpdateInfo {
     pub services: DateTime<FixedOffset>,
     pub placement_groups: DateTime<FixedOffset>,
@@ -58,7 +58,7 @@ impl Default for UpdateInfo {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AdState {
     pub services: HashMap<String, service::Data>,
     pub placement_groups: HashMap<String, placement_group::Data>,
@@ -87,6 +87,9 @@ impl Default for AdState {
 }
 
 impl AdState {
+    pub fn from(other: &Self) -> Self {
+        AdState { ..other.clone() }
+    }
     pub async fn fetch_services(
         client: Arc<PrismaClient>,
         last_updated_at: DateTime<FixedOffset>,
@@ -323,7 +326,7 @@ impl AdState {
     ) -> () {
         let last_updated_at_value = last_updated_at.unwrap_or(self.update_info.contents);
         let new_contents = &Self::fetch_contents(client, last_updated_at_value).await;
-        println!("[new_creatives]: {:?}", new_contents.len());
+        println!("[new_contents]: {:?}", new_contents.len());
         self.update_contents(new_contents);
     }
     pub fn init() -> AdState {
@@ -367,7 +370,7 @@ impl AdState {
         let matched_ads = self.transform_ids_to_ads_grouped(placement_group_id, matched_ids.iter());
         let non_filter_ads = self.transform_ids_to_ads_grouped(
             placement_group_id,
-            self.filter_index.non_filter_ids.lock().unwrap().iter(),
+            self.filter_index.non_filter_ids.iter(),
         );
 
         SearchResult {

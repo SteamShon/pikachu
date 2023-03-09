@@ -9,9 +9,10 @@ use serde_json::json;
 use crate::filter::*;
 use crate::filterable::Filterable;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FilterIndex {
     pub all_dimensions: HashSet<String>,
+    pub ids: HashMap<String, TargetFilter>,
     pub index: HashMap<DimValue, HashSet<String>>,
     pub non_filter_ids: HashSet<String>,
 }
@@ -19,6 +20,7 @@ impl Default for FilterIndex {
     fn default() -> Self {
         Self {
             all_dimensions: Default::default(),
+            ids: Default::default(),
             index: Default::default(),
             non_filter_ids: Default::default(),
         }
@@ -49,92 +51,101 @@ impl FilterIndex {
         let mut dimensions = HashSet::new();
         for filter in filters {
             for target_filter in filter.filter() {
-                dimensions.extend(extract_dimensions(&target_filter));
+                dimensions.extend(TargetFilter::extract_dimensions(&target_filter));
             }
         }
         dimensions
     }
-    fn build_index<F>(
-        filters: &Vec<F>,
-    ) -> (
-        HashSet<String>,
-        HashMap<DimValue, HashSet<String>>,
-        HashSet<String>,
-    )
+
+    fn update_all_dimensions<F>(&mut self, filters: &Vec<F>)
     where
         F: Filterable,
     {
-        let all_dimensions = Self::build_all_dimensions(filters);
-        let mut current_index = HashMap::new();
-        let mut non_filter_ids = HashSet::new();
-
+        let all_dimensions = &mut self.all_dimensions;
+        all_dimensions.extend(Self::build_all_dimensions(filters));
+    }
+    fn update_non_filter_ids<F>(&mut self, filters: &Vec<F>)
+    where
+        F: Filterable,
+    {
+        let non_filter_ids = &mut self.non_filter_ids;
         for filter in filters {
             if let None = filter.filter() {
                 non_filter_ids.insert(filter.id().clone());
             }
+        }
+    }
+    fn update_ids<F>(&mut self, filters: &Vec<F>)
+    where
+        F: Filterable,
+    {
+        let ids = &mut self.ids;
+        for filter in filters {
             for target_filter in filter.filter() {
-                let target_keys = build_target_keys(&target_filter);
+                ids.insert(filter.id(), target_filter);
+            }
+        }
+    }
+    fn cleaup_index<F>(&mut self, filters: &Vec<F>)
+    where
+        F: Filterable,
+    {
+        let prev_ids = &mut self.ids;
+        let prev_all_dimensions = &mut self.all_dimensions;
+        let prev_index = &mut self.index;
 
-                for (index, target_key) in target_keys.iter().enumerate() {
-                    let mut value_existing_dimensions = HashSet::new();
-                    let internal_id = format!("{id}_{seq}", id = filter.id(), seq = index);
-
-                    // fill out index with dimension that has values.
-                    for dv in &target_key.dim_values {
-                        value_existing_dimensions.insert(dv.dimension.clone());
-                        let ids = current_index
-                            .entry(dv.clone())
-                            .or_insert_with(|| HashSet::new());
-
-                        if dv.is_not {
-                            ids.insert(filter.id().to_string());
-                        } else {
-                            ids.insert(internal_id.clone());
-                        };
-                    }
-                    // fill out index for dimension that don't have values. empty.
-                    for dimension in &all_dimensions - &value_existing_dimensions {
-                        let dv = DimValue::new(&dimension, "empty", false);
-
-                        let ids = current_index.entry(dv).or_insert_with(|| HashSet::new());
-                        ids.insert(internal_id.clone());
+        for filter in filters {
+            for prev_target_filter in prev_ids.get(&filter.id()) {
+                let index_key_with_internal_ids = TargetFilter::build_index_key_wth_internal_ids(
+                    &prev_all_dimensions,
+                    prev_target_filter,
+                    &filter.id(),
+                );
+                for (dv, internal_id) in index_key_with_internal_ids {
+                    for prev_ids in prev_index.get_mut(&dv) {
+                        prev_ids.remove(&internal_id);
                     }
                 }
             }
         }
+    }
+    fn update_index<F>(&mut self, filters: &Vec<F>)
+    where
+        F: Filterable,
+    {
+        let all_dimensons = &mut self.all_dimensions;
+        let index = &mut self.index;
 
-        (all_dimensions, current_index, non_filter_ids)
+        for filter in filters {
+            for target_filter in filter.filter() {
+                let index_key_with_internal_ids = TargetFilter::build_index_key_wth_internal_ids(
+                    &all_dimensons,
+                    &target_filter,
+                    &filter.id(),
+                );
+                for (dv, internal_id) in index_key_with_internal_ids {
+                    index
+                        .entry(dv)
+                        .or_insert_with(|| HashSet::new())
+                        .insert(internal_id);
+                }
+            }
+        }
     }
     pub fn update<F>(&mut self, filters: &Vec<F>) -> ()
     where
         F: Filterable,
     {
-        let (all_dimensions, current_index, non_filter_ids) = Self::build_index(filters);
-        let prev_all_dimensions = &mut self.all_dimensions;
-        prev_all_dimensions.extend(all_dimensions);
+        println!("[Before]: {:?}", self.debug());
+        self.update_all_dimensions(filters);
+        self.update_non_filter_ids(filters);
 
-        let prev_index = &mut self.index;
-        for (dim_value, ids) in current_index {
-            prev_index
-                .entry(dim_value)
-                .or_insert_with(|| HashSet::new())
-                .extend(ids);
-        }
-        let prev_non_filter_ids = &mut self.non_filter_ids;
+        self.cleaup_index(filters);
 
-        prev_non_filter_ids.extend(non_filter_ids);
-    }
+        self.update_index(filters);
+        self.update_ids(filters);
 
-    pub fn new<F>(filters: &Vec<F>) -> FilterIndex
-    where
-        F: Filterable,
-    {
-        let (all_dimensions, current_index, non_filter_ids) = Self::build_index(filters);
-        FilterIndex {
-            all_dimensions: all_dimensions,
-            index: current_index,
-            non_filter_ids: non_filter_ids,
-        }
+        println!("[After]: {:?}", self.debug());
     }
 
     fn generate_dimension_candidates(
@@ -167,7 +178,7 @@ impl FilterIndex {
     fn to_ids(internal_ids: &HashSet<String>) -> HashSet<String> {
         let mut ids = HashSet::new();
         for internal_id in internal_ids {
-            for id in internal_id.split("_").nth(0) {
+            if let Some((id, _seq)) = internal_id.rsplit_once("_") {
                 ids.insert(String::from(id));
             }
         }

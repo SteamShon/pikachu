@@ -1,6 +1,6 @@
 use super::*;
 use lazy_static::lazy_static;
-use serde_json::{Result, Value};
+use serde_json::Value;
 use std::collections::HashSet;
 use TargetFilter::*;
 
@@ -88,7 +88,7 @@ lazy_static! {
 }
 #[test]
 fn test_extract_dimensions_for_single_filter() {
-    let all_dimensions = extract_dimensions(&FILTER_1);
+    let all_dimensions = TargetFilter::extract_dimensions(&FILTER_1);
     let expected_output = HashSet::from([
         String::from("age"),
         String::from("gender"),
@@ -109,7 +109,7 @@ fn test_explode() {
         vec![3, 5, 6],
     ];
 
-    assert_eq!(explode(&input, &vec![][..]), expected_output);
+    assert_eq!(TargetFilter::explode(&input, &vec![][..]), expected_output);
 }
 
 #[test]
@@ -175,7 +175,7 @@ fn test_build_target_keys_filter_1() {
         },
     ];
 
-    let output = build_target_keys(&FILTER_1);
+    let output = TargetFilter::build_target_keys(&FILTER_1);
 
     println!("{:?}", output);
     for (a, b) in output.iter().zip(expected_output.iter()) {
@@ -184,7 +184,7 @@ fn test_build_target_keys_filter_1() {
 }
 #[test]
 fn test_build_target_keys_filter_2() {
-    let output = build_target_keys(&FILTER_2);
+    let output = TargetFilter::build_target_keys(&FILTER_2);
     let expected_output = vec![
         TargetKey {
             dim_values: vec![DimValue {

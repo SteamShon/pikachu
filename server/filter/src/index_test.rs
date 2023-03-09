@@ -1,9 +1,7 @@
 use super::*;
-use lazy_static::lazy_static;
-use serde_json::{Result, Value};
-use std::collections::HashSet;
-use TargetFilter::*;
 
+use serde_json::Value;
+use std::collections::HashSet;
 struct TestFilter {
     id: String,
     filter: String,
@@ -150,13 +148,15 @@ fn test_filter_1_expected_true_index(id: &str) -> serde_json::Value {
 #[test]
 fn test_filter_1_index() {
     let filter = test_filter_1("AD_1");
-    let target_keys = build_target_keys(&filter.filter().unwrap());
+    let target_keys = TargetFilter::build_target_keys(&filter.filter().unwrap());
     let expected_target_keys = test_filter_1_expected_target_keys();
     assert_eq!(target_keys, expected_target_keys);
 
     let filters: Vec<TestFilter> = vec![filter];
 
-    let filter_index = FilterIndex::new(&filters);
+    let mut filter_index = FilterIndex::default();
+    filter_index.update(&filters);
+
     let id = &filters[0].id;
     let expected_true_index = test_filter_1_expected_true_index(id);
     let true_index_debug = filter_index.debug_index();
@@ -167,7 +167,8 @@ fn test_new_filter_index() {
     let id = "AD_1";
     let filter = test_filter_1(id);
     let filters: Vec<TestFilter> = vec![filter];
-    let filter_index = FilterIndex::new(&filters);
+    let mut filter_index = FilterIndex::default();
+    filter_index.update(&filters);
     let user_info = HashMap::from([(
         String::from("age"),
         HashSet::from([String::from("10"), String::from("20")]),
@@ -182,4 +183,39 @@ fn test_new_filter_index() {
     ]);
     println!("{:?}", internal_ids);
     assert_eq!(internal_ids, expected_internal_ids);
+}
+#[test]
+fn test_update_index_when_filter_changed() {
+    let id = "AD_1";
+    let mut filter = TestFilter {
+        id: String::from(id),
+        filter: String::from(
+            r#"
+        {"type": "in", "dimension": "age", "values": ["10"]}
+        "#,
+        ),
+    };
+    let filters: Vec<TestFilter> = vec![filter];
+    let mut index = FilterIndex::default();
+    index.update(&filters);
+
+    let user_info = HashMap::from([(
+        String::from("age"),
+        HashSet::from([String::from("10"), String::from("20")]),
+    )]);
+    let mut result = index.search(&user_info);
+
+    assert_eq!(result.contains(id), true);
+    filter = TestFilter {
+        id: String::from(id),
+        filter: String::from(
+            r#"
+            {"type": "in", "dimension": "age", "values": ["30"]}
+            "#,
+        ),
+    };
+    index.update(&vec![filter]);
+    println!("{:?}", index.debug());
+    result = index.search(&user_info);
+    assert_eq!(result.contains(id), false);
 }

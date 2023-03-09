@@ -475,3 +475,7 @@ impl AdState {
         self.build_placement_tree(&meta_tree)
     }
 }
+
+#[cfg(test)]
+#[path = "./ad_state_test.rs"]
+mod ad_state_test;

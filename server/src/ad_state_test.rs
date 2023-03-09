@@ -3,11 +3,10 @@ use super::AdState;
 use crate::db::{
     ad_group, campaign, content, content_type, creative, placement, placement_group, service,
 };
-use actix_web::web::{self};
-use dotenv::dotenv;
 use lazy_static::lazy_static;
-use prisma_client_rust::chrono::{DateTime, FixedOffset, TimeZone};
-use std::{env, sync::Arc};
+use prisma_client_rust::chrono::FixedOffset;
+use serde_json::json;
+use std::collections::HashSet;
 
 lazy_static! {
     pub static ref NOW: prisma_client_rust::chrono::DateTime<FixedOffset> =
@@ -66,6 +65,7 @@ lazy_static! {
         created_at: *NOW,
         updated_at: *NOW,
     };
+    pub static ref AD_GROUP_FILTER: String = String::from(r#"{"in": [{"var": "age"}, ["10"]]}"#);
     pub static ref AD_GROUP: ad_group::Data = ad_group::Data {
         id: String::from("ad_group_1"),
         name: String::from("ag_1"),
@@ -74,7 +74,7 @@ lazy_static! {
         campaign: None,
         campaign_id: CAMPAIGN.id.clone(),
         creatives: None,
-        filter: Some(String::from(r#"{"in": [{"var": "age"}, ["10"]]}"#)),
+        filter: Some(AD_GROUP_FILTER.clone()),
         population: None,
         created_at: *NOW,
         updated_at: *NOW,
@@ -158,4 +158,76 @@ fn test_ad_state_update() {
     init_test_ad_state(&mut ad_state);
 
     assert_eq!(ad_state.services.contains_key(&service_id), true);
+}
+
+#[test]
+fn test_ad_state_and_search_result_after_update() {
+    let mut ad_state = AdState::default();
+    init_test_ad_state(&mut ad_state);
+    let ad_group_id = String::from(AD_GROUP.id.clone());
+    let placement_group_id = PLACEMENT_GROUP.id.clone();
+    let placement_id = PLACEMENT.id.clone();
+    let campaign_id = CAMPAIGN.id.clone();
+    let ids = vec![ad_group_id];
+
+    // before update.
+    let placement_ids = ad_state.merge_ids_with_ad_metas(&placement_group_id, ids.iter());
+
+    assert_eq!(placement_ids.contains_key(&placement_id), true);
+    let campaign_ids = placement_ids.get(&placement_id).unwrap();
+
+    assert_eq!(campaign_ids.contains_key(&campaign_id), true);
+    let ad_groups = campaign_ids.get(&campaign_id).unwrap();
+    for ad_group in ad_groups {
+        assert_eq!(ad_group.name, AD_GROUP.name);
+        for creative in ad_group.creatives().unwrap().iter() {
+            assert_eq!(creative.name, CREATIVE.name);
+        }
+    }
+    // search result: match since user_info {"age": 10} matches to original
+    // filter {"in": [{"var": "age"}, ["10"]]}
+    let user_info_json = json!({
+        "age": HashSet::from([String::from("10")])
+    });
+    let search_result = ad_state.search("", &placement_group_id, &user_info_json);
+    assert_eq!(search_result.matched_ads.len() > 0, true);
+
+    // update ad_group/creative including target filter conditions.
+    let new_ad_group_name = &String::from("new_ad_group_1");
+    let new_ad_group = ad_group::Data {
+        name: new_ad_group_name.clone(),
+        filter: Some(String::from(
+            r#"
+            {"in": [{"var": "age"}, ["30"]]}
+        "#,
+        )),
+        ..AD_GROUP.clone()
+    };
+    let new_creative_name = &String::from("new_creative_1");
+    let new_creative = creative::Data {
+        name: new_creative_name.clone(),
+        ..CREATIVE.clone()
+    };
+    // after update
+    ad_state.update_ad_groups(&vec![new_ad_group]);
+    ad_state.update_creatives(&vec![new_creative]);
+    let new_placement_ids = ad_state.merge_ids_with_ad_metas(&placement_group_id, ids.iter());
+
+    for ad_group in new_placement_ids
+        .get(&placement_id)
+        .unwrap()
+        .get(&campaign_id)
+        .unwrap()
+    {
+        assert_eq!(ad_group.name, *new_ad_group_name);
+        for creative in ad_group.creatives().unwrap().iter() {
+            assert_eq!(creative.name, *new_creative_name);
+        }
+    }
+    // after update, ad_group should not matched since filter changed from
+    // age.10 to age.30 and user_info has age.10
+    let search_result = ad_state.search("", &placement_group_id, &user_info_json);
+    assert_eq!(search_result.matched_ads.len() == 0, true);
+
+    println!("{:?}", new_placement_ids);
 }

@@ -41,7 +41,7 @@ pub type UserInfo = HashMap<String, HashSet<String>>;
 pub struct TargetKey {
     pub dim_values: Vec<DimValue>,
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum TargetFilter {
     In {
         dimension: String,

@@ -242,8 +242,7 @@ impl AdState {
             creatives
                 .entry(creative.ad_group_id.clone())
                 .or_insert_with(|| HashMap::new())
-                .entry(creative.id.clone())
-                .or_insert_with(|| creative.clone());
+                .insert(creative.id.clone(), creative.clone());
         }
     }
     pub fn update_contents(&mut self, new_contents: &Vec<content::Data>) -> () {

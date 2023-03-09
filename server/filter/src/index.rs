@@ -1,10 +1,6 @@
+use serde_json::json;
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
-use std::num::NonZeroUsize;
-use std::sync::{Arc, Mutex, MutexGuard};
-
-use lru::LruCache;
-use serde_json::json;
 
 use crate::filter::*;
 use crate::filterable::Filterable;
@@ -40,6 +36,7 @@ impl FilterIndex {
     pub fn debug(&self) -> serde_json::Value {
         json!({
             "all_dimensions": json!(&self.all_dimensions),
+            "ids": json!(&self.ids),
             "index": self.debug_index(),
             "non_filter_ids": json!(&self.non_filter_ids.borrow()),
         })

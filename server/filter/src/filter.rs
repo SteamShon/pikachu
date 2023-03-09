@@ -1,4 +1,3 @@
-use fasthash::city;
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
@@ -25,14 +24,6 @@ impl DimValue {
             value: String::from(value),
             is_not,
         }
-    }
-    pub fn to_hash(&self) -> u64 {
-        city::hash64(format!(
-            "{is_not}.{dimension}.{value}",
-            is_not = self.is_not,
-            dimension = self.dimension,
-            value = self.value
-        ))
     }
 }
 pub type UserInfo = HashMap<String, HashSet<String>>;

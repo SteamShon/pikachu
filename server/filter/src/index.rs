@@ -133,7 +133,6 @@ impl FilterIndex {
     where
         F: Filterable,
     {
-        println!("[Before]: {:?}", self.debug());
         self.update_all_dimensions(filters);
         self.update_non_filter_ids(filters);
 
@@ -141,8 +140,6 @@ impl FilterIndex {
 
         self.update_index(filters);
         self.update_ids(filters);
-
-        println!("[After]: {:?}", self.debug());
     }
 
     fn generate_dimension_candidates(

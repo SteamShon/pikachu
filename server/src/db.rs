@@ -2,7 +2,7 @@
 
 #![allow(warnings, unused)]
 pub static DATAMODEL_STR: &'static str =
-    include_str!("/home/shon/workspace/pikachu/server/prisma/schema.prisma");
+    include_str!("C:\\Users\\user\\Documents\\workspace\\pikachu\\server\\prisma\\schema.prisma");
 static DATABASE_STR: &'static str = "postgresql";
 pub async fn new_client() -> Result<PrismaClient, ::prisma_client_rust::NewClientError> {
     PrismaClient::_builder().build().await

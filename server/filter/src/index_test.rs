@@ -159,7 +159,7 @@ fn test_filter_1_index() {
     let filter_index = FilterIndex::new(&filters);
     let id = &filters[0].id;
     let expected_true_index = test_filter_1_expected_true_index(id);
-    let true_index_debug = FilterIndex::debug_index(&filter_index.index.lock().unwrap());
+    let true_index_debug = filter_index.debug_index();
     assert_eq!(true_index_debug, expected_true_index);
 }
 #[test]

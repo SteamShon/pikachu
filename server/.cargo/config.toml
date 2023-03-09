@@ -1,2 +1,5 @@
 [alias]
 prisma = "run -p prisma-cli --"
+
+[build]
+incremental = true

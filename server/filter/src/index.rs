@@ -47,7 +47,7 @@ impl FilterIndex {
     {
         let mut dimensions = HashSet::new();
         for filter in filters {
-            for target_filter in filter.filter() {
+            if let Some(target_filter) = filter.filter() {
                 dimensions.extend(TargetFilter::extract_dimensions(&target_filter));
             }
         }
@@ -78,7 +78,7 @@ impl FilterIndex {
     {
         let ids = &mut self.ids;
         for filter in filters {
-            for target_filter in filter.filter() {
+            if let Some(target_filter) = filter.filter() {
                 ids.insert(filter.id(), target_filter);
             }
         }
@@ -92,14 +92,14 @@ impl FilterIndex {
         let prev_index = &mut self.index;
 
         for filter in filters {
-            for prev_target_filter in prev_ids.get(&filter.id()) {
+            if let Some(prev_target_filter) = prev_ids.get(&filter.id()) {
                 let index_key_with_internal_ids = TargetFilter::build_index_key_wth_internal_ids(
                     &prev_all_dimensions,
                     prev_target_filter,
                     &filter.id(),
                 );
                 for (dv, internal_id) in index_key_with_internal_ids {
-                    for prev_ids in prev_index.get_mut(&dv) {
+                    if let Some(prev_ids) = prev_index.get_mut(&dv) {
                         prev_ids.remove(&internal_id);
                     }
                 }
@@ -114,7 +114,7 @@ impl FilterIndex {
         let index = &mut self.index;
 
         for filter in filters {
-            for target_filter in filter.filter() {
+            if let Some(target_filter) = filter.filter() {
                 let index_key_with_internal_ids = TargetFilter::build_index_key_wth_internal_ids(
                     &all_dimensons,
                     &target_filter,
@@ -151,15 +151,15 @@ impl FilterIndex {
         let mut union: HashSet<String> = HashSet::new();
         // empty key need to be lookup.
         let empty_dim_value = DimValue::new(dimension, "empty", is_not);
-        for internal_ids in index.get(&empty_dim_value) {
+        if let Some(internal_ids) = index.get(&empty_dim_value) {
             for internal_id in internal_ids {
                 union.insert(internal_id.clone());
             }
         }
-        for values in user_info.get(dimension) {
+        if let Some(values) = user_info.get(dimension) {
             for value in values {
                 let dim_value = DimValue::new(dimension, value, is_not);
-                for internal_ids in index.get(&dim_value) {
+                if let Some(internal_ids) = index.get(&dim_value) {
                     for internal_id in internal_ids {
                         union.insert(internal_id.clone());
                     }
@@ -202,11 +202,13 @@ impl FilterIndex {
         positive_candidates
     }
     fn search_negative_ids(&self, user_info: &UserInfo) -> HashSet<String> {
+        let all_dimensions = &self.all_dimensions;
         let index = &self.index;
         let mut union: HashSet<String> = HashSet::new();
 
-        for (dim, _values) in user_info {
-            let dim_candidates = Self::generate_dimension_candidates(user_info, dim, &index, true);
+        for dimension in all_dimensions.iter() {
+            let dim_candidates =
+                Self::generate_dimension_candidates(user_info, dimension, &index, true);
             union.extend(dim_candidates);
         }
 

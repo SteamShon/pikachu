@@ -171,7 +171,7 @@ impl TargetFilter {
                     let dimension = value["dimension"].as_str()?.to_string();
                     let mut valid_values = HashSet::new();
                     for value in value["values"].as_array()? {
-                        for v in value.as_str() {
+                        if let Some(v) = value.as_str() {
                             valid_values.insert(v.to_string());
                         }
                     }

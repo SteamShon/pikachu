@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:12-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 100
+  server:
+    container_name: pikachu-server
+    build:
+      context: server
+      dockerfile: server/Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - AD_META_SYNC_PERIOD_MILLIS=${AD_META_SYNC_PERIOD_MILLIS}
+    ports:
+      - 8080:8080
+    depends_on:
+      db:
+        condition: service_healthy
+  dashboard:
+    container_name: pikachu-dashboard
+    build:
+      context: dashboard
+      dockerfile: dashboard/Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+    ports:
+      - 3000:3000
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  db-data: {}

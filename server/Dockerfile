@@ -15,7 +15,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 # stage 3 - use the main officiall rust docker image as our builder
 FROM rust as builder
 
-ENV USER=web
+ENV USER=api
 ENV UID=1001
 
 # create user 
@@ -52,7 +52,7 @@ COPY --from=builder /etc/group /etc/group
 COPY --from=builder /app/target/release/server /app/server
 WORKDIR /app 
 
-USER web:web
+USER api:api
 
 # start the application 
 CMD ["./server"]

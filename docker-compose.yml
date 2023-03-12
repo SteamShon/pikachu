@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  db:
+  postgres:
     image: postgres:12-alpine
     restart: always
     environment:
@@ -15,25 +15,20 @@ services:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
-      retries: 100
-  server:
-    container_name: pikachu-server
+      retries: 10
+  prisma-migrate:
     build:
-      context: server
-      dockerfile: server/Dockerfile
+      context: dashboard/prisma
+      dockerfile: Dockerfile
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - AD_META_SYNC_PERIOD_MILLIS=${AD_META_SYNC_PERIOD_MILLIS}
-    ports:
-      - 8080:8080
+      DATABASE_URL: ${DATABASE_URL}
     depends_on:
-      db:
-        condition: service_healthy
+      - postgres
   dashboard:
-    container_name: pikachu-dashboard
     build:
       context: dashboard
-      dockerfile: dashboard/Dockerfile
+      dockerfile: Dockerfile
+      target: runner
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
@@ -43,7 +38,18 @@ services:
     ports:
       - 3000:3000
     depends_on:
-      db:
-        condition: service_healthy
+      - prisma-migrate
+  server:
+    build:
+      context: server
+      dockerfile: Dockerfile
+      target: builder
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - AD_META_SYNC_PERIOD_MILLIS=${AD_META_SYNC_PERIOD_MILLIS}
+    ports:
+      - 8080:8080
+    depends_on:
+      - dashboard
 volumes:
   db-data: {}

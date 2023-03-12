@@ -5,7 +5,6 @@ RUN apk add --no-cache libc6-compat openssl1.1-compat
 WORKDIR /app
 
 # Install Prisma Client - remove if not using Prisma
-
 COPY prisma ./
 
 # Install dependencies based on the preferred package manager
@@ -27,6 +26,7 @@ ARG NEXT_PUBLIC_CLIENTVAR
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN npx prisma generate
 
 # ENV NEXT_TELEMETRY_DISABLED 1
 

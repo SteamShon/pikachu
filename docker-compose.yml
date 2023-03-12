@@ -28,7 +28,6 @@ services:
     build:
       context: dashboard
       dockerfile: Dockerfile
-      target: runner
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
@@ -43,13 +42,12 @@ services:
     build:
       context: server
       dockerfile: Dockerfile
-      target: builder
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - AD_META_SYNC_PERIOD_MILLIS=${AD_META_SYNC_PERIOD_MILLIS}
     ports:
       - 8080:8080
     depends_on:
-      - dashboard
+      - prisma-migrate
 volumes:
   db-data: {}

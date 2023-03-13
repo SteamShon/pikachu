@@ -46,7 +46,7 @@ function ContentTypeRendererBuilder({
             <LiveProvider
               code={replacePropsInFunction({
                 code,
-                contents: [defaultValues as Record<string, unknown>],
+                contents: [(defaultValues as Record<string, unknown>) * 2],
               })}
               noInline={true}
             >

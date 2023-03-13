@@ -10,6 +10,7 @@ import {
   TextField,
 } from "@mui/material";
 import type { Cube, CubeConfig } from "@prisma/client";
+import type { Dispatch, SetStateAction } from "react";
 import { useMemo, useState } from "react";
 import {
   Controller,
@@ -18,17 +19,20 @@ import {
   useForm,
 } from "react-hook-form";
 import { fetchValues } from "../../utils/duckdb";
-import type { UserInfoSchemaType } from "../schema/userInfo";
-import { userInfoSchema } from "../schema/userInfo";
+import type { SearchResult } from "../../utils/search";
+import type { SearchRequestSchemaType } from "../schema/searchRequest";
+import { searchRequestSchema } from "../schema/searchRequest";
 
-function UserInfoForm({
+function SearchRequestForm({
   cube,
   columns,
+  setMatchedAds,
   onSubmit,
 }: {
   cube?: Cube & { cubeConfig: CubeConfig };
   columns: Record<string, unknown>[];
-  onSubmit: (input: UserInfoSchemaType) => void;
+  setMatchedAds: Dispatch<SetStateAction<SearchResult[]>>;
+  onSubmit: (input: SearchRequestSchemaType) => void;
 }) {
   const [dimension, setDimension] = useState<string | undefined>(undefined);
   const [options, setOptions] = useState<string[]>([]);
@@ -37,19 +41,21 @@ function UserInfoForm({
   const [open, setOpen] = useState(false);
   const loading = open && options.length === 0;
 
-  const methods = useForm<UserInfoSchemaType>({
-    resolver: zodResolver(userInfoSchema),
+  const methods = useForm<SearchRequestSchemaType>({
+    resolver: zodResolver(searchRequestSchema),
   });
   const { control, register, handleSubmit, setValue } = methods;
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "dimension_values",
+    name: "dimensionValues",
   });
   const fetchRemoteValues = useMemo(
     () =>
       debounce((index: number, field: string, prefix?: string) => {
         (async () => {
           if (!cube || !cube?.sql || index !== selectedIndex) return;
+
+          setMatchedAds([]);
 
           const values = (
             await fetchValues(cube.cubeConfig, cube.sql, field, prefix)
@@ -59,7 +65,7 @@ function UserInfoForm({
         })();
       }, 1000),
 
-    [cube, selectedIndex]
+    [cube, selectedIndex, setMatchedAds]
   );
   return (
     <FormProvider {...methods}>
@@ -83,6 +89,13 @@ function UserInfoForm({
             </h3>
           </div>
 
+          <div className="border-t border-gray-200">
+            <input
+              className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+              {...register("apiServerHost")}
+              defaultValue={"https://pikachu-server.fly.dev"}
+            />
+          </div>
           {fields.map((field, index) => (
             <div
               key={field.id}
@@ -90,10 +103,11 @@ function UserInfoForm({
             >
               <div className="col-span-4 bg-gray-50 px-4 py-5">
                 <select
-                  {...register(`dimension_values.${index}.dimension`)}
+                  {...register(`dimensionValues.${index}.dimension`)}
                   onChange={(e) => {
                     setSelectedIndex(index);
                     setDimension(e.target.value);
+                    setOptions([]);
                   }}
                 >
                   <option value="">Please choose</option>
@@ -110,7 +124,7 @@ function UserInfoForm({
               <div className="col-span-7 bg-gray-50 px-4 py-5">
                 <Controller
                   control={control}
-                  name={`dimension_values.${index}.values`}
+                  name={`dimensionValues.${index}.values`}
                   render={({}) => (
                     <Autocomplete
                       id="asynchronous-values"
@@ -133,7 +147,7 @@ function UserInfoForm({
                       loading={loading}
                       multiple
                       onChange={(_e, vs: string[]) => {
-                        setValue(`dimension_values.${index}.values`, vs);
+                        setValue(`dimensionValues.${index}.values`, vs);
                       }}
                       renderInput={(params) => (
                         <TextField
@@ -170,4 +184,4 @@ function UserInfoForm({
   );
 }
 
-export default UserInfoForm;
+export default SearchRequestForm;

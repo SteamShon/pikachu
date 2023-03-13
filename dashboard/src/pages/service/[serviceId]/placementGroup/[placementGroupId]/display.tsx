@@ -1,31 +1,29 @@
-import {
-  Grid
-} from "@mui/material";
 import { useRouter } from "next/router";
 import { useSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 import PlacementData from "../../../../../components/form/placementData";
-import UserInfoForm from "../../../../../components/form/userInfoForm";
+import SearchRequestForm from "../../../../../components/form/searchRequestForm";
+import type { SearchRequestSchemaType } from "../../../../../components/schema/searchRequest";
 import { api } from "../../../../../utils/api";
 import { executeQuery } from "../../../../../utils/duckdb";
 import type { SearchResult } from "../../../../../utils/search";
-import { search, updateAdMeta } from "../../../../../utils/search";
+import { buildUserInfo, search } from "../../../../../utils/search";
 
 function Display() {
   const { enqueueSnackbar } = useSnackbar();
   const router = useRouter();
   const { serviceId, placementGroupId } = router.query;
-  const { data: placementGroup } = api.placementGroup.get.useQuery({
+  const { data: placementGroup, isLoading } = api.placementGroup.get.useQuery({
     id: placementGroupId as string,
   });
+
   const [metadata, setMetadata] = useState<Record<string, unknown>[]>([]);
 
   const [matchedAds, setMatchedAds] = useState<SearchResult[]>([]);
-  const [userInfo, setUserInfo] = useState<Record<string, string[]>>({});
+  const [payload, setPayload] = useState<SearchRequestSchemaType | undefined>(
+    undefined
+  );
 
-  const onUpdateClick = async () => {
-    await updateAdMeta();
-  };
   useEffect(() => {
     if (placementGroup?.cube && placementGroup?.cube?.cubeConfig) {
       const load = async () => {
@@ -45,9 +43,10 @@ function Display() {
         );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [placementGroup]);
+  }, [isLoading]);
 
-  const onSubmit = () => {
+  const searchMatchedAds = (data: SearchRequestSchemaType) => {
+    setPayload(data);
     if (
       !serviceId ||
       !placementGroupId ||
@@ -59,15 +58,56 @@ function Display() {
     search({
       serviceId: serviceId as string,
       placementGroupId: placementGroupId as string,
-      userInfo,
-    }).then((res) => {
-      setMatchedAds(res["matched_ads"] || []);
-    });
+      payload: data,
+    })
+      .then((res) => {
+        enqueueSnackbar("search API success.", { variant: "success" });
+        setMatchedAds(res["matched_ads"] || []);
+      })
+      .catch((e) => console.error(e));
   };
-
+  const buildCurlCommand = () => {
+    const data = payload ? buildUserInfo(payload) : {};
+    const request = JSON.stringify(data, null, 2);
+    return `
+    CURL -X POST -H 'content-type:application/json' ${payload?.apiServerHost}/search -d '${request}'
+    `;
+  };
   return (
     <>
-      <Grid
+      <SearchRequestForm
+        cube={placementGroup?.cube || undefined}
+        columns={metadata}
+        setMatchedAds={setMatchedAds}
+        onSubmit={(data) => {
+          searchMatchedAds(data);
+        }}
+      />
+      <div className="overflow-hidden bg-white shadow sm:rounded-lg">
+        <div className="px-4 py-5 sm:px-6">
+          <h3 className="text-lg font-medium leading-6 text-gray-900">
+            API Request
+          </h3>
+        </div>
+        {payload ? buildCurlCommand() : null}
+      </div>
+
+      <div className="overflow-hidden bg-white shadow sm:rounded-lg">
+        <div className="px-4 py-5 sm:px-6">
+          <h3 className="text-lg font-medium leading-6 text-gray-900">
+            API Result
+          </h3>
+        </div>
+        {matchedAds.map((placement) => {
+          return (
+            <div key={placement.id}>
+              <PlacementData placement={placement} />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* <Grid
         container
         direction="row"
         justifyContent="flex-start"
@@ -78,12 +118,13 @@ function Display() {
             cube={placementGroup?.cube || undefined}
             columns={metadata}
             onSubmit={(data) => {
-              const userInfo = data.dimension_values.reduce((prev, cur) => {
+              console.log(data);
+              const userInfo = data.dimensionValues.reduce((prev, cur) => {
                 prev[cur.dimension] = cur.values;
                 return prev;
               }, {} as Record<string, string[]>);
               setUserInfo(userInfo);
-              onSubmit();
+              // onSubmit();
             }}
           />
         </Grid>
@@ -106,7 +147,7 @@ function Display() {
             </div>
           </div>
         </Grid>
-      </Grid>
+      </Grid> */}
     </>
   );
 }

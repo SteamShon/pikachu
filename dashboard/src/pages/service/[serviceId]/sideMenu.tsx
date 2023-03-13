@@ -40,6 +40,11 @@ const treeData = [
     ],
   },
   {
+    id: "RenderPreview",
+    name: "RenderPreview",
+    children: [],
+  },
+  {
     id: "ContentTypes",
     name: "ContentTypes",
     children: [

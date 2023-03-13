@@ -59,14 +59,12 @@ export function buildUserInfo(
 }
 export async function search({
   serviceId,
-  placementGroupId,
   payload,
 }: {
   serviceId?: string;
-  placementGroupId?: string;
   payload: SearchRequestSchemaType;
 }): Promise<{ [x: string]: SearchResult[] }> {
-  if (!serviceId || !placementGroupId)
+  if (!serviceId)
     return Promise.resolve({ matched_ads: [], non_filter_ads: [] });
 
   //return Promise.resolve(mockResponse);
@@ -76,7 +74,7 @@ export async function search({
     url: (payload.apiServerHost || "http://localhost:8080") + "/search",
     data: {
       service_id: serviceId,
-      placement_group_id: placementGroupId,
+      placement_group_id: payload.placementGroupId,
       user_info: buildUserInfo(payload),
     },
   }).then((res) => {
@@ -84,6 +82,7 @@ export async function search({
     return res.data;
   });
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockResponse: { [x: string]: SearchResult[] } = {
   matched_ads: [
     {

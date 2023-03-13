@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export const searchRequestSchema = z.object({
-  serviceId: z.string().min(1),
   placementGroupId: z.string().min(1),
   apiServerHost: z.string().min(1),
   dimensionValues: z

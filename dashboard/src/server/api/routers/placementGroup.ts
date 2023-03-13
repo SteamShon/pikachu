@@ -6,6 +6,23 @@ import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const placementGroupRouter = createTRPCRouter({
+  list: protectedProcedure
+    .input(z.object({ serviceId: z.string() }))
+    .query(async ({ input }) => {
+      const placementGroups = await prisma.placementGroup.findMany({
+        where: {
+          serviceId: input.serviceId,
+        },
+        include: {
+          cube: {
+            include: {
+              cubeConfig: true,
+            },
+          },
+        },
+      });
+      return placementGroups;
+    }),
   create: protectedProcedure
     .input(placementGroupSchema)
     .mutation(async ({ input }) => {

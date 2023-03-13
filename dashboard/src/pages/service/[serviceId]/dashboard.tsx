@@ -14,6 +14,7 @@ import CubeTable from "./cubeTable";
 import CustomsetTable from "./customsetTable";
 import PlacementGroupTable from "./placementGroupTable";
 import PlacementTable from "./placementTable";
+import RenderPreview from "./renderPreview";
 import SegmentTable from "./segmentTable";
 import SideMenu from "./sideMenu";
 
@@ -140,6 +141,11 @@ function Dashboard() {
         service ? (
           <SegmentTable setServiceTree={setTree} serviceTree={tree} />
         ) : null,
+    },
+    {
+      label: "RenderPreview",
+      description: `renderPreview`,
+      table: () => (service ? <RenderPreview serviceId={service.id} /> : null),
     },
   ];
   const activeStep = step

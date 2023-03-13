@@ -2,7 +2,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { Cube, CubeConfig, Segment } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
-import type { RuleGroupType } from "react-querybuilder";
 import { formatQuery, parseSQL } from "react-querybuilder";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { SegmentWithCubeSchemaType } from "../schema/segment";

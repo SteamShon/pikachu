@@ -3,8 +3,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Service } from "@prisma/client";
 import moment from "moment";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
@@ -101,6 +101,18 @@ function PlacementGroupTable({
               }}
               startIcon={<EditIcon />}
             ></Button>
+            <Link
+              href={{
+                pathname:
+                  "/service/[serviceId]/placementGroup/[placementGroupId]/display",
+                query: {
+                  serviceId: service.id,
+                  placementGroupId: params.row.id,
+                },
+              }}
+            >
+              Show
+            </Link>
           </div>
         );
       },

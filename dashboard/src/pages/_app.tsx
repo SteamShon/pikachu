@@ -6,7 +6,6 @@ import { api } from "../utils/api";
 
 import Layout from "../components/Layout";
 import "../styles/globals.css";
-
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },

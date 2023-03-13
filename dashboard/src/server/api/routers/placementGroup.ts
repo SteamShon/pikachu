@@ -6,6 +6,23 @@ import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const placementGroupRouter = createTRPCRouter({
+  get: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      const placementGroup = await prisma.placementGroup.findUnique({
+        where: {
+          id: input.id,
+        },
+        include: {
+          cube: {
+            include: {
+              cubeConfig: true,
+            },
+          },
+        },
+      });
+      return placementGroup;
+    }),
   create: protectedProcedure
     .input(placementGroupSchema)
     .mutation(async ({ input }) => {

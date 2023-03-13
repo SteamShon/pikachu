@@ -5,6 +5,7 @@ import { replacePropsInFunction } from "../common/CodeTemplate";
 
 function PlacementData({ placement }: { placement: SearchResult }) {
   const { contentType } = placement;
+
   const contents = placement.campaigns.flatMap((campaign) => {
     return campaign.adGroups.flatMap((adGroup) => {
       return adGroup.creatives.flatMap((creative) => {

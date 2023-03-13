@@ -1,3 +1,11 @@
+import {
+  Accordion,
+  AccordionSummary,
+  Typography,
+  AccordionDetails,
+} from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+
 import { useSnackbar } from "notistack";
 import { useState } from "react";
 import PlacementData from "../../../components/form/placementData";
@@ -49,27 +57,41 @@ function RenderPreview({ serviceId }: { serviceId: string }) {
         }}
       />
       <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900">
-            API Request
-          </h3>
-        </div>
-        {payload ? buildCurlCommand() : null}
+        <Accordion expanded>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="panel1a-content"
+            id="api-request"
+          >
+            <Typography>API Request</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography>{payload ? buildCurlCommand() : null}</Typography>
+          </AccordionDetails>
+        </Accordion>
       </div>
 
       <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900">
-            API Result
-          </h3>
-        </div>
-        {matchedAds.map((placement) => {
-          return (
-            <div key={placement.id}>
-              <PlacementData placement={placement} />
-            </div>
-          );
-        })}
+        <Accordion expanded>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="panel1a-content"
+            id="api-result"
+          >
+            <Typography>API Result</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography>
+              {matchedAds.map((placement) => {
+                return (
+                  <div key={placement.id}>
+                    <PlacementData placement={placement} />
+                  </div>
+                );
+              })}
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
       </div>
     </>
   );

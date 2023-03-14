@@ -58,6 +58,7 @@ impl Default for UpdateInfo {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct AdState {
     pub services: HashMap<String, service::Data>,
@@ -68,7 +69,7 @@ pub struct AdState {
     pub creatives: HashMap<String, HashMap<String, creative::Data>>,
     pub contents: HashMap<String, content::Data>,
     pub update_info: UpdateInfo,
-    pub filter_index: FilterIndex,
+    pub filter_index: HashMap<String, FilterIndex>,
 }
 impl Default for AdState {
     fn default() -> Self {
@@ -89,6 +90,27 @@ impl Default for AdState {
 impl AdState {
     pub fn from(other: &Self) -> Self {
         AdState { ..other.clone() }
+    }
+    fn get_campaign(&self, ad_group: &ad_group::Data) -> Option<&campaign::Data> {
+        self.campaigns.get(&ad_group.campaign_id)
+    }
+    fn get_placement(&self, ad_group: &ad_group::Data) -> Option<&placement::Data> {
+        self.placements
+            .get(&self.get_campaign(ad_group)?.placement_id)
+    }
+    fn get_placement_group(&self, ad_group: &ad_group::Data) -> Option<&placement_group::Data> {
+        let placement_group_id = &self.get_placement(ad_group)?.placement_group_id;
+        match placement_group_id {
+            None => None,
+            Some(id) => self.placement_groups.get(id),
+        }
+    }
+    fn get_service(&self, ad_group: &ad_group::Data) -> Option<&service::Data> {
+        let service_id = &self.get_placement_group(ad_group)?.service_id;
+        match service_id {
+            None => None,
+            Some(id) => self.services.get(id),
+        }
     }
     pub async fn fetch_services(
         client: Arc<PrismaClient>,
@@ -220,8 +242,22 @@ impl AdState {
             campaigns.insert(campaign.id.clone(), campaign.clone());
         }
     }
+    fn ad_group_grouped_by_service(
+        &self,
+        ad_groups: &Vec<ad_group::Data>,
+    ) -> HashMap<String, Vec<ad_group::Data>> {
+        let mut service_ad_groups = HashMap::new();
+        for ad_group in ad_groups {
+            if let Some(service) = self.get_service(ad_group) {
+                service_ad_groups
+                    .entry(service.id.clone())
+                    .or_insert_with(|| Vec::new())
+                    .push(ad_group.clone());
+            }
+        }
+        service_ad_groups
+    }
     pub fn update_ad_groups(&mut self, new_ad_groups: &Vec<ad_group::Data>) -> () {
-        let filter_index = &mut self.filter_index;
         let ad_groups = &mut self.ad_groups;
         if let Some(latest_updated_ad_group) = new_ad_groups.first() {
             let update_info = &mut self.update_info;
@@ -230,18 +266,26 @@ impl AdState {
         for ad_group in new_ad_groups {
             ad_groups.insert(ad_group.id.clone(), ad_group.clone());
         }
-        let mut ad_groups_to_insert = Vec::new();
-        let mut ad_groups_to_delete = Vec::new();
+        let service_ad_groups = self.ad_group_grouped_by_service(new_ad_groups);
+        for (service_id, ad_groups) in service_ad_groups.iter() {
+            let index = self
+                .filter_index
+                .entry(service_id.clone())
+                .or_insert_with(|| FilterIndex::default());
 
-        for ad_group in new_ad_groups {
-            if Self::is_active_ad_group(ad_group) {
-                ad_groups_to_insert.push(ad_group.clone());
-            } else {
-                ad_groups_to_delete.push(ad_group.clone());
+            let mut ad_groups_to_insert = Vec::new();
+            let mut ad_groups_to_delete = Vec::new();
+
+            for ad_group in ad_groups {
+                if Self::is_active_ad_group(ad_group) {
+                    ad_groups_to_insert.push(ad_group.clone());
+                } else {
+                    ad_groups_to_delete.push(ad_group.clone());
+                }
             }
-        }
 
-        filter_index.update(&ad_groups_to_insert, &ad_groups_to_delete);
+            index.update(&ad_groups_to_insert, &ad_groups_to_delete);
+        }
     }
     pub fn update_creatives(&mut self, new_creatives: &Vec<creative::Data>) -> () {
         let creatives = &mut self.creatives;
@@ -388,15 +432,20 @@ impl AdState {
         user_info_json: &serde_json::Value,
     ) -> SearchResult {
         let user_info = Self::parse_user_info(user_info_json).unwrap();
-        let matched_ids = self.filter_index.search(&user_info);
-
+        let matched_ids = match self.filter_index.get(service_id) {
+            Some(index) => index.search(&user_info),
+            None => HashSet::new(),
+        };
+        println!("{:?}", self.filter_index.get(service_id));
         println!("[ids]: {:?}", matched_ids);
 
         let matched_ads = self.transform_ids_to_ads_grouped(placement_group_id, matched_ids.iter());
-        let non_filter_ads = self.transform_ids_to_ads_grouped(
-            placement_group_id,
-            self.filter_index.non_filter_ids.iter(),
-        );
+        let non_filter_ads = match self.filter_index.get(service_id) {
+            None => Vec::new(),
+            Some(index) => {
+                self.transform_ids_to_ads_grouped(placement_group_id, index.non_filter_ids.iter())
+            }
+        };
 
         SearchResult {
             matched_ads,

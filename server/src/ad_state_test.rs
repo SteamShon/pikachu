@@ -180,7 +180,7 @@ fn test_ad_state_and_search_result_after_update() {
     // search result: match since user_info {"age": 10} matches to original
     // filter {"in": [{"var": "age"}, ["10"]]}
 
-    let search_result = ad_state.search("", &placement_group_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &placement_group_id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() > 0, true);
 
     // update ad_group/creative including target filter conditions.
@@ -219,7 +219,7 @@ fn test_ad_state_and_search_result_after_update() {
     }
     // after update, ad_group should not matched since filter changed from
     // age.10 to age.30 and user_info has age.10
-    let search_result = ad_state.search("", &placement_group_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &placement_group_id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() == 0, true);
 
     println!("{:?}", new_placement_ids);
@@ -238,7 +238,7 @@ fn test_update_ad_group_filter_and_status_change() {
 
     let placement_group_id = PLACEMENT_GROUP.id.clone();
     // result should contain AD_GROUP since age.10
-    let search_result = ad_state.search("", &placement_group_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &placement_group_id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() > 0, true);
 
     // update ad_group's status to exlucde it from index.
@@ -253,7 +253,7 @@ fn test_update_ad_group_filter_and_status_change() {
     ad_state.update_ad_groups(&vec![new_ad_group]);
     // after update, AD_GROUP should be excluded from result since
     // our index suppose to exlude filters_to_delete.
-    let search_result = ad_state.search("", &placement_group_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &placement_group_id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() == 0, true);
 
     // back to status published.
@@ -266,6 +266,6 @@ fn test_update_ad_group_filter_and_status_change() {
     ad_state.update_ad_groups(&vec![new_ad_group]);
     // after update, AD_GROUP should be included in result.
     // since ad_group's status has been change back to published.
-    let search_result = ad_state.search("", &placement_group_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &placement_group_id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() > 0, true);
 }

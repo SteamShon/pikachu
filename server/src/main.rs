@@ -81,9 +81,8 @@ async fn main() -> std::io::Result<()> {
 
     let database_url = env::var("DATABASE_URL").unwrap();
     let ad_meta_sync_period_millis = env::var("AD_META_SYNC_PERIOD_MILLIS")
-        .unwrap_or(String::from("60_000"))
-        .parse::<u64>()
-        .unwrap();
+        .map(|s| s.parse::<u64>().unwrap_or(60000))
+        .unwrap_or(60000);
 
     let prisma = Arc::new(db::new_client_with_url(&database_url).await.unwrap());
     let client = web::Data::from(prisma);

@@ -394,7 +394,7 @@ impl TargetFilter {
         }
     }
     pub fn build_index_key_wth_internal_ids(
-        all_dimensions: &HashSet<String>,
+        all_dimensions: &HashMap<String, HashSet<String>>,
         target_filter: &TargetFilter,
         id: &str,
     ) -> Vec<(DimValue, String)> {
@@ -412,10 +412,12 @@ impl TargetFilter {
                 dim_value_seqs.push((dv.clone(), Self::to_internal_id(dv, id, index)));
             }
             // fill out index for dimension that don't have values. empty.
-            for dimension in all_dimensions - &value_existing_dimensions {
-                let dv = DimValue::new(&dimension, "empty", false);
+            for (dimension, _ids) in all_dimensions {
+                if !value_existing_dimensions.contains(dimension) {
+                    let dv = DimValue::new(&dimension, "empty", false);
 
-                dim_value_seqs.push((dv.clone(), Self::to_internal_id(&dv, id, index)));
+                    dim_value_seqs.push((dv.clone(), Self::to_internal_id(&dv, id, index)));
+                }
             }
         }
         dim_value_seqs

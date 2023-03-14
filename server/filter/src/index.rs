@@ -7,8 +7,8 @@ use crate::filterable::Filterable;
 
 #[derive(Debug, Clone)]
 pub struct FilterIndex {
-    pub all_dimensions: HashSet<String>,
-    pub ids: HashMap<String, TargetFilter>,
+    pub all_dimensions: HashMap<String, HashSet<String>>,
+    pub filters: HashMap<String, TargetFilter>,
     pub index: HashMap<DimValue, HashSet<String>>,
     pub non_filter_ids: HashSet<String>,
 }
@@ -16,7 +16,7 @@ impl Default for FilterIndex {
     fn default() -> Self {
         Self {
             all_dimensions: Default::default(),
-            ids: Default::default(),
+            filters: Default::default(),
             index: Default::default(),
             non_filter_ids: Default::default(),
         }
@@ -36,84 +36,142 @@ impl FilterIndex {
     pub fn debug(&self) -> serde_json::Value {
         json!({
             "all_dimensions": json!(&self.all_dimensions),
-            "ids": json!(&self.ids),
+            "ids": json!(&self.filters),
             "index": self.debug_index(),
             "non_filter_ids": json!(&self.non_filter_ids.borrow()),
         })
     }
-    fn build_all_dimensions<F>(filters: &Vec<F>) -> HashSet<String>
+    fn build_all_dimensions<F>(filters: &Vec<F>) -> HashMap<String, HashSet<String>>
     where
         F: Filterable,
     {
-        let mut dimensions = HashSet::new();
+        let mut dimensions = HashMap::new();
         for filter in filters {
             if let Some(target_filter) = filter.filter() {
-                dimensions.extend(TargetFilter::extract_dimensions(&target_filter));
+                for dimension in TargetFilter::extract_dimensions(&target_filter) {
+                    dimensions
+                        .entry(dimension)
+                        .or_insert_with(|| HashSet::new())
+                        .insert(filter.id());
+                }
             }
         }
         dimensions
     }
-
-    fn update_all_dimensions<F>(&mut self, filters: &Vec<F>)
+    fn add_all_dimensions<F>(&mut self, filters_to_insert: &Vec<F>)
     where
         F: Filterable,
     {
         let all_dimensions = &mut self.all_dimensions;
-        all_dimensions.extend(Self::build_all_dimensions(filters));
+
+        for (dim, ids) in Self::build_all_dimensions(filters_to_insert) {
+            all_dimensions
+                .entry(dim)
+                .or_insert_with(|| HashSet::new())
+                .extend(ids);
+        }
     }
-    fn update_non_filter_ids<F>(&mut self, filters: &Vec<F>)
+    fn remove_all_dimensions<F>(&mut self, filters_to_delete: &Vec<F>)
+    where
+        F: Filterable,
+    {
+        let all_dimensions = &mut self.all_dimensions;
+
+        for (dim, ids) in Self::build_all_dimensions(filters_to_delete).iter() {
+            let prev_ids = all_dimensions
+                .entry(dim.to_string())
+                .or_insert_with(|| HashSet::new());
+
+            for id in ids {
+                prev_ids.remove(id);
+            }
+        }
+        all_dimensions.retain(|_dv, ids| !ids.is_empty());
+    }
+
+    fn update_non_filter_ids<F>(&mut self, filters_to_insert: &Vec<F>, filters_to_delete: &Vec<F>)
     where
         F: Filterable,
     {
         let non_filter_ids = &mut self.non_filter_ids;
-        for filter in filters {
-            if let None = filter.filter() {
-                non_filter_ids.insert(filter.id().clone());
-            }
+        for filter in filters_to_delete {
+            non_filter_ids.remove(&filter.id());
         }
-    }
-    fn update_ids<F>(&mut self, filters: &Vec<F>)
-    where
-        F: Filterable,
-    {
-        let ids = &mut self.ids;
-        for filter in filters {
-            if let Some(target_filter) = filter.filter() {
-                ids.insert(filter.id(), target_filter);
-            }
-        }
-    }
-    fn cleaup_index<F>(&mut self, filters: &Vec<F>)
-    where
-        F: Filterable,
-    {
-        let prev_ids = &mut self.ids;
-        let prev_all_dimensions = &mut self.all_dimensions;
-        let prev_index = &mut self.index;
-
-        for filter in filters {
-            if let Some(prev_target_filter) = prev_ids.get(&filter.id()) {
-                let index_key_with_internal_ids = TargetFilter::build_index_key_wth_internal_ids(
-                    &prev_all_dimensions,
-                    prev_target_filter,
-                    &filter.id(),
-                );
-                for (dv, internal_id) in index_key_with_internal_ids {
-                    if let Some(prev_ids) = prev_index.get_mut(&dv) {
-                        prev_ids.remove(&internal_id);
-                    }
+        for filter in filters_to_insert {
+            match filter.filter() {
+                None => {
+                    non_filter_ids.insert(filter.id().clone());
+                }
+                Some(_) => {
+                    non_filter_ids.remove(&filter.id());
                 }
             }
         }
     }
-    fn update_index<F>(&mut self, filters: &Vec<F>)
+    fn update_filters<F>(&mut self, filters_to_insert: &Vec<F>, filters_to_delete: &Vec<F>)
+    where
+        F: Filterable,
+    {
+        let filters = &mut self.filters;
+        for filter in filters_to_delete {
+            filters.remove(&filter.id());
+        }
+        for filter in filters_to_insert {
+            match filter.filter() {
+                None => {
+                    filters.remove(&filter.id());
+                }
+                Some(target_filter) => {
+                    filters.insert(filter.id(), target_filter);
+                }
+            }
+        }
+    }
+    fn remove_filter_from_index<F>(&mut self, filter: &F)
+    where
+        F: Filterable,
+    {
+        let all_dimensions = &self.all_dimensions;
+        let filters = &self.filters;
+        let index = &mut self.index;
+
+        if let Some(prev_target_filter) = filters.get(&filter.id()).or(filter.filter().as_ref()) {
+            let index_key_with_internal_ids = TargetFilter::build_index_key_wth_internal_ids(
+                &all_dimensions,
+                prev_target_filter,
+                &filter.id(),
+            );
+
+            for (dv, internal_id) in index_key_with_internal_ids {
+                if let Some(prev_ids) = index.get_mut(&dv) {
+                    prev_ids.remove(&internal_id);
+                }
+            }
+        }
+    }
+    fn cleaup_index<F>(&mut self, filters_to_insert: &Vec<F>, filters_to_delete: &Vec<F>)
+    where
+        F: Filterable,
+    {
+        for filter in filters_to_insert {
+            self.remove_filter_from_index(filter);
+        }
+
+        for filter in filters_to_delete {
+            self.remove_filter_from_index(filter)
+        }
+
+        let index = &mut self.index;
+        index.retain(|_dv, internal_ids| !internal_ids.is_empty());
+    }
+    fn update_index<F>(&mut self, filters_to_insert: &Vec<F>)
     where
         F: Filterable,
     {
         let all_dimensons = &mut self.all_dimensions;
         let index = &mut self.index;
 
-        for filter in filters {
+        for filter in filters_to_insert {
             if let Some(target_filter) = filter.filter() {
                 let index_key_with_internal_ids = TargetFilter::build_index_key_wth_internal_ids(
                     &all_dimensons,
@@ -129,17 +187,20 @@ impl FilterIndex {
             }
         }
     }
-    pub fn update<F>(&mut self, filters: &Vec<F>) -> ()
+
+    pub fn update<F>(&mut self, filters_to_insert: &Vec<F>, filters_to_delete: &Vec<F>) -> ()
     where
         F: Filterable,
     {
-        self.update_all_dimensions(filters);
-        self.update_non_filter_ids(filters);
+        // order of function calls is important.
+        self.add_all_dimensions(filters_to_insert);
+        self.update_non_filter_ids(filters_to_insert, filters_to_delete);
 
-        self.cleaup_index(filters);
+        self.cleaup_index(filters_to_insert, filters_to_delete);
+        self.update_index(filters_to_insert);
 
-        self.update_index(filters);
-        self.update_ids(filters);
+        self.update_filters(filters_to_insert, filters_to_delete);
+        self.remove_all_dimensions(filters_to_delete);
     }
 
     fn generate_dimension_candidates(
@@ -183,7 +244,7 @@ impl FilterIndex {
         let true_index = &self.index;
         let mut positive_candidates: Option<HashSet<String>> = None;
 
-        for dimension in all_dimensions.iter() {
+        for (dimension, _ids) in all_dimensions.iter() {
             let dim_candidates =
                 Self::generate_dimension_candidates(user_info, dimension, true_index, false);
             let intersections = positive_candidates
@@ -206,7 +267,7 @@ impl FilterIndex {
         let index = &self.index;
         let mut union: HashSet<String> = HashSet::new();
 
-        for dimension in all_dimensions.iter() {
+        for (dimension, _ids) in all_dimensions.iter() {
             let dim_candidates =
                 Self::generate_dimension_candidates(user_info, dimension, &index, true);
             union.extend(dim_candidates);

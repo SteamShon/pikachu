@@ -179,7 +179,7 @@ impl AdState {
     }
     pub fn update_services(&mut self, new_services: &Vec<service::Data>) -> () {
         let services = &mut self.services;
-        for latest_updated_service in new_services.first() {
+        if let Some(latest_updated_service) = new_services.first() {
             let update_info = &mut self.update_info;
             update_info.services = latest_updated_service.updated_at;
         }
@@ -192,7 +192,7 @@ impl AdState {
         new_placement_groups: &Vec<placement_group::Data>,
     ) -> () {
         let placement_groups = &mut self.placement_groups;
-        for latest_updated_placement_group in new_placement_groups.first() {
+        if let Some(latest_updated_placement_group) = new_placement_groups.first() {
             let update_info = &mut self.update_info;
             update_info.placement_groups = latest_updated_placement_group.updated_at;
         }
@@ -202,7 +202,7 @@ impl AdState {
     }
     pub fn update_placements(&mut self, new_placements: &Vec<placement::Data>) -> () {
         let placements = &mut self.placements;
-        for latest_updated_placement in new_placements.first() {
+        if let Some(latest_updated_placement) = new_placements.first() {
             let update_info = &mut self.update_info;
             update_info.placements = latest_updated_placement.updated_at;
         }
@@ -212,7 +212,7 @@ impl AdState {
     }
     pub fn update_campaigns(&mut self, new_campaigns: &Vec<campaign::Data>) -> () {
         let campaigns = &mut self.campaigns;
-        for latest_updated_campaign in new_campaigns.first() {
+        if let Some(latest_updated_campaign) = new_campaigns.first() {
             let update_info = &mut self.update_info;
             update_info.campaigns = latest_updated_campaign.updated_at;
         }
@@ -223,18 +223,29 @@ impl AdState {
     pub fn update_ad_groups(&mut self, new_ad_groups: &Vec<ad_group::Data>) -> () {
         let filter_index = &mut self.filter_index;
         let ad_groups = &mut self.ad_groups;
-        for latest_updated_ad_group in new_ad_groups.first() {
+        if let Some(latest_updated_ad_group) = new_ad_groups.first() {
             let update_info = &mut self.update_info;
             update_info.ad_groups = latest_updated_ad_group.updated_at;
         }
         for ad_group in new_ad_groups {
             ad_groups.insert(ad_group.id.clone(), ad_group.clone());
         }
-        filter_index.update(new_ad_groups);
+        let mut ad_groups_to_insert = Vec::new();
+        let mut ad_groups_to_delete = Vec::new();
+
+        for ad_group in new_ad_groups {
+            if Self::is_active_ad_group(ad_group) {
+                ad_groups_to_insert.push(ad_group.clone());
+            } else {
+                ad_groups_to_delete.push(ad_group.clone());
+            }
+        }
+
+        filter_index.update(&ad_groups_to_insert, &ad_groups_to_delete);
     }
     pub fn update_creatives(&mut self, new_creatives: &Vec<creative::Data>) -> () {
         let creatives = &mut self.creatives;
-        for latest_updated_creative in new_creatives.first() {
+        if let Some(latest_updated_creative) = new_creatives.first() {
             let update_info = &mut self.update_info;
             update_info.creatives = latest_updated_creative.updated_at;
         }
@@ -247,7 +258,7 @@ impl AdState {
     }
     pub fn update_contents(&mut self, new_contents: &Vec<content::Data>) -> () {
         let contents = &mut self.contents;
-        for latest_updated_content in new_contents.first() {
+        if let Some(latest_updated_content) = new_contents.first() {
             let update_info = &mut self.update_info;
             update_info.contents = latest_updated_content.updated_at;
         }
@@ -346,7 +357,7 @@ impl AdState {
         for (k, v) in value.as_object()?.iter() {
             let mut items = HashSet::new();
             for item in v.as_array()? {
-                for str in item.as_str() {
+                if let Some(str) = item.as_str() {
                     items.insert(String::from(str));
                 }
             }
@@ -354,6 +365,21 @@ impl AdState {
         }
 
         Some(user_info)
+    }
+    fn is_active_placement(placement: &placement::Data) -> bool {
+        placement.status.to_lowercase() == "published"
+    }
+    fn is_active_campaign(campaign: &campaign::Data) -> bool {
+        campaign.status.to_lowercase() == "published"
+    }
+    fn is_active_ad_group(ad_group: &ad_group::Data) -> bool {
+        ad_group.status.to_lowercase() == "published"
+    }
+    fn is_active_creative(creative: &creative::Data) -> bool {
+        creative.status.to_lowercase() == "published"
+    }
+    fn is_active_content(content: &content::Data) -> bool {
+        content.status.to_lowercase() == "published"
     }
     pub fn search(
         &self,
@@ -386,7 +412,7 @@ impl AdState {
         let campaigns = &self.campaigns;
 
         for (placement_id, campaign_tree) in meta_tree {
-            for placement in placements.get(placement_id) {
+            if let Some(placement) = placements.get(placement_id) {
                 let mut new_campaigns = Vec::new();
                 for (campaign_id, ad_groups) in campaign_tree.iter() {
                     new_campaigns.push(campaign::Data {
@@ -424,16 +450,19 @@ impl AdState {
         let mut new_ad_groups = Vec::new();
 
         for id in ids {
-            for ad_group in ad_groups.get(id) {
+            if let Some(ad_group) = ad_groups.get(id) {
                 let mut new_creatives = Vec::new();
                 let empty = HashMap::new();
+
                 let creatives_in_ad_group = creatives.get(&ad_group.id.clone()).unwrap_or(&empty);
                 for (_creative_id, creative) in creatives_in_ad_group.iter() {
-                    for content in contents.get(&creative.content_id.clone()) {
-                        new_creatives.push(creative::Data {
-                            content: Some(Box::new(content.clone())),
-                            ..creative.clone()
-                        });
+                    if let Some(content) = contents.get(&creative.content_id.clone()) {
+                        if Self::is_active_creative(creative) && Self::is_active_content(content) {
+                            new_creatives.push(creative::Data {
+                                content: Some(Box::new(content.clone())),
+                                ..creative.clone()
+                            });
+                        }
                     }
                 }
                 new_ad_groups.push(ad_group::Data {
@@ -443,10 +472,13 @@ impl AdState {
             }
         }
         for ad_group in new_ad_groups.iter() {
-            for campaign in campaigns.get(&ad_group.campaign_id) {
-                for placement in placements.get(&campaign.placement_id) {
+            if let Some(campaign) = campaigns.get(&ad_group.campaign_id) {
+                if let Some(placement) = placements.get(&campaign.placement_id) {
                     for current_placement_group_id in placement.placement_group_id.iter() {
-                        if current_placement_group_id == placement_group_id {
+                        if current_placement_group_id == placement_group_id
+                            && Self::is_active_campaign(campaign)
+                            && Self::is_active_placement(placement)
+                        {
                             tree.entry(placement.id.clone())
                                 .or_insert_with(|| HashMap::new())
                                 .entry(campaign.id.clone())

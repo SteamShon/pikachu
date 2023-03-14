@@ -15,7 +15,7 @@ lazy_static! {
         id: String::from("service_1"),
         name: String::from("s1"),
         description: None,
-        status: String::from(""),
+        status: String::from("published"),
         placement_groups: None,
         users: None,
         content_types: None,
@@ -28,7 +28,7 @@ lazy_static! {
         id: String::from("placement_group_1"),
         name: String::from("pg1"),
         description: None,
-        status: String::from(""),
+        status: String::from("published"),
         cube: None,
         cube_id: None,
         placements: None,
@@ -41,7 +41,7 @@ lazy_static! {
         id: String::from("placement_1"),
         name: String::from("p1"),
         description: None,
-        status: String::from(""),
+        status: String::from("published"),
         advertisers_on_placements: None,
         campaigns: None,
         content_type: None,
@@ -55,7 +55,7 @@ lazy_static! {
         id: String::from("campaign_1"),
         name: String::from("cp1"),
         description: None,
-        status: String::from(""),
+        status: String::from("published"),
         ad_groups: None,
         placement: None,
         placement_id: PLACEMENT.id.clone(),
@@ -70,7 +70,7 @@ lazy_static! {
         id: String::from("ad_group_1"),
         name: String::from("ag_1"),
         description: None,
-        status: String::from(""),
+        status: String::from("published"),
         campaign: None,
         campaign_id: CAMPAIGN.id.clone(),
         creatives: None,
@@ -83,7 +83,7 @@ lazy_static! {
         id: String::from("creative_1"),
         name: String::from("c_1"),
         description: None,
-        status: String::from(""),
+        status: String::from("published"),
         ad_group: None,
         ad_group_id: AD_GROUP.id.clone(),
         content: None,
@@ -102,7 +102,7 @@ lazy_static! {
         default_values: None,
         schema: None,
         ui_schema: None,
-        status: String::from(""),
+        status: String::from("published"),
         created_at: *NOW,
         updated_at: *NOW,
     };
@@ -117,7 +117,7 @@ lazy_static! {
         user_id: None,
         creatives: None,
         values: String::from(""),
-        status: String::from(""),
+        status: String::from("published"),
         created_at: *NOW,
         updated_at: *NOW,
     };
@@ -138,18 +138,7 @@ fn init_test_ad_state(ad_state: &mut AdState) {
     ad_state.update_creatives(&vec![CREATIVE.clone()]);
     ad_state.update_contents(&vec![CONTENT.clone()]);
 }
-// #[tokio::test]
-// async fn test_load() {
-//     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-//     dotenv().ok();
 
-//     let database_url = env::var("DATABASE_URL").unwrap();
-//     let prisma = Arc::new(db::new_client_with_url(&database_url).await.unwrap());
-//     let mut ad_state = AdState::default();
-
-//     ad_state.load(prisma).await;
-//     println!("{:?}", ad_state);
-// }
 #[test]
 fn test_ad_state_update() {
     let mut ad_state = AdState::default();
@@ -162,8 +151,12 @@ fn test_ad_state_update() {
 
 #[test]
 fn test_ad_state_and_search_result_after_update() {
+    let user_info_json = json!({
+        "age": HashSet::from([String::from("10")])
+    });
     let mut ad_state = AdState::default();
     init_test_ad_state(&mut ad_state);
+
     let ad_group_id = String::from(AD_GROUP.id.clone());
     let placement_group_id = PLACEMENT_GROUP.id.clone();
     let placement_id = PLACEMENT.id.clone();
@@ -186,9 +179,7 @@ fn test_ad_state_and_search_result_after_update() {
     }
     // search result: match since user_info {"age": 10} matches to original
     // filter {"in": [{"var": "age"}, ["10"]]}
-    let user_info_json = json!({
-        "age": HashSet::from([String::from("10")])
-    });
+
     let search_result = ad_state.search("", &placement_group_id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() > 0, true);
 
@@ -211,6 +202,8 @@ fn test_ad_state_and_search_result_after_update() {
     // after update
     ad_state.update_ad_groups(&vec![new_ad_group]);
     ad_state.update_creatives(&vec![new_creative]);
+    println!("{:?}", ad_state.filter_index);
+
     let new_placement_ids = ad_state.merge_ids_with_ad_metas(&placement_group_id, ids.iter());
 
     for ad_group in new_placement_ids
@@ -230,4 +223,49 @@ fn test_ad_state_and_search_result_after_update() {
     assert_eq!(search_result.matched_ads.len() == 0, true);
 
     println!("{:?}", new_placement_ids);
+}
+
+#[test]
+/*
+test if the changes on ad_group's filter and status
+ */
+fn test_update_ad_group_filter_and_status_change() {
+    let user_info_json = json!({
+        "age": HashSet::from([String::from("10")])
+    });
+    let mut ad_state = AdState::default();
+    init_test_ad_state(&mut ad_state);
+
+    let placement_group_id = PLACEMENT_GROUP.id.clone();
+    // result should contain AD_GROUP since age.10
+    let search_result = ad_state.search("", &placement_group_id, &user_info_json);
+    assert_eq!(search_result.matched_ads.len() > 0, true);
+
+    // update ad_group's status to exlucde it from index.
+    let new_ad_group_name = &String::from("new_ad_group_1");
+    let mut new_ad_group = ad_group::Data {
+        name: new_ad_group_name.clone(),
+        filter: AD_GROUP.filter.clone(),
+        status: String::from("archieved"),
+        ..AD_GROUP.clone()
+    };
+
+    ad_state.update_ad_groups(&vec![new_ad_group]);
+    // after update, AD_GROUP should be excluded from result since
+    // our index suppose to exlude filters_to_delete.
+    let search_result = ad_state.search("", &placement_group_id, &user_info_json);
+    assert_eq!(search_result.matched_ads.len() == 0, true);
+
+    // back to status published.
+    new_ad_group = ad_group::Data {
+        name: new_ad_group_name.clone(),
+        filter: AD_GROUP.filter.clone(),
+        status: String::from("published"),
+        ..AD_GROUP.clone()
+    };
+    ad_state.update_ad_groups(&vec![new_ad_group]);
+    // after update, AD_GROUP should be included in result.
+    // since ad_group's status has been change back to published.
+    let search_result = ad_state.search("", &placement_group_id, &user_info_json);
+    assert_eq!(search_result.matched_ads.len() > 0, true);
 }

@@ -3,8 +3,8 @@ import type { CubeConfig, Service } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import CustomLoadingButton from "../common/CustomLoadingButton";
-import type { CubeConfigWithServiceSchemaType } from "../schema/cubeConfig";
-import { cubeConfigWithServiceSchema } from "../schema/cubeConfig";
+import type { CubeConfigWithServiceSchemaType } from "../schema/serviceConfig";
+import { cubeConfigWithServiceSchema } from "../schema/serviceConfig";
 
 function CubeConfigForm({
   services,

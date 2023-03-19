@@ -60,11 +60,7 @@ export const placementRouter = createTRPCRouter({
           },
         },
         include: {
-          placementGroup: {
-            include: {
-              service: true,
-            },
-          },
+          service: true,
           contentType: true,
           campaigns: {
             orderBy: {
@@ -107,11 +103,7 @@ export const placementRouter = createTRPCRouter({
           },
         },
         include: {
-          placementGroup: {
-            include: {
-              service: true,
-            },
-          },
+          service: true,
           contentType: true,
           campaigns: {
             orderBy: {
@@ -159,11 +151,7 @@ export const placementRouter = createTRPCRouter({
           },
         },
         include: {
-          placementGroup: {
-            include: {
-              service: true,
-            },
-          },
+          service: true,
           contentType: true,
           campaigns: {
             orderBy: {

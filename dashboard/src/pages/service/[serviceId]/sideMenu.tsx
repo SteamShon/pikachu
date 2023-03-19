@@ -12,26 +12,20 @@ type Node = {
 };
 const treeData = [
   {
-    id: "PlacementGroups",
-    name: "PlacementGroups",
+    id: "Placements",
+    name: "Placements",
     children: [
       {
-        id: "Placements",
-        name: "Placements",
+        id: "Campaigns",
+        name: "Campaigns",
         children: [
           {
-            id: "Campaigns",
-            name: "Campaigns",
+            id: "AdGroups",
+            name: "AdGroups",
             children: [
               {
-                id: "AdGroups",
-                name: "AdGroups",
-                children: [
-                  {
-                    id: "Creatives",
-                    name: "Creatives",
-                  },
-                ],
+                id: "Creatives",
+                name: "Creatives",
               },
             ],
           },
@@ -59,8 +53,8 @@ const treeData = [
     name: "Customsets",
   },
   {
-    id: "CubeConfigs",
-    name: "CubeConfigs",
+    id: "ServiceConfig",
+    name: "ServiceConfig",
     children: [
       {
         id: "Cubes",

@@ -12,7 +12,7 @@ import CreativeTable from "./creativeTable";
 import CubeConfigTable from "./cubeConfigTable";
 import CubeTable from "./cubeTable";
 import CustomsetTable from "./customsetTable";
-import PlacementGroupTable from "./placementGroupTable";
+
 import PlacementTable from "./placementTable";
 import RenderPreview from "./renderPreview";
 import SegmentTable from "./segmentTable";
@@ -39,23 +39,15 @@ function Dashboard() {
 
   const steps = [
     {
-      label: "PlacementGroups",
-      description: `placementGroups`,
-      table: () =>
-        service ? (
-          <PlacementGroupTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
-        ) : null,
-    },
-    {
       label: "Placements",
       description: `placements`,
       table: () =>
         service ? (
-          <PlacementTable setServiceTree={setTree} serviceTree={tree} />
+          <PlacementTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
         ) : null,
     },
     {
@@ -115,8 +107,8 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "CubeConfigs",
-      description: `cubeConfigs`,
+      label: "ServiceConfig",
+      description: `serviceConfig`,
       table: () =>
         service ? (
           <CubeConfigTable

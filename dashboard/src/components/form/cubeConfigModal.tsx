@@ -2,11 +2,11 @@ import { Dialog, DialogContent } from "@mui/material";
 import type { Service } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import type { cubeConfigRouter } from "../../server/api/routers/cubeConfig";
+import type { serviceConfigRouter } from "../../server/api/routers/serviceConfig";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
 import { buildCubeConfigsTree } from "../../utils/tree";
-import type { CubeConfigWithServiceSchemaType } from "../schema/cubeConfig";
+import type { CubeConfigWithServiceSchemaType } from "../schema/serviceConfig";
 import CubeConfigForm from "./cubeConfigForm";
 
 function CubeConfigModal({
@@ -24,7 +24,7 @@ function CubeConfigModal({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  type RouterOutput = inferRouterOutputs<typeof cubeConfigRouter>;
+  type RouterOutput = inferRouterOutputs<typeof serviceConfigRouter>;
   type OutputType = RouterOutput["addCubeConfig"];
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {

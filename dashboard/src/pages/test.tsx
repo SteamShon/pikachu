@@ -10,7 +10,7 @@ const Test = () => {
     builder
       .get("hero", { url: location.pathname })
       .promise()
-      .then(setBuilderContentJson);
+      .then((data) => setBuilderContentJson(data));
   }, []);
 
   return <BuilderComponent model="hero" content={builderContentJson} />;

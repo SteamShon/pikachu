@@ -137,8 +137,8 @@ model Placement {
     serviceId               String?
     campaigns               Campaign[]
     AdvertisersOnPlacements AdvertisersOnPlacements[]
-    contentType             ContentType               @relation(fields: [contentTypeId], references: [id])
-    contentTypeId           String
+    contentType             ContentType?              @relation(fields: [contentTypeId], references: [id])
+    contentTypeId           String?
     // createdBy               User                      @relation("createdPlacements", fields: [creatorId], references: [id], onDelete: Cascade)
     // creatorId               String
     status                  String                    @default("CREATED")
@@ -310,8 +310,8 @@ model ServiceConfig {
     id            String   @id @default(cuid())
     service       Service  @relation(fields: [serviceId], references: [id])
     serviceId     String   @unique
-    name          String
-    description   String?
+    // name          String
+    // description   String?
     s3Config      Json
     builderConfig Json?
     // s3Region          String
@@ -319,7 +319,7 @@ model ServiceConfig {
     // s3SecretAccessKey String
     // buckets           String?
     cubes         Cube[]
-    status        String   @default("CREATED")
+    // status        String   @default("CREATED")
     createdAt     DateTime @default(now())
     updatedAt     DateTime @updatedAt
 }

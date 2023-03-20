@@ -140,7 +140,7 @@ function ContentTypeTable({
                 if (confirm("Are you sure?")) {
                   deleteContentType({
                     serviceId: service.id,
-                    name: params.row.name,
+                    id: params.row.id,
                   });
                 }
               }}
@@ -196,7 +196,7 @@ function ContentTypeTable({
       </div>
       <ContentTypeModal
         key="contentTypeModal"
-        services={[service]}
+        service={service}
         initialData={contentType}
         modalOpen={modalOpen}
         setModalOpen={setModalOpen}

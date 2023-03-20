@@ -1,16 +1,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Service } from "@prisma/client";
+import type { Service, ServiceConfig } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { ServiceSchemaType } from "../schema/service";
 import { serviceSchema } from "../schema/service";
+import ServiceConfigForm from "./serviceConfigForm";
+
 function ServiceForm({
   onSubmit,
   initialData,
 }: {
   onSubmit: (input: ServiceSchemaType) => void;
-  initialData?: Service;
+  initialData?: Service & { serviceConfig?: ServiceConfig };
 }) {
   const methods = useForm<ServiceSchemaType>({
     resolver: zodResolver(serviceSchema),
@@ -32,65 +33,78 @@ function ServiceForm({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} id="service-form">
-        <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Service Information
-            </h3>
-          </div>
-          <div className="border-t border-gray-200">
-            <dl>
-              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Name</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <input
-                    className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                    defaultValue={initialData?.name}
-                    {...register("name")}
-                  />
-                  {errors.name && <p role="alert">{errors.name?.message}</p>}
-                </dd>
-              </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">
-                  Description
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <textarea
-                    className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                    defaultValue={initialData?.description || undefined}
-                    rows={3}
-                    {...register("description")}
-                  />
-                  {errors.description && (
-                    <p role="alert">{errors.description?.message}</p>
-                  )}
-                </dd>
-              </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Status</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <select
-                    {...register("status")}
-                    defaultValue={initialData?.status}
-                  >
-                    <option value="CREATED">CREATED</option>
-                    <option value="PUBLISHED">PUBLISHED</option>
-                    <option value="ARCHIVED">ARCHIVED</option>
-                  </select>
-                  {errors.status && (
-                    <p role="alert">{errors.status?.message}</p>
-                  )}
-                </dd>
-              </div>
-            </dl>
+        <div className="mx-auto max-w-screen-xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-lg text-center">
+            <h1 className="text-2xl font-bold sm:text-3xl">Service</h1>
+
+            <p className="mt-4 text-gray-500">enter</p>
           </div>
         </div>
-        <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-          <CustomLoadingButton
-            handleSubmit={handleSubmit}
-            onSubmit={onSubmit}
-          />
+        <div className="mx-auto mt-8 mb-0 max-w-md space-y-4">
+          <label
+            htmlFor="name"
+            className="relative block overflow-hidden rounded-md border border-gray-200 px-3 pt-3 shadow-sm focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600"
+          >
+            <input
+              id="name"
+              className="peer h-8 w-full border-none bg-transparent p-0 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
+              defaultValue={initialData?.name}
+              {...register("name")}
+            />
+            {errors.name && <p role="alert">{errors.name?.message}</p>}
+            <span className="absolute left-3 top-3 -translate-y-1/2 text-xs text-gray-700 transition-all peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm peer-focus:top-3 peer-focus:text-xs">
+              Name
+            </span>
+          </label>
+          <label
+            htmlFor="description"
+            className="relative block overflow-hidden rounded-md border border-gray-200 px-3 pt-3 shadow-sm focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600"
+          >
+            <textarea
+              id="description"
+              className="peer h-8 w-full border-none bg-transparent p-0 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
+              defaultValue={initialData?.name}
+              rows={5}
+              {...register("description")}
+            />
+            {errors.description && (
+              <p role="alert">{errors.description?.message}</p>
+            )}
+            <span className="absolute left-3 top-3 -translate-y-1/2 text-xs text-gray-700 transition-all peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm peer-focus:top-3 peer-focus:text-xs">
+              Description
+            </span>
+          </label>
+          <label
+            htmlFor="status"
+            className="relative block overflow-hidden rounded-md border border-gray-200 px-3 pt-3 shadow-sm focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600"
+          >
+            <select
+              id="status"
+              className="peer h-8 w-full border-none bg-transparent p-0 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
+              {...register("status")}
+              defaultValue={initialData?.status}
+            >
+              <option value="">Please select</option>
+              <option value="CREATED">CREATED</option>
+              <option value="PUBLISHED">PUBLISHED</option>
+              <option value="ARCHIVED">ARCHIVED</option>
+            </select>
+
+            <span className="absolute left-3 top-3 -translate-y-1/2 text-xs text-gray-700 transition-all peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm peer-focus:top-3 peer-focus:text-xs">
+              Status
+            </span>
+          </label>
+        </div>
+
+        <ServiceConfigForm service={initialData} />
+        <div className="flex items-center justify-end">
+          <button
+            type="submit"
+            className="inline-block rounded-lg bg-blue-500 px-5 py-3 text-sm font-medium text-white"
+            onClick={() => handleSubmit(onSubmit)}
+          >
+            Save
+          </button>
         </div>
       </form>
     </FormProvider>

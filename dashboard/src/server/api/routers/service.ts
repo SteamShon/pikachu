@@ -12,40 +12,50 @@ export const serviceRouter = createTRPCRouter({
   create: protectedProcedure
     .input(serviceSchema)
     .mutation(async ({ input }) => {
-      const service = await prisma.service.create({
+      const { serviceConfig, ...service } = input;
+      const { serviceId, ...serviceConfigInput } = {
+        ...serviceConfig,
+        s3Config: serviceConfig?.s3Config as Prisma.JsonObject,
+        builderConfig: serviceConfig?.builderConfig as Prisma.JsonObject,
+      };
+      return await prisma.service.create({
         data: {
-          name: input.name,
-          description: input.description,
-          status: input.status,
+          ...service,
+          serviceConfig: {
+            create: serviceConfigInput,
+          },
         },
-        /*
         include: {
-          placementGroups: {
-            include: {
-              placements: true,
-            },
-          },
-          contentTypes: {
-            include: {
-              contents: true,
-            },
-          },
+          serviceConfig: true,
         },
-        */
       });
-
-      return service;
     }),
   update: protectedProcedure
     .input(serviceSchema)
     .mutation(async ({ input }) => {
-      const service = await prisma.service.update({
+      const { serviceConfig, ...service } = input;
+      const { serviceId, ...serviceConfigInput } = {
+        ...serviceConfig,
+        s3Config: serviceConfig?.s3Config as Prisma.JsonObject,
+        builderConfig: serviceConfig?.builderConfig as Prisma.JsonObject,
+      };
+      return await prisma.service.update({
         where: {
-          id: input?.id || "",
+          id: service.id,
         },
-        data: input,
+        data: {
+          ...service,
+          serviceConfig: {
+            upsert: {
+              update: serviceConfigInput,
+              create: serviceConfigInput,
+            },
+          },
+        },
+        include: {
+          serviceConfig: true,
+        },
       });
-      return service;
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
@@ -86,7 +96,11 @@ export const serviceRouter = createTRPCRouter({
       return services;
     }),
   getAllOnlyServices: protectedProcedure.query(async ({}) => {
-    return await prisma.service.findMany();
+    return await prisma.service.findMany({
+      include: {
+        serviceConfig: true,
+      },
+    });
   }),
   getAll: protectedProcedure.query(async ({}) => {
     const services = await prisma.service.findMany({
@@ -165,7 +179,7 @@ export const serviceRouter = createTRPCRouter({
   addPlacement: protectedProcedure
     .input(placementSchema)
     .mutation(async ({ input }) => {
-      const { serviceId, ...placementGroupInput } = input;
+      const { serviceId, ...placement } = input;
       const service = await prisma.service.update({
         where: {
           id: serviceId,
@@ -176,10 +190,10 @@ export const serviceRouter = createTRPCRouter({
               where: {
                 serviceId_name: {
                   serviceId: serviceId,
-                  name: placementGroupInput.name,
+                  name: placement.name,
                 },
               },
-              create: placementGroupInput,
+              create: placement,
             },
           },
         },

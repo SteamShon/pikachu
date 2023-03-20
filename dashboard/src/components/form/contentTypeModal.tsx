@@ -10,13 +10,13 @@ import type { ContentTypeSchemaType } from "../schema/contentType";
 import ContentTypeForm from "./contentTypeForm";
 
 function ContentTypeModal({
-  services,
+  service,
   initialData,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
-  services: Service[];
+  service: Service;
   initialData?: Parameters<typeof ContentTypeForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -59,7 +59,7 @@ function ContentTypeModal({
     >
       <DialogContent>
         <ContentTypeForm
-          services={services}
+          service={service}
           initialData={initialData}
           onSubmit={onSubmit}
           //onClose={() => setModalOpen(false)}

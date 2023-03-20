@@ -1,6 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Grid, Step, StepButton, Stepper } from "@mui/material";
-import type { Content, ContentType, Service } from "@prisma/client";
+import type {
+  Content,
+  ContentType,
+  ContentTypeInfo,
+  Prisma,
+  Service,
+} from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -14,26 +20,30 @@ import ContentTypeRendererBuilder from "./contentTypeRendererBuilder";
 import ContentTypeSchemaBuilder from "./contentTypeSchemaBuilder";
 
 function ContentTypeForm({
-  services,
+  service,
   initialData,
   onSubmit,
 }: {
-  services: Service[];
-  initialData?: ContentType & { contents: Content[] };
+  service: Service;
+  initialData?: ContentType & {
+    contentTypeInfo?: ContentTypeInfo;
+    contents: Content[];
+  };
   onSubmit: (input: ContentTypeSchemaType & { serviceId: string }) => void;
 }) {
-  const [schema, setSchema] = useState<string | undefined>(undefined);
+  const [source, setSource] = useState<string | undefined>(undefined);
+  const [schema, setSchema] = useState<Prisma.JsonObject | undefined>(
+    undefined
+  );
   // eslint-disable-next-line @typescript-eslint/ban-types
-  const [defaultValues, setDefaultValues] = useState<{ [x: string]: {} }>({});
+  const [defaultValues, setDefaultValues] = useState<
+    Prisma.JsonObject | undefined
+  >({});
   const [code, setCode] = useState<string | undefined>(undefined);
   const [activeStep, setActiveStep] = useState(0);
 
   const methods = useForm<ContentTypeSchemaType & { serviceId: string }>({
-    resolver: zodResolver(
-      contentTypeSchema.extend({
-        serviceId: z.string(),
-      })
-    ),
+    resolver: zodResolver(contentTypeSchema),
   });
 
   const {
@@ -44,67 +54,40 @@ function ContentTypeForm({
   } = methods;
 
   useEffect(() => {
-    const { serviceId, defaultValues, ...others } = initialData || {};
+    const { serviceId, contentTypeInfo, source, ...others } = initialData || {};
+    const details = contentTypeInfo?.details as Prisma.JsonObject | undefined;
 
-    const parsedDefaultValues = jsonParseWithFallback(defaultValues) as {
-      // eslint-disable-next-line @typescript-eslint/ban-types
-      [x: string]: {};
-    };
-    setDefaultValues(parsedDefaultValues);
-    setSchema(initialData?.schema || undefined);
-    if (initialData?.uiSchema) {
-      setCode(initialData?.uiSchema);
+    const defaultValueKey = source === "local" ? "defaultValues" : "";
+    const defaultValues = details?.[defaultValueKey] as
+      | Prisma.JsonObject
+      | undefined;
+
+    const schemaKey = source === "local" ? "schema" : "";
+    const schemaValues = details?.[schemaKey] as Prisma.JsonObject | undefined;
+
+    const uiSchemaKey = source === "local" ? "uiSchema" : "";
+    const uiSchemaValues = details?.[uiSchemaKey] as
+      | Prisma.JsonObject
+      | undefined;
+
+    console.log(details);
+    console.log(defaultValues);
+    console.log(schemaValues);
+    console.log(uiSchemaValues);
+
+    setDefaultValues(defaultValues);
+    setSchema(schemaValues);
+    if (uiSchemaValues) {
+      setCode(JSON.stringify(uiSchemaValues));
     } else {
       setCode(removeRenderFunction(undefined));
     }
-
-    console.log(initialData);
-    console.log(parsedDefaultValues);
-
+    setSource(initialData?.source);
     reset({
       ...others,
       serviceId: serviceId || undefined,
-      defaultValues: parsedDefaultValues,
     });
   }, [initialData, reset]);
-
-  const steps = [
-    {
-      label: "Schema",
-      description: `build json schema for this contentType.`,
-      component: (
-        <ContentTypeSchemaBuilder
-          initialData={initialData}
-          schema={schema}
-          setSchema={setSchema}
-        />
-      ),
-    },
-    {
-      label: "Form",
-      description: `provide default example values for this contentType.`,
-      component: (
-        <ContentTypeFormBuilder
-          initialData={initialData}
-          schema={schema}
-          defaultValues={defaultValues}
-          setDefaultValues={setDefaultValues}
-        />
-      ),
-    },
-    {
-      label: "Preview",
-      description: `provide renderer of this contentType and see preview.`,
-      component: (
-        <ContentTypeRendererBuilder
-          initialData={initialData}
-          defaultValues={defaultValues}
-          code={code}
-          setCode={setCode}
-        />
-      ),
-    },
-  ];
 
   return (
     <FormProvider {...methods}>
@@ -118,25 +101,11 @@ function ContentTypeForm({
           <div className="border-t border-gray-200">
             <dl>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Service</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <select
-                    {...register("serviceId")}
-                    defaultValue={initialData?.serviceId || undefined}
-                  >
-                    <option key="" value="" selected>
-                      Select
-                    </option>
-                    {services.map((service) => {
-                      return (
-                        <option key={service.id} value={service.id}>
-                          {service.name}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {errors.name && <p role="alert">{errors.name?.message}</p>}
-                </dd>
+                <input
+                  type="hidden"
+                  {...register(`serviceId`)}
+                  value={service.id}
+                />
               </div>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Name</dt>
@@ -166,6 +135,19 @@ function ContentTypeForm({
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Source</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <select
+                    {...register("source")}
+                    defaultValue={initialData?.source || "local"}
+                    onChange={(e) => setSource(e.target.value)}
+                  >
+                    <option value="local">LOCAL</option>
+                    <option value="builder.io">BUILDER.IO</option>
+                  </select>
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Status</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
@@ -185,34 +167,7 @@ function ContentTypeForm({
           </div>
         </div>
         <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Stepper nonLinear activeStep={activeStep}>
-                {steps.map((step, index) => (
-                  <Step key={step.label}>
-                    <StepButton
-                      onClick={() => {
-                        setActiveStep(index);
-                      }}
-                    >
-                      {step.label}
-                    </StepButton>
-                  </Step>
-                ))}
-              </Stepper>
-            </Grid>
-            <Grid item xs={12}>
-              {steps[activeStep]?.component}
-              {activeStep === steps.length - 1 ? (
-                <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                  <CustomLoadingButton
-                    handleSubmit={handleSubmit}
-                    onSubmit={onSubmit}
-                  />
-                </div>
-              ) : null}
-            </Grid>
-          </Grid>
+          {source}
         </div>
       </form>
     </FormProvider>

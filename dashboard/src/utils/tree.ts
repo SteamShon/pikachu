@@ -36,7 +36,7 @@ export function buildServiceTree(
           })[];
         })[];
       })[];
-      contentType: ContentType;
+      contentType: ContentType | null;
     })[];
     contentTypes: (ContentType & {
       contentTypeInfo: ContentTypeInfo | null;
@@ -83,11 +83,11 @@ export function buildPlacementTree(
         })[];
       })[];
     })[];
-    contentType: ContentType;
+    contentType: ContentType | null;
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
-  contentType: ContentType;
+  contentType: ContentType | null;
 } {
   const campaigns = arrayToRecord(
     placement.campaigns.map((campaign) => {
@@ -141,7 +141,7 @@ export function buildAdGroupTree(
 }
 export function buildContentTypesTree(
   contentTypes: (ContentType & {
-    contentTypeInfo: ContentTypeInfo;
+    contentTypeInfo: ContentTypeInfo | null;
     contents: (Content & { creatives: Creative[] })[];
   })[]
 ): Record<string, ReturnType<typeof buildContentTypeTree>> {

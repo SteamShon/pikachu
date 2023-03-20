@@ -104,7 +104,7 @@ function PlacementForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("contentTypeId")}
-                    defaultValue={initialData?.contentTypeId}
+                    defaultValue={initialData?.contentTypeId || undefined}
                   >
                     <option value="">Please choose</option>
                     {contentTypes.map((contentType) => {

@@ -3,7 +3,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Box, Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Service } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -15,10 +14,11 @@ import { api } from "../../utils/api";
 
 function ServiceList() {
   const router = useRouter();
-  const [service, setService] = useState<
-    Parameters<typeof ServiceForm>[0]["initialData"] | undefined
-  >(undefined);
-  const [services, setServices] = useState<Service[]>([]);
+  const [service, setService] =
+    useState<Parameters<typeof ServiceForm>[0]["initialData"]>(undefined);
+  const [services, setServices] = useState<
+    NonNullable<Parameters<typeof ServiceForm>[0]["initialData"]>[]
+  >([]);
   const [modalOpen, setModalOpen] = useState(false);
   const { serviceIds } = router.query;
   const { data: allServices, isLoading } =
@@ -34,7 +34,15 @@ function ServiceList() {
   });
 
   useEffect(() => {
-    if (allServices) setServices(allServices);
+    if (allServices)
+      setServices(
+        allServices.map((service) => {
+          return {
+            ...service,
+            serviceConfig: service.serviceConfig || undefined,
+          };
+        })
+      );
   }, [allServices]);
 
   const rows = services || [];

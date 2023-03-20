@@ -86,7 +86,7 @@ function PlacementTable({
       headerName: "ContentType",
       flex: 1,
       valueGetter: (params) => {
-        return params.row.contentType.name;
+        return params.row.contentType?.name;
       },
     },
     {

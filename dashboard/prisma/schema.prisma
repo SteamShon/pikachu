@@ -152,13 +152,12 @@ model Placement {
 }
 
 model ContentType {
-    id          String  @id @default(cuid())
+    id          String   @id @default(cuid())
     name        String
-    source      String  @default("local")
     description String?
-
-    service   Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-    serviceId String?
+    source      String   @default("local")
+    service     Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+    serviceId   String?
 
     contentTypeInfo ContentTypeInfo?
     // createdBy   User        @relation("createdContentTypes", fields: [creatorId], references: [id], onDelete: Cascade)
@@ -179,11 +178,12 @@ model ContentTypeInfo {
     id            String      @id @default(cuid())
     contentType   ContentType @relation(fields: [contentTypeId], references: [id])
     contentTypeId String      @unique
+    // source        String      @default("local")
     details       Json?
     // schema        String?
     // uiSchema      String?
     // defaultValues String?
-    status        String      @default("CREATED")
+    //status        String      @default("CREATED")
     createdAt     DateTime    @default(now())
     updatedAt     DateTime    @updatedAt
 

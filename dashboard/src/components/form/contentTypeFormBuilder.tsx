@@ -3,35 +3,62 @@ import {
   materialRenderers,
 } from "@jsonforms/material-renderers";
 import { JsonForms } from "@jsonforms/react";
-import type { Content, ContentType } from "@prisma/client";
-import type { Dispatch, SetStateAction } from "react";
+import type {
+  Content,
+  ContentType,
+  ContentTypeInfo,
+  Prisma,
+} from "@prisma/client";
+import { Dispatch, SetStateAction, useState } from "react";
 import { useEffect } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-import { jsonParseWithFallback } from "../../utils/json";
+import { extractValue, jsonParseWithFallback } from "../../utils/json";
+import { removeRenderFunction } from "../common/CodeTemplate";
 
 function ContentTypeFormBuilder({
-  initialData,
-  schema,
-  defaultValues,
-  setDefaultValues,
+  contentType,
 }: {
-  initialData?: ContentType & { contents: Content[] };
-  schema?: string;
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  defaultValues: { [x: string]: {} };
-  setDefaultValues: Dispatch<
-    SetStateAction<{
-      // eslint-disable-next-line @typescript-eslint/ban-types
-      [x: string]: {};
-    }>
-  >;
+  contentType?: ContentType & {
+    contentTypeInfo?: ContentTypeInfo | null;
+    contents: Content[];
+  };
 }) {
+  const [schema, setSchema] = useState<Record<string, unknown> | undefined>(
+    undefined
+  );
+  const [defaultValues, setDefaultValues] = useState<
+    Record<string, unknown> | undefined
+  >(undefined);
+  const [code, setCode] = useState<string | undefined>(undefined);
+
   const methods = useFormContext();
   const { control, reset } = methods;
 
   useEffect(() => {
-    reset(initialData, { keepValues: true });
-  }, [initialData, reset]);
+    console.log(contentType?.contentTypeInfo);
+    const schema = extractValue({
+      object: contentType?.contentTypeInfo?.details,
+      paths: ["schema"],
+    }) as Record<string, unknown> | undefined;
+    const defaultValues = extractValue({
+      object: contentType?.contentTypeInfo?.details,
+      paths: ["defaultValues"],
+    }) as Record<string, unknown> | undefined;
+    const code = extractValue({
+      object: contentType?.contentTypeInfo?.details,
+      paths: ["code"],
+    }) as string | undefined;
+
+    setDefaultValues(defaultValues);
+    setSchema(schema);
+    setCode(code || removeRenderFunction(undefined));
+
+    // reset({
+    //   ...others,
+    //   serviceId: serviceId || undefined,
+    //   defaultValues: parsedDefaultValues,
+    // });
+  }, [contentType]);
 
   return (
     <div className="overflow-hidden bg-white shadow sm:rounded-lg">
@@ -51,13 +78,13 @@ function ContentTypeFormBuilder({
                 rules={{ required: true }}
                 render={({ field }) => (
                   <JsonForms
-                    schema={jsonParseWithFallback(schema)}
+                    schema={{}}
                     //uischema={uiSchema}
-                    data={defaultValues}
+                    data={{}}
                     renderers={materialRenderers}
                     cells={materialCells}
                     onChange={({ data }) => {
-                      if (Object.keys(data).length === 0) return;
+                      if (!data || Object.keys(data).length === 0) return;
 
                       setDefaultValues(data);
                       //setValue("defaultValues", data);

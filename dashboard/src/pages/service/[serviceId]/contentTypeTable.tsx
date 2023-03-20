@@ -1,3 +1,4 @@
+import type { ModelType } from "@builder.io/admin-sdk";
 import {
   materialCells,
   materialRenderers,
@@ -8,10 +9,11 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Service } from "@prisma/client";
+import type { Prisma, Service, ServiceConfig } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
+import { useEffect } from "react";
 import { useState } from "react";
 import { LivePreview, LiveProvider } from "react-live";
 import { replacePropsInFunction } from "../../../components/common/CodeTemplate";
@@ -22,13 +24,14 @@ import { api } from "../../../utils/api";
 import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypesTree } from "../../../utils/tree";
+import { getModels } from "../../api/builder.io/builderAdmin";
 
 function ContentTypeTable({
   service,
   serviceTree,
   setServiceTree,
 }: {
-  service: Service;
+  service: Service & { serviceConfig?: ServiceConfig | null };
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -170,39 +173,41 @@ function ContentTypeTable({
   });
 
   return (
-    <div style={{ display: "flex", height: "100%" }}>
-      <div style={{ flexGrow: 1 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          autoHeight
-          getRowHeight={() => "auto"}
-          pageSize={10}
-          rowsPerPageOptions={[10, 20, 30, 40, 50]}
-          checkboxSelection
-          disableSelectionOnClick
-          experimentalFeatures={{ newEditingApi: true }}
-          selectionModel={(contentTypeIds || []) as string[]}
-          onSelectionModelChange={(ids) => {
-            if (ids && Array.isArray(ids)) {
-              router.query.contentTypeIds = ids.map((id) => String(id));
-              router.push(router);
-            }
-          }}
-          components={{
-            Toolbar: toolbar,
-          }}
+    <>
+      <div style={{ display: "flex", height: "100%" }}>
+        <div style={{ flexGrow: 1 }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            autoHeight
+            getRowHeight={() => "auto"}
+            pageSize={10}
+            rowsPerPageOptions={[10, 20, 30, 40, 50]}
+            checkboxSelection
+            disableSelectionOnClick
+            experimentalFeatures={{ newEditingApi: true }}
+            selectionModel={(contentTypeIds || []) as string[]}
+            onSelectionModelChange={(ids) => {
+              if (ids && Array.isArray(ids)) {
+                router.query.contentTypeIds = ids.map((id) => String(id));
+                router.push(router);
+              }
+            }}
+            components={{
+              Toolbar: toolbar,
+            }}
+          />
+        </div>
+        <ContentTypeModal
+          key="contentTypeModal"
+          service={service}
+          initialData={contentType}
+          modalOpen={modalOpen}
+          setModalOpen={setModalOpen}
+          setServiceTree={setServiceTree}
         />
       </div>
-      <ContentTypeModal
-        key="contentTypeModal"
-        service={service}
-        initialData={contentType}
-        modalOpen={modalOpen}
-        setModalOpen={setModalOpen}
-        setServiceTree={setServiceTree}
-      />
-    </div>
+    </>
   );
 }
 

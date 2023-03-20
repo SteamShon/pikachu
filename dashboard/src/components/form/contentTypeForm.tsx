@@ -1,46 +1,33 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Grid, Step, StepButton, Stepper } from "@mui/material";
 import type {
   Content,
   ContentType,
   ContentTypeInfo,
   Prisma,
   Service,
+  ServiceConfig,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { z } from "zod";
-import { jsonParseWithFallback } from "../../utils/json";
 import { removeRenderFunction } from "../common/CodeTemplate";
-import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { ContentTypeSchemaType } from "../schema/contentType";
 import { contentTypeSchema } from "../schema/contentType";
-import ContentTypeFormBuilder from "./contentTypeFormBuilder";
-import ContentTypeRendererBuilder from "./contentTypeRendererBuilder";
-import ContentTypeSchemaBuilder from "./contentTypeSchemaBuilder";
+import BuilderIOModelForm from "./builderIOModelForm";
+import ContentTypeInfoForm from "./contentTypeInfoForm";
 
 function ContentTypeForm({
   service,
   initialData,
   onSubmit,
 }: {
-  service: Service;
+  service: Service & { serviceConfig?: ServiceConfig | null };
   initialData?: ContentType & {
-    contentTypeInfo?: ContentTypeInfo;
+    contentTypeInfo?: ContentTypeInfo | null;
     contents: Content[];
   };
   onSubmit: (input: ContentTypeSchemaType & { serviceId: string }) => void;
 }) {
   const [source, setSource] = useState<string | undefined>(undefined);
-  const [schema, setSchema] = useState<Prisma.JsonObject | undefined>(
-    undefined
-  );
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  const [defaultValues, setDefaultValues] = useState<
-    Prisma.JsonObject | undefined
-  >({});
-  const [code, setCode] = useState<string | undefined>(undefined);
-  const [activeStep, setActiveStep] = useState(0);
 
   const methods = useForm<ContentTypeSchemaType & { serviceId: string }>({
     resolver: zodResolver(contentTypeSchema),
@@ -55,34 +42,7 @@ function ContentTypeForm({
 
   useEffect(() => {
     const { serviceId, contentTypeInfo, source, ...others } = initialData || {};
-    const details = contentTypeInfo?.details as Prisma.JsonObject | undefined;
 
-    const defaultValueKey = source === "local" ? "defaultValues" : "";
-    const defaultValues = details?.[defaultValueKey] as
-      | Prisma.JsonObject
-      | undefined;
-
-    const schemaKey = source === "local" ? "schema" : "";
-    const schemaValues = details?.[schemaKey] as Prisma.JsonObject | undefined;
-
-    const uiSchemaKey = source === "local" ? "uiSchema" : "";
-    const uiSchemaValues = details?.[uiSchemaKey] as
-      | Prisma.JsonObject
-      | undefined;
-
-    console.log(details);
-    console.log(defaultValues);
-    console.log(schemaValues);
-    console.log(uiSchemaValues);
-
-    setDefaultValues(defaultValues);
-    setSchema(schemaValues);
-    if (uiSchemaValues) {
-      setCode(JSON.stringify(uiSchemaValues));
-    } else {
-      setCode(removeRenderFunction(undefined));
-    }
-    setSource(initialData?.source);
     reset({
       ...others,
       serviceId: serviceId || undefined,
@@ -142,6 +102,7 @@ function ContentTypeForm({
                     defaultValue={initialData?.source || "local"}
                     onChange={(e) => setSource(e.target.value)}
                   >
+                    <option value="">Please select</option>
                     <option value="local">LOCAL</option>
                     <option value="builder.io">BUILDER.IO</option>
                   </select>
@@ -167,7 +128,20 @@ function ContentTypeForm({
           </div>
         </div>
         <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-          {source}
+          <ContentTypeInfoForm
+            service={service}
+            contentType={initialData}
+            source={source || "local"}
+          />
+        </div>
+        <div className="flex items-center justify-end">
+          <button
+            type="submit"
+            className="inline-block rounded-lg bg-blue-500 px-5 py-3 text-sm font-medium text-white"
+            onClick={() => handleSubmit(onSubmit)}
+          >
+            Save
+          </button>
         </div>
       </form>
     </FormProvider>

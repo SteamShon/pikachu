@@ -1,6 +1,6 @@
 import { builder } from "@builder.io/react";
 import type { Builder } from "@builder.io/react";
-import { MyCache } from "../../utils/cache";
+import { MyCache } from "../../../utils/cache";
 
 const pool = new MyCache<string, Builder>({
   max: 3, // # of items

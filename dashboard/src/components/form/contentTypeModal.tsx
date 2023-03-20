@@ -1,5 +1,5 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Service } from "@prisma/client";
+import type { Service, ServiceConfig } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { serviceRouter } from "../../server/api/routers/service";
@@ -16,7 +16,7 @@ function ContentTypeModal({
   setModalOpen,
   setServiceTree,
 }: {
-  service: Service;
+  service: Service & { serviceConfig?: ServiceConfig | null };
   initialData?: Parameters<typeof ContentTypeForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -46,8 +46,9 @@ function ContentTypeModal({
     },
   });
   const onSubmit = (input: ContentTypeSchemaType & { serviceId: string }) => {
-    if (initialData) update(input);
-    else create(input);
+    // if (initialData) update(input);
+    // else create(input);
+    console.log(input);
   };
 
   return (

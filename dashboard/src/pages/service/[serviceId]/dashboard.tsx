@@ -28,7 +28,7 @@ function Dashboard() {
   >(undefined);
 
   const { data: service, isLoading } = api.service.get.useQuery({
-    id: serviceId as string,
+    id: serviceId as string | undefined,
   });
 
   useEffect(() => {

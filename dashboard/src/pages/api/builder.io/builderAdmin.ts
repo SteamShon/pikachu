@@ -1,5 +1,7 @@
+import type { JSONObject, ModelType } from "@builder.io/admin-sdk";
 import { createAdminApiClient } from "@builder.io/admin-sdk";
-import { MyCache } from "../../utils/cache";
+import type { ContentTypeInfo } from "@prisma/client";
+import { MyCache } from "../../../utils/cache";
 
 type ClientType = ReturnType<typeof createAdminApiClient>;
 
@@ -8,8 +10,8 @@ const pool = new MyCache<string, ClientType>({
   ttl: 10 * 60 * 1000, // expiration in ms (10 min)
 });
 
-function getClient(builderPrimaryKey: string) {
-  return pool.get(builderPrimaryKey, (k) =>
+function getClient(builderPrivateKey: string) {
+  return pool.get(builderPrivateKey, (k) =>
     Promise.resolve(createAdminApiClient(k))
   );
 }
@@ -25,12 +27,12 @@ export async function getSettings({
   });
   return settings;
 }
-export async function getContentTypes({
-  builderPrimaryKey,
+export async function getModels({
+  builderPrivateKey,
 }: {
-  builderPrimaryKey: string;
+  builderPrivateKey: string;
 }) {
-  const adminSDK = await getClient(builderPrimaryKey);
+  const adminSDK = await getClient(builderPrivateKey);
   const { data } = await adminSDK.query({
     models: {
       everything: true,
@@ -38,6 +40,26 @@ export async function getContentTypes({
   });
 
   return (data?.models || []).map((model) => model.everything);
+}
+
+export function modelToContentTypeInfo(model: ModelType): ContentTypeInfo {
+  const status = model.archived
+    ? "archived"
+    : model.publicReadable
+    ? "published"
+    : "created";
+  const updatedAt = model.lastUpdateBy
+    ? new Date(model.lastUpdateBy)
+    : new Date();
+
+  return {
+    id: model.id || "",
+    contentTypeId: "abc",
+    details: model.everything as JSONObject,
+    status: status,
+    createdAt: new Date(),
+    updatedAt,
+  };
 }
 /*
 

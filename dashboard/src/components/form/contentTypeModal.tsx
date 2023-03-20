@@ -46,9 +46,8 @@ function ContentTypeModal({
     },
   });
   const onSubmit = (input: ContentTypeSchemaType & { serviceId: string }) => {
-    // if (initialData) update(input);
-    // else create(input);
-    console.log(input);
+    if (initialData) update(input);
+    else create(input);
   };
 
   return (

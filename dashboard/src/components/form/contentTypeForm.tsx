@@ -28,9 +28,18 @@ function ContentTypeForm({
   onSubmit: (input: ContentTypeSchemaType & { serviceId: string }) => void;
 }) {
   const [source, setSource] = useState<string | undefined>(undefined);
-
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  const details = initialData?.contentTypeInfo?.details as { [x: string]: {} };
   const methods = useForm<ContentTypeSchemaType & { serviceId: string }>({
     resolver: zodResolver(contentTypeSchema),
+    defaultValues: {
+      ...initialData,
+      serviceId: initialData?.serviceId || undefined,
+      contentTypeInfo: {
+        ...initialData?.contentTypeInfo,
+        details,
+      },
+    },
   });
 
   const {
@@ -39,6 +48,8 @@ function ContentTypeForm({
     reset,
     formState: { errors },
   } = methods;
+
+  console.log(errors);
 
   useEffect(() => {
     const { serviceId, contentTypeInfo, source, ...others } = initialData || {};
@@ -128,11 +139,13 @@ function ContentTypeForm({
           </div>
         </div>
         <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-          <ContentTypeInfoForm
-            service={service}
-            contentType={initialData}
-            source={source || "local"}
-          />
+          {initialData ? (
+            <ContentTypeInfoForm
+              service={service}
+              contentType={initialData}
+              source={source || "local"}
+            />
+          ) : null}
         </div>
         <div className="flex items-center justify-end">
           <button

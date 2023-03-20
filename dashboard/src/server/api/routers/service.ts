@@ -386,7 +386,8 @@ export const serviceRouter = createTRPCRouter({
   addContentType: protectedProcedure
     .input(contentTypeSchema)
     .mutation(async ({ input }) => {
-      const { serviceId, name, contentTypeInfo } = input;
+      const { contentTypeInfo, ...contentTypeInput } = input;
+      const { serviceId, ...contentType } = contentTypeInput;
       const contentTypeInfoJson = {
         ...contentTypeInfo,
         details: contentTypeInfo?.details as Prisma.JsonObject,
@@ -401,20 +402,20 @@ export const serviceRouter = createTRPCRouter({
             connectOrCreate: {
               where: {
                 serviceId_name: {
-                  serviceId,
-                  name,
+                  serviceId: serviceId,
+                  name: contentType.name,
                 },
               },
               create: {
-                ...input,
-                contentTypeInfo: {
-                  connectOrCreate: {
-                    where: {
-                      id: contentTypeInfo?.id,
-                    },
-                    create: contentTypeInfoJson,
-                  },
-                },
+                ...contentType,
+                // contentTypeInfo: {
+                //   connectOrCreate: {
+                //     where: {
+                //       id: contentTypeInfo?.id,
+                //     },
+                //     create: contentTypeInfoJson,
+                //   },
+                // },
               },
             },
           },
@@ -471,9 +472,10 @@ export const serviceRouter = createTRPCRouter({
   updateContentType: protectedProcedure
     .input(contentTypeSchema)
     .mutation(async ({ input }) => {
-      const { serviceId, id, contentTypeInfo } = input;
+      const { contentTypeInfo, ...contentTypeInput } = input;
+      const { serviceId, ...contentType } = contentTypeInput;
       const contentTypeInfoJson = {
-        ...contentTypeInfo,
+        id: contentTypeInfo?.id,
         details: contentTypeInfo?.details as Prisma.JsonObject,
       };
 
@@ -485,12 +487,15 @@ export const serviceRouter = createTRPCRouter({
           contentTypes: {
             update: {
               where: {
-                id,
+                id: contentType.id,
               },
               data: {
-                ...input,
+                ...contentType,
                 contentTypeInfo: {
-                  update: contentTypeInfoJson,
+                  upsert: {
+                    update: contentTypeInfoJson,
+                    create: contentTypeInfoJson,
+                  },
                 },
               },
             },

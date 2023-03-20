@@ -1,26 +1,71 @@
+import {
+  materialRenderers,
+  materialCells,
+} from "@jsonforms/material-renderers";
+import { JsonForms } from "@jsonforms/react";
 import JsonSchemaEditor from "@optum/json-schema-editor";
-import type { Content, ContentType } from "@prisma/client";
-import type { Dispatch, SetStateAction } from "react";
-import { useEffect } from "react";
+import type { Content, ContentType, ContentTypeInfo } from "@prisma/client";
+import { useEffect, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-import { jsonParseWithFallback } from "../../utils/json";
+import { LiveEditor, LiveError, LivePreview, LiveProvider } from "react-live";
+import { extractValue, jsonParseWithFallback } from "../../utils/json";
+import {
+  removeRenderFunction,
+  replacePropsInFunction,
+} from "../common/CodeTemplate";
 
 function ContentTypeSchemaBuilder({
-  initialData,
-  schema,
-  setSchema,
+  contentType,
 }: {
-  initialData?: ContentType & { contents: Content[] };
-  schema?: string;
-  setSchema: Dispatch<SetStateAction<string | undefined>>;
+  contentType?: ContentType & {
+    contentTypeInfo?: ContentTypeInfo | null;
+    contents: Content[];
+  };
 }) {
+  const [schema, setSchema] = useState<string | undefined>(undefined);
+  const [defaultValues, setDefaultValues] = useState<string | undefined>(
+    undefined
+  );
+  const [code, setCode] = useState<string | undefined>(undefined);
+
   const methods = useFormContext();
   const { control, register, reset, setValue } = methods;
-
+  const initialSchema = (extractValue({
+    object: contentType?.contentTypeInfo?.details,
+    paths: ["schema"],
+  }) || "{}") as string;
+  const initialDefaultValues = (extractValue({
+    object: contentType?.contentTypeInfo?.details,
+    paths: ["defaultValues"],
+  }) || "{}") as string;
+  const currentSchema = () => {
+    return schema
+      ? jsonParseWithFallback(schema)
+      : jsonParseWithFallback(initialSchema);
+  };
+  const currentDefaultValues = () => {
+    return defaultValues
+      ? jsonParseWithFallback(defaultValues)
+      : jsonParseWithFallback(initialDefaultValues);
+  };
   useEffect(() => {
-    console.log(initialData);
-    reset(initialData);
-  }, [initialData, reset]);
+    const schema = (extractValue({
+      object: contentType?.contentTypeInfo?.details,
+      paths: ["schema"],
+    }) || "{}") as string;
+    const defaultValues = (extractValue({
+      object: contentType?.contentTypeInfo?.details,
+      paths: ["defaultValues"],
+    }) || "{}") as string;
+    const code = extractValue({
+      object: contentType?.contentTypeInfo?.details,
+      paths: ["code"],
+    }) as string | undefined;
+
+    setSchema(schema);
+    setDefaultValues(defaultValues);
+    setCode(code);
+  }, [contentType?.contentTypeInfo?.details]);
 
   return (
     <div className="overflow-hidden bg-white shadow sm:rounded-lg">
@@ -40,22 +85,110 @@ function ContentTypeSchemaBuilder({
                 className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
                 defaultValue={schema}
                 rows={3}
-                {...register("schema")}
+                {...register("contentTypeInfo.details.schema")}
               />
               <Controller
-                name="schema"
+                name="contentTypeInfo.details.schema"
                 control={control}
                 rules={{ required: true }}
-                render={({}) => (
+                render={({ field }) => (
                   <JsonSchemaEditor
-                    data={jsonParseWithFallback(schema || initialData?.schema)}
-                    onSchemaChange={(schema) => {
-                      setValue("schema", schema);
+                    data={currentSchema()}
+                    onSchemaChange={(newSchema) => {
+                      if (newSchema == "{}") return;
+                      // console.log(schema);
+                      // setValue("contentTypeInfo.details.schema", newSchema);
                       //TODO: somehow JSONSchemaEditor does not update when field.onChange.
-                      //field.onChange(schema);
-                      setSchema(schema);
+                      field.onChange(newSchema);
+                      setSchema(newSchema);
                     }}
                   />
+                )}
+              />
+            </dd>
+          </div>
+          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt className="text-sm font-medium text-gray-500">Form Builder</dt>
+            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+              <Controller
+                name="contentTypeInfo.details.defaultValues"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <JsonForms
+                    schema={currentSchema()}
+                    data={currentDefaultValues()}
+                    renderers={materialRenderers}
+                    cells={materialCells}
+                    onChange={({ data }) => {
+                      if (!data || Object.keys(data).length === 0) return;
+
+                      const newDefaultValues = JSON.stringify(data);
+                      setDefaultValues(newDefaultValues);
+                      //setValue("defaultValues", data);
+                      field.onChange(newDefaultValues);
+                    }}
+                  />
+                )}
+              />
+            </dd>
+          </div>
+          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt className="text-sm font-medium text-gray-500">
+              Render Component Code
+            </dt>
+            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+              <Controller
+                name="contentTypeInfo.details.code"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <LiveProvider
+                    code={replacePropsInFunction({
+                      code,
+                      contents: [jsonParseWithFallback(defaultValues)],
+                    })}
+                    noInline={true}
+                  >
+                    <dl>
+                      <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500">
+                          Renderer Code
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                          <div>
+                            <LiveEditor
+                              onChange={(newCode) => {
+                                const newCodeWithoutRender =
+                                  removeRenderFunction(newCode);
+
+                                setCode(newCodeWithoutRender);
+                                //setValue("uiSchema", newCodeWithoutRender);
+                                field.onChange(newCodeWithoutRender);
+                                //setCode(newCodeWithoutRender);
+                              }}
+                            />
+                          </div>
+                        </dd>
+                      </div>
+                      <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500">
+                          Preview
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                          <LivePreview />
+                        </dd>
+                      </div>
+                      <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500">
+                          Preview Erros
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                          <LiveError />
+                        </dd>
+                      </div>
+                    </dl>
+                  </LiveProvider>
                 )}
               />
             </dd>

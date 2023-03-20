@@ -78,9 +78,9 @@ function ContentTypeFormBuilder({
                 rules={{ required: true }}
                 render={({ field }) => (
                   <JsonForms
-                    schema={{}}
+                    schema={schema}
                     //uischema={uiSchema}
-                    data={{}}
+                    data={defaultValues}
                     renderers={materialRenderers}
                     cells={materialCells}
                     onChange={({ data }) => {

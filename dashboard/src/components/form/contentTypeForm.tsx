@@ -49,8 +49,6 @@ function ContentTypeForm({
     formState: { errors },
   } = methods;
 
-  console.log(errors);
-
   useEffect(() => {
     const { serviceId, contentTypeInfo, source, ...others } = initialData || {};
 
@@ -58,6 +56,7 @@ function ContentTypeForm({
       ...others,
       serviceId: serviceId || undefined,
     });
+    setSource(source);
   }, [initialData, reset]);
 
   return (

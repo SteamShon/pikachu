@@ -1,6 +1,6 @@
 import {
-  materialRenderers,
   materialCells,
+  materialRenderers,
 } from "@jsonforms/material-renderers";
 import { JsonForms } from "@jsonforms/react";
 import JsonSchemaEditor from "@optum/json-schema-editor";
@@ -29,7 +29,7 @@ function ContentTypeSchemaBuilder({
   const [code, setCode] = useState<string | undefined>(undefined);
 
   const methods = useFormContext();
-  const { control, register, reset, setValue } = methods;
+  const { control, register } = methods;
   const initialSchema = (extractValue({
     object: contentType?.contentTypeInfo?.details,
     paths: ["schema"],

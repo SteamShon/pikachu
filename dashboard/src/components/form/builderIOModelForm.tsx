@@ -1,5 +1,6 @@
-import type { JSONObject, ModelType } from "@builder.io/admin-sdk";
+import type { ModelType } from "@builder.io/admin-sdk";
 import type {
+  Content,
   ContentType,
   ContentTypeInfo,
   Service,
@@ -10,19 +11,20 @@ import { useFormContext } from "react-hook-form";
 import { getModels } from "../../pages/api/builder.io/builderAdmin";
 import { extractValue } from "../../utils/json";
 import type { ContentTypeSchemaType } from "../schema/contentType";
-import type { ContentTypeInfoSchemaType } from "../schema/contentTypeInfo";
 
 function BuilderIOModelForm({
   service,
   contentType,
-  name,
 }: {
-  name: string;
-  contentType?: ContentType;
+  contentType?: ContentType & {
+    contentTypeInfo?: ContentTypeInfo | null;
+    contents: Content[];
+  };
   service?: Service & { serviceConfig?: ServiceConfig | null };
 }) {
   const [models, setModels] = useState<ModelType[]>([]);
-  const [details, setDetails] = useState<string | undefined>(undefined);
+  const [model, setModel] = useState<ModelType | undefined>(undefined);
+
   const { register, setValue } = useFormContext<ContentTypeSchemaType>();
 
   useEffect(() => {
@@ -37,12 +39,24 @@ function BuilderIOModelForm({
     }
   }, [service]);
 
+  useEffect(() => {
+    const modelId = extractValue({
+      object: contentType?.contentTypeInfo?.details,
+      paths: ["id"],
+    }) as string | undefined;
+    setModel(models.find((model) => model.id === modelId));
+  }, [contentType?.contentTypeInfo?.details, models]);
+
   const handleSelect = (modelId: string) => {
     const model = models.find((model) => model.id === modelId);
-    console.log(model);
-    setValue("id", model?.id || undefined);
+    setModel(model);
+
+    // setValue("id", model?.id || undefined);
     setValue("name", model?.name || "");
-    setDetails(JSON.stringify(model ? (model as JSONObject) : {}));
+    setValue(
+      "contentTypeInfo.details",
+      (model || {}) as Record<string, unknown>
+    );
   };
   return (
     <>
@@ -71,6 +85,7 @@ function BuilderIOModelForm({
               onChange={(e) => {
                 handleSelect(e.target.value);
               }}
+              value={model?.id || undefined}
             >
               <option value="">Please select</option>
               {models.map((model) => (
@@ -91,8 +106,7 @@ function BuilderIOModelForm({
             <textarea
               id="details"
               className="peer h-8 w-full border-none bg-transparent p-0 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
-              // {...register("contentTypeInfo.details")}
-              value={details}
+              defaultValue={JSON.stringify(model, null, 2)}
             />
             <span className="absolute left-3 top-3 -translate-y-1/2 text-xs text-gray-700 transition-all peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm peer-focus:top-3 peer-focus:text-xs">
               Details

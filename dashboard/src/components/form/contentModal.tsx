@@ -49,9 +49,8 @@ function ContentModal({
   });
 
   const onSubmit = (input: ContentWithContentTypeSchemaType) => {
-    // if (initialData) update(input);
-    // else create(input);
-    console.log(input);
+    if (initialData) update(input);
+    else create(input);
   };
 
   return (

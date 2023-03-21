@@ -1,4 +1,4 @@
-import type { ModelType } from "@builder.io/admin-sdk";
+import { BuilderComponent } from "@builder.io/react";
 import {
   materialCells,
   materialRenderers,
@@ -9,11 +9,15 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Prisma, Service, ServiceConfig } from "@prisma/client";
+import type {
+  ContentType,
+  ContentTypeInfo,
+  Service,
+  ServiceConfig,
+} from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
-import { useEffect } from "react";
 import { useState } from "react";
 import { LivePreview, LiveProvider } from "react-live";
 import { replacePropsInFunction } from "../../../components/common/CodeTemplate";
@@ -21,10 +25,9 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type ContentTypeForm from "../../../components/form/contentTypeForm";
 import ContentTypeModal from "../../../components/form/contentTypeModal";
 import { api } from "../../../utils/api";
-import { jsonParseWithFallback } from "../../../utils/json";
+import { extractValue, jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypesTree } from "../../../utils/tree";
-import { getModels } from "../../api/builder.io/builderAdmin";
 
 function ContentTypeTable({
   service,
@@ -56,6 +59,19 @@ function ContentTypeTable({
       },
     });
 
+  const renderBuilderPreview = (
+    service: Service & { serviceConfig?: ServiceConfig | null },
+    contentType: ContentType & { contentTypeInfo?: ContentTypeInfo | null }
+  ) => {
+    if (contentType.source !== "builder.io") return <></>;
+    const publicKey = extractValue({
+      object: service.serviceConfig?.builderConfig,
+      paths: ["publicKey"],
+    }) as string | undefined;
+
+    return <BuilderComponent model={contentType.name} apiKey={publicKey} />;
+  };
+
   const rows = serviceTree?.contentTypes
     ? Object.values(serviceTree.contentTypes).map((contentType) => {
         return {
@@ -83,15 +99,31 @@ function ContentTypeTable({
       flex: 1,
     },
     {
+      field: "source",
+      headerName: "Source",
+      flex: 1,
+    },
+
+    {
       field: "schema",
       headerName: "Schema",
       flex: 1,
       renderCell: (params: GridRenderCellParams<Date>) => {
         return (
           <JsonForms
-            schema={jsonParseWithFallback(params.row.schema)}
+            schema={jsonParseWithFallback(
+              extractValue({
+                object: params.row.contentTypeInfo?.details,
+                paths: ["schema"],
+              }) as string | undefined
+            )}
             //uischema={uiSchema}
-            data={jsonParseWithFallback(params.row?.defaultValues)}
+            data={jsonParseWithFallback(
+              extractValue({
+                object: params.row.contentTypeInfo?.details,
+                paths: ["defaultValues"],
+              }) as string | undefined
+            )}
             renderers={materialRenderers}
             cells={materialCells}
           />
@@ -103,16 +135,28 @@ function ContentTypeTable({
       headerName: "Preview",
       flex: 4,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        return (
+        return params.row.source === "local" ? (
           <LiveProvider
             code={replacePropsInFunction({
-              code: params.row?.uiSchema,
-              contents: [jsonParseWithFallback(params.row?.defaultValues)],
+              code: extractValue({
+                object: params.row?.contentTypeInfo?.details,
+                paths: ["code"],
+              }) as string | undefined,
+              contents: [
+                jsonParseWithFallback(
+                  extractValue({
+                    object: params.row?.contentTypeInfo?.details,
+                    paths: ["defaultValues"],
+                  }) as string | undefined
+                ),
+              ],
             })}
             noInline={true}
           >
             <LivePreview />
           </LiveProvider>
+        ) : (
+          <>{renderBuilderPreview(service, params.row)}</>
         );
       },
     },

@@ -1,6 +1,11 @@
 import type { BuilderContent } from "@builder.io/react";
 import { BuilderComponent } from "@builder.io/react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  materialCells,
+  materialRenderers,
+} from "@jsonforms/material-renderers";
+import { JsonForms } from "@jsonforms/react";
 import type {
   Content,
   ContentType,
@@ -9,9 +14,11 @@ import type {
   ServiceConfig,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm } from "react-hook-form";
+import { LivePreview, LiveProvider } from "react-live";
 import { getContents } from "../../pages/api/builder.io/builderContent";
 import { extractValue, jsonParseWithFallback } from "../../utils/json";
+import { replacePropsInFunction } from "../common/CodeTemplate";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type {
   ContentSchemaType,
@@ -30,9 +37,11 @@ function ContentForm({
   initialData?: Content & { contentType: ContentType };
   onSubmit: (input: ContentSchemaType & { contentTypeId: string }) => void;
 }) {
+  console.log(initialData);
   const [contentType, setContentType] = useState<
     typeof contentTypes[0] | undefined
   >(undefined);
+  const [schema, setSchema] = useState<string | undefined>(undefined);
   // eslint-disable-next-line @typescript-eslint/ban-types
   const [defaultValues, setDefaultValues] = useState<{ [x: string]: {} }>({});
   const [builderContents, setBuilderContens] = useState<BuilderContent[]>([]);
@@ -53,17 +62,24 @@ function ContentForm({
     formState: { errors },
   } = methods;
 
-  console.log(errors);
-
   useEffect(() => {
     const { values, ...others } = initialData || {};
-
-    setContentType(initialData?.contentType);
+    const currentContentType = contentTypes.find(
+      (ct) => ct.id === initialData?.contentType?.id
+    );
+    setContentType(currentContentType);
+    const schema = extractValue({
+      object: currentContentType?.contentTypeInfo?.details,
+      paths: ["schema"],
+    }) as string | undefined;
+    setSchema(schema);
     // eslint-disable-next-line @typescript-eslint/ban-types
     const parsedValues = jsonParseWithFallback(values) as { [x: string]: {} };
 
     setDefaultValues(parsedValues);
-
+    if (currentContentType?.source === "builder.io" && initialData) {
+      setBuilderContent(parsedValues as unknown as BuilderContent);
+    }
     reset({
       ...others,
       contentTypeId: initialData?.contentType.id,
@@ -90,6 +106,7 @@ function ContentForm({
       }).then((contents) => setBuilderContens(contents));
     }
   }, [contentType, service?.serviceConfig?.builderConfig]);
+
   const handleBuilderContentSelect = (contentName: string) => {
     const content = builderContents.find((c) => c.name === contentName);
 
@@ -153,6 +170,7 @@ function ContentForm({
                           onChange={(e) =>
                             handleBuilderContentSelect(e.target.value)
                           }
+                          value={builderContent?.name}
                         >
                           <option value="">Please choose</option>
                           {builderContents.map((content) => {
@@ -214,61 +232,36 @@ function ContentForm({
                     )}
                   </dd>
                 </div>
-                {/* <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">Values</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                     <Controller
                       name="values"
                       control={control}
                       rules={{ required: true }}
-                      render={({}) => (
+                      render={({ field }) => (
                         <JsonForms
-                          schema={jsonParseWithFallback(contentType?.schema)}
+                          schema={jsonParseWithFallback(schema)}
                           //uischema={uiSchema}
                           data={defaultValues}
                           renderers={materialRenderers}
                           cells={materialCells}
                           onChange={({ data }) => {
                             if (Object.keys(data).length === 0) return;
-                            //field.onChange(data);
-                            setValue("values", data);
+
+                            field.onChange(data);
+                            //setValue("values", data);
                             setDefaultValues(data);
                           }}
                         />
                       )}
                     />
                   </dd>
-                </div> */}
+                </div>
               </dl>
             </div>
           </div>
-          {/* <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg font-medium leading-6 text-gray-900">
-                Preview
-              </h3>
-            </div>
-            <div className="border-t border-gray-200">
-              <LiveProvider
-                code={replacePropsInFunction({
-                  code: contentType?.uiSchema || undefined,
-                  contents: [defaultValues],
-                })}
-                noInline={true}
-              >
-                <dl>
-                  <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt className="text-sm font-medium text-gray-500">
-                      Preview
-                    </dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                      <LivePreview />
-                    </dd>
-                  </div>
-                </dl>
-              </LiveProvider>
-            </div>
-          </div> */}
+
           <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
             <CustomLoadingButton
               handleSubmit={handleSubmit}
@@ -277,9 +270,27 @@ function ContentForm({
           </div>
         </form>
       </FormProvider>
-      {contentType ? (
-        <BuilderComponent model={contentType.name} content={builderContent} />
-      ) : null}
+      <div className="mx-auto max-w-screen-xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-lg text-center">
+          <h1 className="text-2xl font-bold sm:text-3xl">Preview</h1>
+        </div>
+      </div>
+      <div className="mx-auto mt-8 mb-0 space-y-4 ">
+        <BuilderComponent model={contentType?.name} content={builderContent} />
+
+        <LiveProvider
+          code={replacePropsInFunction({
+            code: extractValue({
+              object: contentType?.contentTypeInfo?.details,
+              paths: ["code"],
+            }) as string | undefined,
+            contents: [defaultValues],
+          })}
+          noInline={true}
+        >
+          <LivePreview />
+        </LiveProvider>
+      </div>
     </>
   );
 }

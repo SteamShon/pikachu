@@ -176,7 +176,7 @@ model ContentType {
 
 model ContentTypeInfo {
     id            String      @id @default(cuid())
-    contentType   ContentType @relation(fields: [contentTypeId], references: [id])
+    contentType   ContentType @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
     contentTypeId String      @unique
     // source        String      @default("local")
     details       Json?
@@ -264,7 +264,7 @@ model Content {
     id            String       @id @default(cuid())
     name          String
     description   String?
-    contentType   ContentType? @relation(fields: [contentTypeId], references: [id])
+    contentType   ContentType? @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
     contentTypeId String?
     values        String
     creatives     Creative[]

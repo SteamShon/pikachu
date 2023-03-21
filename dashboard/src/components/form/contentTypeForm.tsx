@@ -3,16 +3,13 @@ import type {
   Content,
   ContentType,
   ContentTypeInfo,
-  Prisma,
   Service,
   ServiceConfig,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { removeRenderFunction } from "../common/CodeTemplate";
 import type { ContentTypeSchemaType } from "../schema/contentType";
 import { contentTypeSchema } from "../schema/contentType";
-import BuilderIOModelForm from "./builderIOModelForm";
 import ContentTypeInfoForm from "./contentTypeInfoForm";
 
 function ContentTypeForm({

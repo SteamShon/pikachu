@@ -6,7 +6,7 @@ import {
   CircularProgress,
   TextField,
 } from "@mui/material";
-import type { CubeConfig } from "@prisma/client";
+import type { ServiceConfig } from "@prisma/client";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
@@ -17,19 +17,20 @@ import {
   partitionBucketPrefix,
 } from "../../utils/aws";
 import { fetchParquetSchema } from "../../utils/duckdb";
+import { extractValue } from "../../utils/json";
 import type { DatasetSchemaType } from "../schema/dataset";
 import JoinConditionBuilder from "./joinConditionBuilder";
 import type { TableMetadata } from "./sqlBuilder";
 
 function JoinCandidateBuilder({
-  cubeConfig,
+  serviceConfig,
   initialData,
   index,
   methods,
   tableColumns,
   setTableColumns,
 }: {
-  cubeConfig: CubeConfig;
+  serviceConfig: ServiceConfig;
   index: number;
   initialData?: DatasetSchemaType;
   methods: UseFormReturn<DatasetSchemaType, unknown>;
@@ -51,7 +52,7 @@ function JoinCandidateBuilder({
   const loadPaths = useMemo(
     () => async (bucketName: string, prefix?: string) => {
       setBucket(bucketName);
-      const s3 = loadS3(cubeConfig);
+      const s3 = loadS3(serviceConfig);
       const folders = await listFoldersRecursively({
         s3,
         bucketName: bucketName,
@@ -64,11 +65,11 @@ function JoinCandidateBuilder({
 
       setPaths(newPaths);
     },
-    [cubeConfig]
+    [serviceConfig]
   );
   const loadMetadata = useMemo(
     () => async (path: string) => {
-      const rows = await fetchParquetSchema(cubeConfig, path);
+      const rows = await fetchParquetSchema(serviceConfig, path);
       const columns = rows.map((row) => String(row.name));
       setTableColumns((prev) => {
         prev[`${index}`] = { columns };
@@ -77,7 +78,7 @@ function JoinCandidateBuilder({
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cubeConfig]
+    [serviceConfig]
   );
 
   const getBucket = () => {
@@ -87,6 +88,14 @@ function JoinCandidateBuilder({
     return partitionBucketPrefix(file).bucket;
   };
 
+  const s3Buckets = () => {
+    const s3Buckets = extractValue({
+      object: serviceConfig?.s3Config,
+      paths: ["s3Buckets"],
+    }) as string | undefined;
+
+    return s3Buckets?.split(",") || [];
+  };
   const defaultValue = {
     sourceColumn: "",
     targetColumn: "",
@@ -109,7 +118,7 @@ function JoinCandidateBuilder({
         <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
           <select onChange={(e) => loadPaths(e.target.value)} value={bucket}>
             <option value="">Please choose</option>
-            {(cubeConfig.buckets?.split(",") || []).map((bucket) => {
+            {s3Buckets().map((bucket) => {
               return (
                 <option key={bucket} value={bucket}>
                   {bucket}

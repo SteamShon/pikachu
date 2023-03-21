@@ -9,7 +9,6 @@ import CampaignTable from "./campaignTable";
 import ContentTable from "./contentTable";
 import ContentTypeTable from "./contentTypeTable";
 import CreativeTable from "./creativeTable";
-import CubeConfigTable from "./cubeConfigTable";
 import CubeTable from "./cubeTable";
 import CustomsetTable from "./customsetTable";
 
@@ -28,7 +27,7 @@ function Dashboard() {
   >(undefined);
 
   const { data: service, isLoading } = api.service.get.useQuery({
-    id: serviceId as string | undefined,
+    id: serviceId as string,
   });
 
   useEffect(() => {
@@ -111,23 +110,15 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "ServiceConfig",
-      description: `serviceConfig`,
-      table: () =>
-        service ? (
-          <CubeConfigTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
-        ) : null,
-    },
-    {
       label: "Cubes",
       description: `cubes`,
       table: () =>
         service ? (
-          <CubeTable setServiceTree={setTree} serviceTree={tree} />
+          <CubeTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
         ) : null,
     },
     {

@@ -1,17 +1,31 @@
-import type { CubeConfig } from "@prisma/client";
+import type { ServiceConfig } from "@prisma/client";
 import type { Buckets, Object as S3Object } from "aws-sdk/clients/s3";
 import S3 from "aws-sdk/clients/s3";
+import { extractValue } from "./json";
 
 export type TreeNode = {
   name: string;
   path: string;
   children: TreeNode[];
 };
-export function loadS3(config: CubeConfig): S3 {
+export function loadS3(serviceConfig: ServiceConfig): S3 {
+  const s3Region = extractValue({
+    object: serviceConfig?.s3Config,
+    paths: ["s3Region"],
+  }) as string | undefined;
+  const s3AccessKeyId = extractValue({
+    object: serviceConfig?.s3Config,
+    paths: ["s3AccessKeyId"],
+  }) as string | undefined;
+  const s3SecretAccessKey = extractValue({
+    object: serviceConfig?.s3Config,
+    paths: ["s3SecretAccessKey"],
+  }) as string | undefined;
+
   return new S3({
-    region: config.s3Region,
-    accessKeyId: config.s3AccessKeyId,
-    secretAccessKey: config.s3SecretAccessKey,
+    region: s3Region,
+    accessKeyId: s3AccessKeyId,
+    secretAccessKey: s3SecretAccessKey,
     signatureVersion: "v4",
   });
 }

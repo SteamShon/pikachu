@@ -1,7 +1,7 @@
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import { Button } from "@mui/material";
-import type { CubeConfig } from "@prisma/client";
+import type { ServiceConfig } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type { DatasetSchemaType } from "../schema/dataset";
@@ -12,11 +12,11 @@ export type TableMetadata = {
   };
 };
 function SqlBuilder({
-  cubeConfig,
+  serviceConfig,
   initialData,
   onSubmit,
 }: {
-  cubeConfig: CubeConfig;
+  serviceConfig: ServiceConfig;
   initialData?: DatasetSchemaType;
   onSubmit: (input: DatasetSchemaType) => void;
 }) {
@@ -35,7 +35,7 @@ function SqlBuilder({
     if (initialData) {
       reset(initialData);
     }
-  }, [cubeConfig, initialData, reset]);
+  }, [serviceConfig, initialData, reset]);
 
   const defaultValue = { files: [], conditions: [] };
   console.log(initialData);
@@ -56,7 +56,7 @@ function SqlBuilder({
                 </h3>
               </div>
               <JoinCandidateBuilder
-                cubeConfig={cubeConfig}
+                serviceConfig={serviceConfig}
                 index={index}
                 methods={methods}
                 tableColumns={tableColumns}

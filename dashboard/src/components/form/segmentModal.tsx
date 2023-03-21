@@ -29,10 +29,9 @@ function SegmentModal({
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
       if (!prev) return prev;
+      if (!prev.serviceConfig) return prev;
 
-      const cubeConfig = prev.cubeConfigs[created.cubeConfigId];
-      if (!cubeConfig) return prev;
-      cubeConfig.cubes[created.id] = buildCubeTree(created);
+      prev.serviceConfig.cubes[created.id] = buildCubeTree(created);
 
       return prev;
     });

@@ -5,6 +5,31 @@ import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const placementRouter = createTRPCRouter({
+  list: protectedProcedure
+    .input(z.object({ serviceId: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const { serviceId } = input;
+      const placements = await prisma.placement.findMany({
+        where: {
+          serviceId,
+        },
+        include: {
+          cube: {
+            include: {
+              serviceConfig: true,
+            },
+          },
+          contentType: {
+            include: {
+              contentTypeInfo: true,
+              contents: true,
+            },
+          },
+        },
+      });
+
+      return placements;
+    }),
   addCampaign: protectedProcedure
     .input(campaignWithPlacementSchema)
     .mutation(async ({ input }) => {

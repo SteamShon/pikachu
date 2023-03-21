@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Cube, CubeConfig, Segment } from "@prisma/client";
+import type { Cube, Segment, ServiceConfig } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { formatQuery, parseSQL } from "react-querybuilder";
@@ -13,7 +13,7 @@ function SegmentForm({
   onSubmit,
   initialData,
 }: {
-  cubes: (Cube & { cubeConfig: CubeConfig })[];
+  cubes: (Cube & { serviceConfig: ServiceConfig })[];
   onSubmit: (input: SegmentWithCubeSchemaType) => void;
   initialData?: Segment;
 }) {

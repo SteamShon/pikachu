@@ -1,7 +1,5 @@
 import { z } from "zod";
 import { contentWithContentTypeSchema } from "../../../components/schema/content";
-
-import { contentTypeSchema } from "../../../components/schema/contentType";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -150,30 +148,5 @@ export const contentTypeRouter = createTRPCRouter({
       });
 
       return contentTypes;
-    }),
-  update: protectedProcedure
-    .input(contentTypeSchema)
-    .mutation(async ({ input }) => {
-      const contentType = await prisma.contentType.update({
-        where: {
-          id: input.id,
-        },
-        data: input,
-      });
-
-      return contentType;
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      const contentType = await prisma.contentType.delete({
-        where: {
-          id: input.id,
-        },
-        include: {
-          contents: true,
-        },
-      });
-      return contentType;
     }),
 });

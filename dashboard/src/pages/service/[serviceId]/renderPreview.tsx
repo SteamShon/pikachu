@@ -17,10 +17,9 @@ import { search, buildUserInfo } from "../../../utils/search";
 
 function RenderPreview({ serviceId }: { serviceId: string }) {
   const { enqueueSnackbar } = useSnackbar();
-  const { data: placementGroups } = api.placementGroup.list.useQuery({
+  const { data: placements } = api.placement.list.useQuery({
     serviceId: serviceId as string,
   });
-
   const [matchedAds, setMatchedAds] = useState<SearchResult[]>([]);
   const [payload, setPayload] = useState<SearchRequestSchemaType | undefined>(
     undefined
@@ -50,7 +49,7 @@ function RenderPreview({ serviceId }: { serviceId: string }) {
   return (
     <>
       <SearchRequestForm
-        placementGroups={placementGroups}
+        placements={placements}
         setMatchedAds={setMatchedAds}
         onSubmit={(data) => {
           searchMatchedAds(data);

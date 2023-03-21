@@ -144,7 +144,7 @@ model Placement {
     status                  String                    @default("CREATED")
     createdAt               DateTime                  @default(now())
     updatedAt               DateTime                  @updatedAt
-    Cube                    Cube?                     @relation(fields: [cubeId], references: [id])
+    cube                    Cube?                     @relation(fields: [cubeId], references: [id])
     cubeId                  String?
 
     @@unique([serviceId, name])

@@ -1,5 +1,5 @@
 import { LiveEditor, LivePreview, LiveProvider } from "react-live";
-import { jsonParseWithFallback } from "../../utils/json";
+import { extractValue, jsonParseWithFallback } from "../../utils/json";
 import type { SearchResult } from "../../utils/search";
 import { replacePropsInFunction } from "../common/CodeTemplate";
 
@@ -32,7 +32,10 @@ function PlacementData({ placement }: { placement: SearchResult }) {
             <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <LiveProvider
                 code={replacePropsInFunction({
-                  code: contentType?.uiSchema || undefined,
+                  code: extractValue({
+                    object: contentType?.contentTypeInfo?.details,
+                    paths: ["code"],
+                  }) as string | undefined,
                   contents: contents.map((content) => {
                     return jsonParseWithFallback(content.values);
                   }),

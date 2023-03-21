@@ -6,26 +6,6 @@ import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const serviceConfigRouter = createTRPCRouter({
-  // getAll: protectedProcedure
-  //   .input(z.object({ serviceId: z.string().min(1) }))
-  //   .query(async ({ input }) => {
-  //     const cubeConfigs = await prisma.serviceConfig.findMany({
-  //       where: {
-  //         serviceId: input.serviceId,
-  //       },
-  //       include: {
-  //         service: true,
-  //         cubes: {
-  //           include: {
-  //             segments: true,
-  //           },
-  //         },
-  //       },
-  //     });
-
-  //     return cubeConfigs;
-  //   }),
-
   create: protectedProcedure
     .input(serviceConfigSchema)
     .mutation(async ({ input }) => {
@@ -35,13 +15,13 @@ export const serviceConfigRouter = createTRPCRouter({
 
       const service = await prisma.service.update({
         where: {
-          id: serviceId,
+          id: serviceId || undefined,
         },
         data: {
           serviceConfig: {
             connectOrCreate: {
               where: {
-                serviceId,
+                serviceId: serviceId || undefined,
               },
               create: {
                 ...others,
@@ -75,7 +55,7 @@ export const serviceConfigRouter = createTRPCRouter({
 
       const service = await prisma.service.update({
         where: {
-          id: serviceId,
+          id: serviceId || undefined,
         },
         data: {
           serviceConfig: {

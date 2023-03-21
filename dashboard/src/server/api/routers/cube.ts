@@ -6,98 +6,46 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const cubeRouter = createTRPCRouter({
   create: protectedProcedure.input(cubeSchema).mutation(async ({ input }) => {
-    const { serviceConfigId, name } = input;
-    const serviceConfig = await prisma.serviceConfig.update({
-      where: {
-        id: serviceConfigId,
-      },
-      data: {
-        cubes: {
-          connectOrCreate: {
-            where: {
-              serviceConfigId_name: {
-                serviceConfigId,
-                name,
-              },
-            },
-            create: input,
-          },
-        },
-      },
+    const cube = await prisma.cube.create({
+      data: input,
       include: {
-        cubes: {
-          include: {
-            segments: true,
-          },
-        },
+        serviceConfig: true,
+        segments: true,
       },
     });
 
-    return serviceConfig;
+    return cube;
   }),
-  updateCube: protectedProcedure
-    .input(cubeSchema)
-    .mutation(async ({ input }) => {
-      const { serviceConfigId, name } = input;
-      const serviceConfig = await prisma.serviceConfig.update({
-        where: {
-          id: serviceConfigId,
-        },
-        data: {
-          cubes: {
-            update: {
-              where: {
-                serviceConfigId_name: {
-                  serviceConfigId,
-                  name,
-                },
-              },
-              data: input,
-            },
-          },
-        },
-        include: {
-          cubes: {
-            include: {
-              segments: true,
-            },
-          },
-        },
-      });
+  update: protectedProcedure.input(cubeSchema).mutation(async ({ input }) => {
+    const cube = await prisma.cube.update({
+      where: {
+        id: input.id,
+      },
+      data: input,
+      include: {
+        serviceConfig: true,
+        segments: true,
+      },
+    });
 
-      return serviceConfig;
-    }),
+    return cube;
+  }),
   //TODO: Refactor all remove apis use id instead of name.
-  removeCube: protectedProcedure
+  remove: protectedProcedure
     .input(
       z.object({
-        serviceConfigId: z.string().min(1),
         id: z.string().min(1),
       })
     )
     .mutation(async ({ input }) => {
-      const { serviceConfigId, id } = input;
-      const serviceConfig = await prisma.serviceConfig.update({
+      const { id } = input;
+      const cube = await prisma.cube.delete({
         where: {
-          id: serviceConfigId,
-        },
-        data: {
-          cubes: {
-            delete: {
-              id,
-            },
-          },
-        },
-        include: {
-          cubes: {
-            include: {
-              segments: true,
-            },
-          },
+          id: id,
         },
       });
 
-      return serviceConfig;
+      return cube;
     }),
   get: protectedProcedure
     .input(

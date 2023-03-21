@@ -19,9 +19,11 @@ import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypeTree } from "../../../utils/tree";
 function ContentTable({
+  service,
   serviceTree,
   setServiceTree,
 }: {
+  service: Parameters<typeof ContentForm>[0]["service"];
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -203,6 +205,7 @@ function ContentTable({
       </div>
       <ContentModal
         key="contentModal"
+        service={service}
         contentTypes={contentTypes}
         initialData={content}
         modalOpen={modalOpen}

@@ -9,12 +9,14 @@ import type { ContentWithContentTypeSchemaType } from "../schema/content";
 import ContentForm from "./contentForm";
 
 function ContentModal({
+  service,
   contentTypes,
   initialData,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
+  service: Parameters<typeof ContentForm>[0]["service"];
   contentTypes: ReturnType<typeof buildContentTypeTree>[];
   initialData?: Parameters<typeof ContentForm>[0]["initialData"];
   modalOpen: boolean;
@@ -47,8 +49,9 @@ function ContentModal({
   });
 
   const onSubmit = (input: ContentWithContentTypeSchemaType) => {
-    if (initialData) update(input);
-    else create(input);
+    // if (initialData) update(input);
+    // else create(input);
+    console.log(input);
   };
 
   return (
@@ -60,6 +63,7 @@ function ContentModal({
     >
       <DialogContent>
         <ContentForm
+          service={service}
           contentTypes={contentTypes}
           initialData={initialData}
           onSubmit={onSubmit}

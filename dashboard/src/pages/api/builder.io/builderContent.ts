@@ -30,11 +30,18 @@ export async function getContent({
 export async function getContents({
   builderPublicKey,
   modelName,
+  options,
 }: {
   builderPublicKey: string;
   modelName: string;
+  options: { limit: number; userAttributes: { urlPath: string } };
 }) {
   const builder = await getClient(builderPublicKey);
-  const contents = await builder.getAll(modelName);
+  const contents = await builder.getAll(modelName, {
+    limit: options.limit,
+    userAttributes: {
+      urlPath: options.userAttributes.urlPath,
+    },
+  });
   return contents;
 }

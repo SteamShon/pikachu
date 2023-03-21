@@ -91,7 +91,11 @@ function Dashboard() {
       description: `contents`,
       table: () =>
         service ? (
-          <ContentTable setServiceTree={setTree} serviceTree={tree} />
+          <ContentTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
         ) : null,
     },
     {

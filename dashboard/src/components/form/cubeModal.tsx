@@ -2,7 +2,6 @@ import { Dialog, DialogContent } from "@mui/material";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { cubeRouter } from "../../server/api/routers/cube";
-import type { serviceConfigRouter } from "../../server/api/routers/serviceConfig";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
 import { buildCubeTree } from "../../utils/tree";

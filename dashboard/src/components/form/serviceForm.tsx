@@ -26,6 +26,8 @@ function ServiceForm({
 
   useEffect(() => {
     if (initialData) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       reset(initialData);
     }
   }, [initialData, reset]);

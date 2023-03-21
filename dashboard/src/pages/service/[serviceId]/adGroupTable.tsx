@@ -3,6 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
+import type { Prisma } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -18,7 +19,7 @@ function AdGroupTable({
   serviceTree,
   setServiceTree,
 }: {
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  serviceTree: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
@@ -46,18 +47,22 @@ function AdGroupTable({
     },
   });
 
-  const allCubes = serviceTree
-    ? Object.values(serviceTree?.serviceConfig?.cubes || {}).map(
-        ({ segments, ...cube }) => {
-          return {
-            ...cube,
-            serviceConfig: serviceTree?.serviceConfig || null,
-            segments,
-          };
-        }
-      )
-    : [];
-
+  const allCubes = Object.values(serviceTree.serviceConfig?.cubes || {}).map(
+    ({ segments, ...cube }) => {
+      return {
+        ...cube,
+        serviceConfig: {
+          id: serviceTree.serviceConfig?.id || "",
+          serviceId: serviceTree.id,
+          s3Config: serviceTree?.serviceConfig?.s3Config as Prisma.JsonValue,
+          builderConfig: serviceTree?.serviceConfig?.builderConfig || null,
+          createdAt: serviceTree?.serviceConfig?.createdAt as Date,
+          updatedAt: serviceTree?.serviceConfig?.updatedAt as Date,
+        },
+        segments,
+      };
+    }
+  );
   const allCampaigns = Object.values(serviceTree?.placements || {}).flatMap(
     ({ campaigns, ...placement }) => {
       const cube = allCubes.find((cube) => cube.id === placement.cubeId);

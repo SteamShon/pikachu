@@ -49,7 +49,7 @@ function ContentForm({
     BuilderContent<object>[]
   >([]);
   const [builderContent, setBuilderContent] = useState<
-    BuilderContent | undefined
+    BuilderContent<object> | undefined
   >(undefined);
 
   const methods = useForm<ContentWithContentTypeSchemaType>({
@@ -119,6 +119,14 @@ function ContentForm({
       setValue("values", content as unknown as Record<string, unknown>);
     }
     setBuilderContent(content);
+  };
+
+  const builderContentPreview = () => {
+    return (
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      <BuilderComponent model={contentType?.name} content={builderContent} />
+    );
   };
   return (
     <>
@@ -280,8 +288,7 @@ function ContentForm({
         </div>
       </div>
       <div className="mx-auto mt-8 mb-0 space-y-4 ">
-        <BuilderComponent model={contentType?.name} content={builderContent} />
-
+        {builderContentPreview()}
         <LiveProvider
           code={replacePropsInFunction({
             code: extractValue({

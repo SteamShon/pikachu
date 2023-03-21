@@ -150,7 +150,7 @@ function ContentTable({
                 if (confirm("Are you sure?")) {
                   deleteContent({
                     contentTypeId: params.row.contentTypeId,
-                    name: params.row.name,
+                    id: params.row.id,
                   });
                 }
               }}

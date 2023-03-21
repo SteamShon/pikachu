@@ -53,7 +53,7 @@ export const contentTypeRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const { contentTypeId, ...contentInput } = input;
 
-      const contentType = await prisma.contentType.update({
+      return await prisma.contentType.update({
         where: {
           id: contentTypeId,
         },
@@ -86,18 +86,16 @@ export const contentTypeRouter = createTRPCRouter({
           },
         },
       });
-
-      return contentType;
     }),
   removeContent: protectedProcedure
     .input(
       z.object({
         contentTypeId: z.string(),
-        name: z.string(),
+        id: z.string(),
       })
     )
     .mutation(async ({ input }) => {
-      const { contentTypeId, name } = input;
+      const { contentTypeId, id } = input;
 
       const contentType = await prisma.contentType.update({
         where: {
@@ -107,15 +105,13 @@ export const contentTypeRouter = createTRPCRouter({
         data: {
           contents: {
             delete: {
-              contentTypeId_name: {
-                contentTypeId,
-                name,
-              },
+              id,
             },
           },
         },
 
         include: {
+          contentTypeInfo: true,
           contents: {
             include: {
               creatives: true,

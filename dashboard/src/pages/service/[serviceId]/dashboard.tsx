@@ -14,7 +14,7 @@ import CustomsetTable from "./customsetTable";
 
 import PlacementTable from "./placementTable";
 import RenderPreview from "./renderPreview";
-import SegmentTable from "./segmentTable";
+
 import SideMenu from "./sideMenu";
 
 function Dashboard() {
@@ -61,7 +61,7 @@ function Dashboard() {
       label: "AdGroups",
       description: `adGroups`,
       table: () =>
-        service ? (
+        service && tree ? (
           <AdGroupTable setServiceTree={setTree} serviceTree={tree} />
         ) : null,
     },
@@ -121,14 +121,7 @@ function Dashboard() {
           />
         ) : null,
     },
-    {
-      label: "Segments",
-      description: `segments`,
-      table: () =>
-        service ? (
-          <SegmentTable setServiceTree={setTree} serviceTree={tree} />
-        ) : null,
-    },
+
     {
       label: "RenderPreview",
       description: `renderPreview`,

@@ -13,7 +13,7 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type CreativeForm from "../../../components/form/creativeForm";
 import CreativeModal from "../../../components/form/creativeModal";
 import { api } from "../../../utils/api";
-import { jsonParseWithFallback } from "../../../utils/json";
+import { extractValue, jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildAdGroupTree } from "../../../utils/tree";
 function CreativeTable({
@@ -38,12 +38,9 @@ function CreativeTable({
       setServiceTree((prev) => {
         if (!prev) return prev;
         const adGroups =
-          prev.placementGroups[
-            created?.campaign?.placement?.placementGroup?.id || ""
-          ]?.placements[created?.campaign?.placement?.id || ""]?.campaigns[
-            created?.campaign?.id || ""
+          prev?.placements?.[created.campaign.placementId]?.campaigns?.[
+            created.campaignId
           ]?.adGroups;
-
         if (!adGroups) return prev;
         adGroups[created.id] = buildAdGroupTree(created);
         return prev;
@@ -53,31 +50,22 @@ function CreativeTable({
     },
   });
 
-  const allAdGroups = serviceTree
-    ? Object.values(serviceTree.placementGroups).flatMap((placementGroup) => {
-        const { placements, ...placementGroupData } = placementGroup;
-        return Object.values(placements).flatMap((placement) => {
-          const { campaigns, ...placementData } = placement;
-          return Object.values(campaigns).flatMap((campaign) => {
-            const { adGroups, ...campaignData } = campaign;
-            return Object.values(adGroups).map((adGroup) => {
-              const { creatives, ...adGroupData } = adGroup;
-              return {
-                ...adGroupData,
-                campaign: {
-                  ...campaignData,
-                  placement: {
-                    ...placementData,
-                    placementGroup: placementGroupData,
-                  },
-                },
-                creatives,
-              };
-            });
-          });
+  const allAdGroups = Object.values(serviceTree?.placements || []).flatMap(
+    ({ campaigns, ...placement }) => {
+      return Object.values(campaigns).flatMap(({ adGroups, ...campaign }) => {
+        return Object.values(adGroups).map(({ creatives, ...adGroup }) => {
+          return {
+            ...adGroup,
+            campaign: {
+              ...campaign,
+              placement,
+            },
+            creatives,
+          };
         });
-      })
-    : [];
+      });
+    }
+  );
 
   const adGroups =
     selectedIds.length === 0
@@ -103,14 +91,6 @@ function CreativeTable({
 
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", flex: 1 },
-    {
-      field: "placementGroup.name",
-      headerName: "PlacementGroup",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.adGroup.campaign.placement.placementGroup.name;
-      },
-    },
     {
       field: "placement.name",
       headerName: "Placement",
@@ -161,7 +141,10 @@ function CreativeTable({
         return (
           <LiveProvider
             code={replacePropsInFunction({
-              code: content?.contentType?.uiSchema || undefined,
+              code: extractValue({
+                object: content?.contentType?.contentTypeInfo?.details,
+                paths: ["code"],
+              }) as string | undefined,
               contents: [jsonParseWithFallback(content?.values)],
             })}
             noInline={true}

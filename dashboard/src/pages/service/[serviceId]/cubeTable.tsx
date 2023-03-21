@@ -3,9 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Service, ServiceConfig } from "@prisma/client";
 import moment from "moment";
-import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
@@ -25,12 +23,10 @@ function CubeTable({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const { cubeConfigIds } = router.query;
+
   const [cube, setCube] =
     useState<Parameters<typeof CubeForm>[0]["initialData"]>(undefined);
-  const selectedIds = (cubeConfigIds || []) as string[];
 
   const { mutate: deleteCube } = api.cube.remove.useMutation({
     onSuccess(deleted) {

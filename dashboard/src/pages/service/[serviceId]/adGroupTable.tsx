@@ -51,9 +51,7 @@ function AdGroupTable({
         ({ segments, ...cube }) => {
           return {
             ...cube,
-            serviceConfig: {
-              ...(serviceTree?.serviceConfig || {}),
-            },
+            serviceConfig: serviceTree?.serviceConfig || null,
             segments,
           };
         }
@@ -213,6 +211,7 @@ function AdGroupTable({
         modalOpen={modalOpen}
         setModalOpen={setModalOpen}
         campaigns={campaigns}
+        cubes={allCubes}
         initialData={adGroup}
         setServiceTree={setServiceTree}
       />

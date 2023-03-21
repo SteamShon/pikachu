@@ -44,7 +44,10 @@ function ContentForm({
   const [schema, setSchema] = useState<string | undefined>(undefined);
   // eslint-disable-next-line @typescript-eslint/ban-types
   const [defaultValues, setDefaultValues] = useState<{ [x: string]: {} }>({});
-  const [builderContents, setBuilderContens] = useState<BuilderContent[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [builderContents, setBuilderContens] = useState<
+    BuilderContent<object>[]
+  >([]);
   const [builderContent, setBuilderContent] = useState<
     BuilderContent | undefined
   >(undefined);
@@ -102,8 +105,9 @@ function ContentForm({
       getContents({
         builderPublicKey,
         modelName,
-        options: { limit: 10, userAttributes: { urlPath: "/test" } },
-      }).then((contents) => setBuilderContens(contents));
+      }).then((contents) => {
+        setBuilderContens(contents.map((c) => c as BuilderContent<object>));
+      });
     }
   }, [contentType, service?.serviceConfig?.builderConfig]);
 

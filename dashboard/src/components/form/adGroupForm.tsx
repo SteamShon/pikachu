@@ -11,7 +11,6 @@ import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { formatQuery, parseJsonLogic } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
-import type { buildCampaignTree } from "../../utils/tree";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { AdGroupWithCampaignSchemaType } from "../schema/adGroup";
 import { adGroupWithCampaignSchema } from "../schema/adGroup";
@@ -19,20 +18,16 @@ import SegmentQueryBuilder from "./segmentQueryBuilder";
 
 function AdGroupForm({
   campaigns,
+  cubes,
   onSubmit,
   initialData,
 }: {
-  campaigns: (ReturnType<typeof buildCampaignTree> & {
-    placement: Placement & {
-      cube?: Cube & { serviceConfig: ServiceConfig };
-    };
-  })[];
+  campaigns: (Campaign & { placement: Placement })[];
+  cubes: (Cube & { serviceConfig: ServiceConfig })[];
   onSubmit: (input: AdGroupWithCampaignSchemaType) => void;
   initialData?: AdGroup & { campaign: Campaign };
 }) {
-  const [cube, setCube] = useState<
-    (Cube & { serviceConfig: ServiceConfig }) | undefined
-  >(undefined);
+  const [cube, setCube] = useState<typeof cubes[0] | undefined>(undefined);
 
   const methods = useForm<AdGroupWithCampaignSchemaType>({
     resolver: zodResolver(adGroupWithCampaignSchema),
@@ -57,10 +52,10 @@ function AdGroupForm({
       const campaign = campaigns.find(
         (campaign) => campaign.id === initialData?.campaignId
       );
-
-      setCube(campaign?.placement?.cube);
+      const cube = cubes.find((c) => c.id === campaign?.placement.cubeId);
+      setCube(cube);
     }
-  }, [reset, initialData, campaigns]);
+  }, [reset, initialData, campaigns, cubes]);
 
   return (
     <FormProvider {...methods}>
@@ -84,7 +79,10 @@ function AdGroupForm({
                       const campaign = campaigns.find(
                         (campaign) => campaign.id === e.target.value
                       );
-                      setCube(campaign?.placement?.cube);
+                      const cube = cubes.find(
+                        (c) => c.id === campaign?.placement?.cubeId
+                      );
+                      setCube(cube);
                     }}
                   >
                     <option value="">Please choose</option>

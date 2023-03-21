@@ -17,8 +17,8 @@ function CreativeModal({
   setModalOpen,
   setServiceTree,
 }: {
-  adGroups: ReturnType<typeof buildAdGroupTree>[];
-  contents: (Content & { contentType: ContentType })[];
+  adGroups: Parameters<typeof CreativeForm>[0]["adGroups"];
+  contents: Parameters<typeof CreativeForm>[0]["contents"];
   initialData?: Parameters<typeof CreativeForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -32,10 +32,8 @@ function CreativeModal({
     setServiceTree((prev) => {
       if (!prev) return prev;
       const adGroups =
-        prev.placementGroups[
-          created?.campaign?.placement?.placementGroup?.id || ""
-        ]?.placements[created?.campaign?.placement?.id || ""]?.campaigns[
-          created?.campaign?.id || ""
+        prev?.placements?.[created.campaign.placementId]?.campaigns?.[
+          created.campaignId
         ]?.adGroups;
       if (!adGroups) return prev;
       adGroups[created.id] = buildAdGroupTree(created);

@@ -9,15 +9,14 @@ import type {
   Campaign,
   Content,
   ContentType,
+  ContentTypeInfo,
   Creative,
   Placement,
-  PlacementGroup,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { LivePreview, LiveProvider } from "react-live";
-import { jsonParseWithFallback } from "../../utils/json";
-import type { buildAdGroupTree } from "../../utils/tree";
+import { extractValue, jsonParseWithFallback } from "../../utils/json";
 import { replacePropsInFunction } from "../common/CodeTemplate";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { CreativeWithAdGroupIdAndContentIdType } from "../schema/creative";
@@ -29,22 +28,26 @@ function CreativeForm({
   onSubmit,
   initialData,
 }: {
-  adGroups: ReturnType<typeof buildAdGroupTree>[];
-  contents: (Content & { contentType: ContentType })[];
+  adGroups: (AdGroup & { campaign: Campaign & { placement: Placement } })[];
+  contents: (Content & {
+    contentType: ContentType & { contentTypeInfo: ContentTypeInfo | null };
+  })[];
   onSubmit: (input: CreativeWithAdGroupIdAndContentIdType) => void;
   initialData?: Creative & {
     adGroup: AdGroup & {
       campaign: Campaign & {
-        placement: Placement & {
-          placementGroup: PlacementGroup;
-        };
+        placement: Placement;
       };
     };
   };
 }) {
-  const [content, setContent] = useState<
-    (Content & { contentType: ContentType }) | undefined
-  >(undefined);
+  const [adGroup, setAdGroup] = useState<typeof adGroups[0] | undefined>(
+    undefined
+  );
+  const [content, setContent] = useState<typeof contents[0] | undefined>(
+    undefined
+  );
+  const [validContents, setValidContents] = useState<typeof contents>([]);
 
   const methods = useForm<CreativeWithAdGroupIdAndContentIdType>({
     resolver: zodResolver(creativeWithAdGroupIdAndContentId),
@@ -57,6 +60,7 @@ function CreativeForm({
   } = methods;
 
   useEffect(() => {
+    setAdGroup(initialData?.adGroup);
     setContent(
       contents.find((content) => content.id === initialData?.contentId)
     );
@@ -65,6 +69,13 @@ function CreativeForm({
       adGroupId: initialData?.adGroup.id,
     });
   }, [reset, initialData, contents]);
+
+  useEffect(() => {
+    const valid = contents.filter(
+      (c) => c.contentTypeId === adGroup?.campaign?.placement?.contentTypeId
+    );
+    setValidContents(valid);
+  }, [adGroup, contents]);
 
   return (
     <FormProvider {...methods}>
@@ -84,6 +95,12 @@ function CreativeForm({
                     {...register("adGroupId")}
                     defaultValue={initialData?.adGroupId}
                     disabled={initialData ? true : false}
+                    onChange={(e) => {
+                      const adGroup = adGroups.find(
+                        (ag) => ag.id === e.target.value
+                      );
+                      setAdGroup(adGroup);
+                    }}
                   >
                     <option value="">Please choose</option>
                     {adGroups.map((adGroup) => {
@@ -148,7 +165,7 @@ function CreativeForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("contentId")}
-                    defaultValue={initialData?.contentId}
+                    value={content?.id}
                     onChange={(e) =>
                       setContent(
                         contents.find(
@@ -158,7 +175,7 @@ function CreativeForm({
                     }
                   >
                     <option value="">Please choose</option>
-                    {contents.map((content) => {
+                    {validContents.map((content) => {
                       return (
                         <option key={content.id} value={content.id}>
                           {content.name}
@@ -177,7 +194,11 @@ function CreativeForm({
                   {content ? (
                     <JsonForms
                       schema={jsonParseWithFallback(
-                        content?.contentType?.schema
+                        extractValue({
+                          object:
+                            content?.contentType?.contentTypeInfo?.details,
+                          paths: ["schema"],
+                        }) as string | undefined
                       )}
                       //uischema={uiSchema}
                       data={jsonParseWithFallback(content?.values)}
@@ -193,7 +214,10 @@ function CreativeForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <LiveProvider
                     code={replacePropsInFunction({
-                      code: content?.contentType?.uiSchema || undefined,
+                      code: extractValue({
+                        object: content?.contentType?.contentTypeInfo?.details,
+                        paths: ["code"],
+                      }) as string | undefined,
                       contents: [jsonParseWithFallback(content?.values)],
                     })}
                     noInline={true}

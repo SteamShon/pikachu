@@ -23,6 +23,8 @@ async function loadDuckDBInner(
   const bestBundle = await duckdb.selectBundle(allBundles);
 
   console.log(bestBundle);
+  console.log(serviceConfig);
+
   if (!bestBundle.mainWorker) {
     console.error("can't initialize workder");
     return Promise.resolve(undefined);
@@ -35,15 +37,15 @@ async function loadDuckDBInner(
   await db.instantiate(bestBundle.mainModule, bestBundle.pthreadWorker);
 
   const s3Region = extractValue({
-    object: serviceConfig.s3Config,
+    object: serviceConfig?.s3Config,
     paths: ["s3Region"],
   }) as string | undefined;
   const s3AccessKeyId = extractValue({
-    object: serviceConfig.s3Config,
+    object: serviceConfig?.s3Config,
     paths: ["s3AccessKeyId"],
   }) as string | undefined;
   const s3SecretAccessKey = extractValue({
-    object: serviceConfig.s3Config,
+    object: serviceConfig?.s3Config,
     paths: ["s3SecretAccessKey"],
   }) as string | undefined;
   // set s3 config.

@@ -73,6 +73,7 @@ function SegmentQueryBuilder({
         enqueueSnackbar("cube sql is empty.", { variant: "error" });
         return;
       }
+
       const sql = `DESCRIBE ${inputSql}`;
       const rows = await executeQuery(cube.serviceConfig, sql);
       enqueueSnackbar("finished loading metadata", { variant: "success" });
@@ -87,7 +88,7 @@ function SegmentQueryBuilder({
     () =>
       debounce((q?: RuleGroupType) => {
         (async () => {
-          if (!q) return;
+          if (!q || !cube?.serviceConfig) return;
           const sql = formatQuery(q, "sql");
           const count = await countPopulation({
             serviceConfig: cube.serviceConfig,

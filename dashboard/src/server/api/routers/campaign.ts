@@ -16,11 +16,7 @@ export const campaignRouter = createTRPCRouter({
         },
         data: input,
         include: {
-          placement: {
-            include: {
-              placementGroup: true,
-            },
-          },
+          placement: true,
           adGroups: {
             include: {
               creatives: {
@@ -61,11 +57,7 @@ export const campaignRouter = createTRPCRouter({
           placement: {
             include: {
               contentType: true,
-              placementGroup: {
-                include: {
-                  service: true,
-                },
-              },
+              service: true,
             },
           },
           adGroups: {
@@ -113,11 +105,7 @@ export const campaignRouter = createTRPCRouter({
           placement: {
             include: {
               contentType: true,
-              placementGroup: {
-                include: {
-                  service: true,
-                },
-              },
+              service: true,
             },
           },
           adGroups: {
@@ -160,11 +148,7 @@ export const campaignRouter = createTRPCRouter({
           placement: {
             include: {
               contentType: true,
-              placementGroup: {
-                include: {
-                  service: true,
-                },
-              },
+              service: true,
             },
           },
           adGroups: {

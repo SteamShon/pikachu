@@ -249,7 +249,7 @@ export const serviceRouter = createTRPCRouter({
   updatePlacement: protectedProcedure
     .input(placementSchema)
     .mutation(async ({ input }) => {
-      const { serviceId, id } = input;
+      const { serviceId, ...placement } = input;
       const service = await prisma.service.update({
         where: {
           id: serviceId,
@@ -258,9 +258,9 @@ export const serviceRouter = createTRPCRouter({
           placements: {
             update: {
               where: {
-                id,
+                id: placement.id,
               },
-              data: input,
+              data: placement,
             },
           },
         },

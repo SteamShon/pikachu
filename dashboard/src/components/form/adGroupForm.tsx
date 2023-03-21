@@ -4,13 +4,11 @@ import type {
   AdGroup,
   Campaign,
   Cube,
-  CubeConfig,
   Placement,
-  PlacementGroup,
+  ServiceConfig,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
-import type { RuleGroupType } from "react-querybuilder";
 import { formatQuery, parseJsonLogic } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
 import type { buildCampaignTree } from "../../utils/tree";
@@ -26,16 +24,14 @@ function AdGroupForm({
 }: {
   campaigns: (ReturnType<typeof buildCampaignTree> & {
     placement: Placement & {
-      placementGroup: PlacementGroup & {
-        cube?: Cube & { cubeConfig: CubeConfig };
-      };
+      cube?: Cube & { serviceConfig: ServiceConfig };
     };
   })[];
   onSubmit: (input: AdGroupWithCampaignSchemaType) => void;
   initialData?: AdGroup & { campaign: Campaign };
 }) {
   const [cube, setCube] = useState<
-    (Cube & { cubeConfig: CubeConfig }) | undefined
+    (Cube & { serviceConfig: ServiceConfig }) | undefined
   >(undefined);
 
   const methods = useForm<AdGroupWithCampaignSchemaType>({
@@ -62,7 +58,7 @@ function AdGroupForm({
         (campaign) => campaign.id === initialData?.campaignId
       );
 
-      setCube(campaign?.placement.placementGroup.cube);
+      setCube(campaign?.placement?.cube);
     }
   }, [reset, initialData, campaigns]);
 
@@ -85,11 +81,10 @@ function AdGroupForm({
                     defaultValue={initialData?.campaignId}
                     disabled={initialData ? true : false}
                     onChange={(e) => {
-                      setCube(
-                        campaigns.find(
-                          (campaign) => campaign.id === e.target.value
-                        )?.placement.placementGroup.cube
+                      const campaign = campaigns.find(
+                        (campaign) => campaign.id === e.target.value
                       );
+                      setCube(campaign?.placement?.cube);
                     }}
                   >
                     <option value="">Please choose</option>

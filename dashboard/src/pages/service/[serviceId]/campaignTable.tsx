@@ -35,8 +35,7 @@ function CampaignTable({
     onSuccess(created) {
       setServiceTree((prev) => {
         if (!prev) return prev;
-        const placements =
-          prev.placementGroups[created?.placementGroup?.id || ""]?.placements;
+        const placements = prev?.placements;
         if (!placements) return prev;
         placements[created.id] = buildPlacementTree(created);
 
@@ -48,18 +47,14 @@ function CampaignTable({
   });
 
   const allPlacements = serviceTree
-    ? Object.values(serviceTree.placementGroups).flatMap((placementGroup) => {
-        const { placements, ...placementGroupData } = placementGroup;
-        return Object.values(placements).map((placement) => {
-          const { campaigns, ...placementData } = placement;
-
+    ? Object.values(serviceTree.placements).flatMap(
+        ({ campaigns, ...placement }) => {
           return {
-            ...placementData,
-            placementGroup: placementGroupData,
+            ...placement,
             campaigns,
           };
-        });
-      })
+        }
+      )
     : [];
 
   const placements =

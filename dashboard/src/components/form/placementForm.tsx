@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ContentType, Placement, Service } from "@prisma/client";
+import type { ContentType, Cube, Placement, Service } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import CustomLoadingButton from "../common/CustomLoadingButton";
@@ -9,11 +9,13 @@ import { placementSchema } from "../schema/placement";
 function PlacementForm({
   service,
   contentTypes,
+  cubes,
   initialData,
   onSubmit,
 }: {
   service: Service;
   contentTypes: ContentType[];
+  cubes: Cube[];
   initialData?: Placement;
   onSubmit: (input: PlacementSchemaType) => void;
 }) {
@@ -111,6 +113,27 @@ function PlacementForm({
                       return (
                         <option key={contentType.id} value={contentType.id}>
                           {contentType.name}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {errors.contentTypeId && (
+                    <p role="alert">{errors.contentTypeId?.message}</p>
+                  )}
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Cube</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <select
+                    {...register("cubeId")}
+                    defaultValue={initialData?.cubeId || undefined}
+                  >
+                    <option value="">Please choose</option>
+                    {cubes.map((cube) => {
+                      return (
+                        <option key={cube.id} value={cube.id}>
+                          {cube.name}
                         </option>
                       );
                     })}

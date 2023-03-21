@@ -58,6 +58,8 @@ function PlacementTable({
     ? Object.values(serviceTree?.contentTypes)
     : [];
 
+  const cubes = Object.values(serviceTree?.serviceConfig?.cubes || {});
+
   const rows = placements;
 
   const columns: GridColDef[] = [
@@ -173,6 +175,7 @@ function PlacementTable({
         setModalOpen={setModalOpen}
         service={service}
         contentTypes={contentTypes}
+        cubes={cubes}
         initialData={placement}
         setServiceTree={setServiceTree}
       />

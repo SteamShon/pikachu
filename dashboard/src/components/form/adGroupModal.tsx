@@ -29,9 +29,7 @@ function AdGroupModal({
     setServiceTree((prev) => {
       if (!prev) return prev;
 
-      const campaigns =
-        prev.placementGroups[created?.placement?.placementGroup?.id || ""]
-          ?.placements[created?.placement?.id || ""]?.campaigns;
+      const campaigns = prev?.placements?.[created.placementId]?.campaigns;
       if (!campaigns) return prev;
 
       campaigns[created.id] = buildCampaignTree(created);

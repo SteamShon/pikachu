@@ -36,9 +36,7 @@ function AdGroupTable({
       setServiceTree((prev) => {
         if (!prev) return prev;
 
-        const campaigns =
-          prev.placementGroups[created?.placement?.placementGroup?.id || ""]
-            ?.placements[created?.placement?.id || ""]?.campaigns;
+        const campaigns = prev?.placements?.[created.placementId]?.campaigns;
         if (!campaigns) return prev;
 
         campaigns[created.id] = buildCampaignTree(created);
@@ -49,43 +47,35 @@ function AdGroupTable({
   });
 
   const allCubes = serviceTree
-    ? Object.values(serviceTree.cubeConfigs).flatMap(
-        ({ cubes, ...cubeConfig }) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          return Object.values(cubes).map(({ segments, ...cube }) => {
-            return { ...cube, cubeConfig };
-          });
+    ? Object.values(serviceTree?.serviceConfig?.cubes || {}).map(
+        ({ segments, ...cube }) => {
+          return {
+            ...cube,
+            serviceConfig: {
+              ...(serviceTree?.serviceConfig || {}),
+            },
+            segments,
+          };
         }
       )
     : [];
 
-  const allCampaigns = serviceTree
-    ? Object.values(serviceTree.placementGroups).flatMap(
-        ({ placements, ...placementGroup }) => {
-          return Object.values(placements).flatMap(
-            ({ campaigns, ...placement }) => {
-              return Object.values(campaigns).map(
-                ({ adGroups, ...campaign }) => {
-                  return {
-                    ...campaign,
-                    adGroups,
-                    placement: {
-                      ...placement,
-                      placementGroup: {
-                        ...placementGroup,
-                        cube: allCubes.find(
-                          (cube) => cube.id === placementGroup.cubeId
-                        ),
-                      },
-                    },
-                  };
-                }
-              );
-            }
-          );
-        }
-      )
-    : [];
+  const allCampaigns = Object.values(serviceTree?.placements || {}).flatMap(
+    ({ campaigns, ...placement }) => {
+      const cube = allCubes.find((cube) => cube.id === placement.cubeId);
+
+      return Object.values(campaigns).map(({ adGroups, ...campaign }) => {
+        return {
+          ...campaign,
+          adGroups,
+          placement: {
+            ...placement,
+            cube,
+          },
+        };
+      });
+    }
+  );
 
   const campaigns =
     selectedIds.length === 0
@@ -102,14 +92,6 @@ function AdGroupTable({
 
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", flex: 1 },
-    {
-      field: "placementGroup.name",
-      headerName: "PlacementGroup",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.campaign.placement.placementGroup.name;
-      },
-    },
     {
       field: "placement.name",
       headerName: "Placement",

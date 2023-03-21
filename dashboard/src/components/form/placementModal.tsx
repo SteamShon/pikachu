@@ -11,13 +11,15 @@ import PlacementForm from "./placementForm";
 function PlacementModal({
   service,
   contentTypes,
+  cubes,
   initialData,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
-  service: Service;
-  contentTypes: ContentType[];
+  service: Parameters<typeof PlacementForm>[0]["service"];
+  contentTypes: Parameters<typeof PlacementForm>[0]["contentTypes"];
+  cubes: Parameters<typeof PlacementForm>[0]["cubes"];
   initialData?: Parameters<typeof PlacementForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -63,6 +65,7 @@ function PlacementModal({
         <PlacementForm
           service={service}
           contentTypes={contentTypes}
+          cubes={cubes}
           initialData={initialData}
           onSubmit={onSubmit}
         />

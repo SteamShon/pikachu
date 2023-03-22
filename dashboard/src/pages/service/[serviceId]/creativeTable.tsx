@@ -23,9 +23,7 @@ function CreativeTable({
   serviceTree,
   setServiceTree,
 }: {
-  service: Service & {
-    serviceConfig?: ServiceConfig;
-  };
+  service: Service & { serviceConfig?: ServiceConfig | null };
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>

@@ -31,7 +31,7 @@ function CreativeForm({
   onSubmit,
   initialData,
 }: {
-  service: Service & { serviceConfig?: ServiceConfig };
+  service: Service & { serviceConfig?: ServiceConfig | null };
   adGroups: (AdGroup & { campaign: Campaign & { placement: Placement } })[];
   contents: (Content & {
     contentType: ContentType & { contentTypeInfo: ContentTypeInfo | null };

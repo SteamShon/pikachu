@@ -70,7 +70,11 @@ function Dashboard() {
       description: `creatives`,
       table: () =>
         service ? (
-          <CreativeTable setServiceTree={setTree} serviceTree={tree} />
+          <CreativeTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
         ) : null,
     },
     {

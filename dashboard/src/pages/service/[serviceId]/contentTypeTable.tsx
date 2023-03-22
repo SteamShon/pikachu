@@ -111,7 +111,7 @@ function ContentTypeTable({
       headerName: "Schema",
       flex: 1,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        return (
+        return params.row.source === "builder.io" ? null : (
           <JsonForms
             schema={jsonParseWithFallback(
               extractSchema(params.row.contentTypeInfo)

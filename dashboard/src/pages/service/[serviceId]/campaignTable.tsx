@@ -74,14 +74,6 @@ function CampaignTable({
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", flex: 1 },
     {
-      field: "placementGroup.name",
-      headerName: "PlacementGroup",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.placement.placementGroup.name;
-      },
-    },
-    {
       field: "placement.name",
       headerName: "Placement",
       flex: 1,

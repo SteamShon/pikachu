@@ -98,8 +98,6 @@ function ContentForm({
         }).then((content) => {
           const newLastUpdated = content?.lastUpdated;
           if (lastUpdated && lastUpdated < newLastUpdated) {
-            console.log(lastUpdated);
-            console.log(newLastUpdated);
             setNeedUpdate(true);
           }
           setBuilderContent(content);
@@ -287,32 +285,36 @@ function ContentForm({
                     )}
                   </dd>
                 </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Values</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                    <Controller
-                      name="values"
-                      control={control}
-                      rules={{ required: true }}
-                      render={({ field }) => (
-                        <JsonForms
-                          schema={jsonParseWithFallback(schema)}
-                          //uischema={uiSchema}
-                          data={defaultValues}
-                          renderers={materialRenderers}
-                          cells={materialCells}
-                          onChange={({ data }) => {
-                            if (Object.keys(data).length === 0) return;
+                {contentType?.source === "local" ? (
+                  <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                    <dt className="text-sm font-medium text-gray-500">
+                      Values
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      <Controller
+                        name="values"
+                        control={control}
+                        rules={{ required: true }}
+                        render={({ field }) => (
+                          <JsonForms
+                            schema={jsonParseWithFallback(schema)}
+                            //uischema={uiSchema}
+                            data={defaultValues}
+                            renderers={materialRenderers}
+                            cells={materialCells}
+                            onChange={({ data }) => {
+                              if (Object.keys(data).length === 0) return;
 
-                            field.onChange(data);
-                            //setValue("values", data);
-                            setDefaultValues(data);
-                          }}
-                        />
-                      )}
-                    />
-                  </dd>
-                </div>
+                              field.onChange(data);
+                              //setValue("values", data);
+                              setDefaultValues(data);
+                            }}
+                          />
+                        )}
+                      />
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
             </div>
           </div>

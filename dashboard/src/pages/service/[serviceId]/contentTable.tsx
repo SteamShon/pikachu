@@ -9,12 +9,12 @@ import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import ContentPreview from "../../../components/builder/contentPreview";
+import ContentSync from "../../../components/builder/contentSync";
 
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type ContentForm from "../../../components/form/contentForm";
 import ContentModal from "../../../components/form/contentModal";
 import { api } from "../../../utils/api";
-import { extractCode } from "../../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypeTree } from "../../../utils/tree";
@@ -105,7 +105,21 @@ function ContentTable({
     {
       field: "status",
       headerName: "Status",
-      flex: 1,
+      flex: 0.1,
+    },
+    {
+      field: "update",
+      headerName: "Update",
+      flex: 0.1,
+      renderCell: (params: GridRenderCellParams<Date>) => {
+        return (
+          <ContentSync
+            serviceConfig={service?.serviceConfig || undefined}
+            contentType={params.row?.contentType}
+            contents={[jsonParseWithFallback(params.row.values)]}
+          />
+        );
+      },
     },
     {
       field: "preview",

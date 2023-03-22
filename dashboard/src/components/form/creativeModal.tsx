@@ -10,6 +10,7 @@ import type { CreativeWithAdGroupIdAndContentIdType } from "../schema/creative";
 import CreativeForm from "./creativeForm";
 
 function CreativeModal({
+  service,
   adGroups,
   contents,
   initialData,
@@ -17,6 +18,7 @@ function CreativeModal({
   setModalOpen,
   setServiceTree,
 }: {
+  service: Parameters<typeof CreativeForm>[0]["service"];
   adGroups: Parameters<typeof CreativeForm>[0]["adGroups"];
   contents: Parameters<typeof CreativeForm>[0]["contents"];
   initialData?: Parameters<typeof CreativeForm>[0]["initialData"];
@@ -67,6 +69,7 @@ function CreativeModal({
     >
       <DialogContent>
         <CreativeForm
+          service={service}
           adGroups={adGroups}
           contents={contents}
           initialData={initialData}

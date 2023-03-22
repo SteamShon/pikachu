@@ -3,6 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
+import type { Service, ServiceConfig } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -18,9 +19,13 @@ import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildAdGroupTree } from "../../../utils/tree";
 function CreativeTable({
+  service,
   serviceTree,
   setServiceTree,
 }: {
+  service: Service & {
+    serviceConfig?: ServiceConfig;
+  };
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -237,6 +242,7 @@ function CreativeTable({
         key="campaignModal"
         modalOpen={modalOpen}
         setModalOpen={setModalOpen}
+        service={service}
         adGroups={adGroups}
         contents={contents}
         initialData={creative}

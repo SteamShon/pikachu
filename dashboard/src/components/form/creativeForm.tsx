@@ -12,10 +12,12 @@ import type {
   ContentTypeInfo,
   Creative,
   Placement,
+  Service,
+  ServiceConfig,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { extractCode, extractSchema } from "../../utils/contentTypeInfo";
+import { extractSchema } from "../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../utils/json";
 import ContentPreview from "../builder/contentPreview";
 import CustomLoadingButton from "../common/CustomLoadingButton";
@@ -23,11 +25,13 @@ import type { CreativeWithAdGroupIdAndContentIdType } from "../schema/creative";
 import { creativeWithAdGroupIdAndContentId } from "../schema/creative";
 
 function CreativeForm({
+  service,
   adGroups,
   contents,
   onSubmit,
   initialData,
 }: {
+  service: Service & { serviceConfig?: ServiceConfig };
   adGroups: (AdGroup & { campaign: Campaign & { placement: Placement } })[];
   contents: (Content & {
     contentType: ContentType & { contentTypeInfo: ContentTypeInfo | null };

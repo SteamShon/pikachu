@@ -179,7 +179,7 @@ model ContentTypeInfo {
     contentType   ContentType @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
     contentTypeId String      @unique
     // source        String      @default("local")
-    details       Json?
+    details       Json        @default("{}")
     // schema        String?
     // uiSchema      String?
     // defaultValues String?
@@ -312,8 +312,8 @@ model ServiceConfig {
     serviceId     String   @unique
     // name          String
     // description   String?
-    s3Config      Json
-    builderConfig Json?
+    s3Config      Json     @default("{}")
+    builderConfig Json     @default("{}")
     // s3Region          String
     // s3AccessKeyId     String
     // s3SecretAccessKey String

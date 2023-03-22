@@ -100,7 +100,7 @@ CREATE TABLE "ContentType" (
 CREATE TABLE "ContentTypeInfo" (
     "id" TEXT NOT NULL,
     "contentTypeId" TEXT NOT NULL,
-    "details" JSONB,
+    "details" JSONB NOT NULL DEFAULT '{}',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -206,8 +206,8 @@ CREATE TABLE "CustomsetInfo" (
 CREATE TABLE "ServiceConfig" (
     "id" TEXT NOT NULL,
     "serviceId" TEXT NOT NULL,
-    "s3Config" JSONB NOT NULL,
-    "builderConfig" JSONB,
+    "s3Config" JSONB NOT NULL DEFAULT '{}',
+    "builderConfig" JSONB NOT NULL DEFAULT '{}',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

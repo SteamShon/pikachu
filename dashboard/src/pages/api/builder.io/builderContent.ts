@@ -38,7 +38,7 @@ export async function getContent({
     })
     .promise();
   console.log("getContent", builderPublicKey, modelName, contentId, content);
-  return content;
+  return content as BuilderContent<object>;
 }
 
 export async function getContents({

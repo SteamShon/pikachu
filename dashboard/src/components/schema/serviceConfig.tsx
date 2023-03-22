@@ -6,20 +6,16 @@ export const serviceConfigSchema = z
     // name: z.string().min(1),
     // description: z.string().optional().nullable().default(null),
     serviceId: z.string().optional().nullable(),
-    s3Config: z
-      .object({
-        s3Region: z.string().optional().default("ap-northeast-2"),
-        s3AccessKeyId: z.string().min(1),
-        s3SecretAccessKey: z.string().min(1),
-        s3Buckets: z.string().min(1),
-      })
-      .optional(),
-    builderConfig: z
-      .object({
-        publicKey: z.string().min(1),
-        privateKey: z.string().min(1),
-      })
-      .optional(),
+    s3Config: z.object({
+      s3Region: z.string().optional().default("ap-northeast-2"),
+      s3AccessKeyId: z.string().min(1),
+      s3SecretAccessKey: z.string().min(1),
+      s3Buckets: z.string().min(1),
+    }),
+    builderConfig: z.object({
+      publicKey: z.string().min(1),
+      privateKey: z.string().min(1),
+    }),
     // status: z.string().min(1),
   })
   .transform((o) => {

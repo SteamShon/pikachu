@@ -18,7 +18,10 @@ import {
   getContent,
   getContents,
 } from "../../pages/api/builder.io/builderContent";
-import { extractSchema } from "../../utils/contentTypeInfo";
+import {
+  extractDefaultValues,
+  extractSchema,
+} from "../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../utils/json";
 import ContentPreview from "../builder/contentPreview";
 import CustomLoadingButton from "../common/CustomLoadingButton";
@@ -69,63 +72,91 @@ function ContentForm({
 
   useEffect(() => {
     if (initialData) {
-      const contentType = contentTypes.find(
-        (ct) => ct.id === initialData.contentType?.id
-      );
-      setContentType(contentType);
-      setSchema(extractSchema(contentType?.contentTypeInfo));
+      const update = async () => {
+        console.log("initial!!!");
+        const initialContentType = contentTypes.find(
+          (ct) => ct.id === initialData.contentType?.id
+        );
+        if (initialContentType) {
+          handleContentTypeSelect(initialContentType?.id);
+        }
 
-      // eslint-disable-next-line @typescript-eslint/ban-types
-      const parsedValues = jsonParseWithFallback(initialData.values) as {
         // eslint-disable-next-line @typescript-eslint/ban-types
-        [x: string]: {};
-      };
-      setDefaultValues(parsedValues);
-      if (
-        contentType &&
-        contentType?.source === "builder.io" &&
-        initialData.values
-      ) {
-        const contentId = parsedValues?.id as string | undefined;
-        const lastUpdated = parsedValues?.lastUpdated as number | undefined;
+        const parsedValues = jsonParseWithFallback(initialData.values) as {
+          // eslint-disable-next-line @typescript-eslint/ban-types
+          [x: string]: {};
+        };
 
-        getContent({
-          serviceConfig: service?.serviceConfig,
-          contentType,
-          contentId,
-        }).then((content) => {
-          const newLastUpdated = content?.lastUpdated;
-          if (lastUpdated && lastUpdated < newLastUpdated) {
-            setNeedUpdate(true);
-          }
-          setBuilderContent(content);
-          setValue("name", content.name);
-          setValue("values", content as unknown as Record<string, unknown>);
+        setDefaultValues(parsedValues);
+        if (initialContentType && initialContentType?.source === "builder.io") {
+          const contentId = parsedValues?.id as string | undefined;
+          const lastUpdated = parsedValues?.lastUpdated as number | undefined;
+
+          getContent({
+            serviceConfig: service?.serviceConfig,
+            contentType: initialContentType,
+            contentId,
+          }).then((content) => {
+            if (content === undefined) return;
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            //@ts-ignore
+            const newLastUpdated = content?.lastUpdated;
+            if (lastUpdated && lastUpdated < newLastUpdated) {
+              setNeedUpdate(true);
+            }
+            setBuilderContent(content);
+            setValue("name", content.name);
+            setValue("values", content as unknown as Record<string, unknown>);
+          });
+        }
+
+        reset({
+          ...initialData,
+          contentTypeId: initialData?.contentType.id,
+          values: parsedValues,
         });
-      }
-
-      reset({
-        ...initialData,
-        contentTypeId: initialData?.contentType.id,
-        values: parsedValues,
-      });
+      };
+      update();
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData]);
 
-  useEffect(() => {
-    getContents({ serviceConfig: service?.serviceConfig, contentType }).then(
-      (contents) => setBuilderContens(contents || [])
+  const handleContentTypeSelect = async (contentTypeId: string) => {
+    console.log("contentType changed!!!");
+    const contentType = contentTypes.find(
+      (contentType) => contentType.id === contentTypeId
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    contentType?.contentTypeInfo,
-    contentType?.source,
-    service?.serviceConfig,
-  ]);
+    setContentType(contentType);
 
-  const handleBuilderContentSelect = async (contentId: string) => {
+    if (contentType?.source === "builder.io") {
+      const contents = await getContents({
+        serviceConfig: service?.serviceConfig,
+        contentType,
+      });
+      setBuilderContens(contents || []);
+    }
+  };
+  const handleBuilderContentSelect = async (
+    newContenType: typeof contentType,
+    contentId: string
+  ) => {
+    console.log("content changed!!!");
+    setSchema(extractSchema(newContenType?.contentTypeInfo));
+
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    const parsedValues = jsonParseWithFallback(
+      extractDefaultValues(newContenType?.contentTypeInfo)
+    ) as {
+      // eslint-disable-next-line @typescript-eslint/ban-types
+      [x: string]: {};
+    };
+    setDefaultValues(parsedValues);
+
+    const lastUpdated = parsedValues?.lastUpdated as number | undefined;
+    if (!newContenType || newContenType?.source !== "builder.io" || !contentId)
+      return;
+
     const updatedContent = await getContent({
       serviceConfig: service?.serviceConfig,
       contentType,
@@ -136,6 +167,11 @@ function ContentForm({
     if (updatedContent) {
       setValue("name", updatedContent.name);
       setValue("values", updatedContent as unknown as Record<string, unknown>);
+      setNeedUpdate(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        (lastUpdated || updatedContent.lastUpdated) < updatedContent.lastUpdated
+      );
     }
     setBuilderContent(updatedContent);
   };
@@ -184,13 +220,7 @@ function ContentForm({
                       {...register("contentTypeId")}
                       defaultValue={initialData?.contentTypeId || undefined}
                       disabled={initialData ? true : false}
-                      onChange={(e) => {
-                        setContentType(
-                          contentTypes.find(
-                            (contentType) => contentType.id === e.target.value
-                          )
-                        );
-                      }}
+                      onChange={(e) => handleContentTypeSelect(e.target.value)}
                     >
                       <option value="">Please choose</option>
                       {contentTypes.map((contentType) => {
@@ -215,7 +245,10 @@ function ContentForm({
                       <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                         <select
                           onChange={(e) =>
-                            handleBuilderContentSelect(e.target.value)
+                            handleBuilderContentSelect(
+                              contentType,
+                              e.target.value
+                            )
                           }
                           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                           // @ts-ignore

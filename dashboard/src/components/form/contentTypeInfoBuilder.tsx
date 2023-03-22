@@ -14,7 +14,7 @@ import {
   replacePropsInFunction,
 } from "../common/CodeTemplate";
 
-function ContentTypeSchemaBuilder({
+function ContentTypeInfoBuilder({
   contentType,
 }: {
   contentType?: ContentType & {
@@ -199,4 +199,4 @@ function ContentTypeSchemaBuilder({
   );
 }
 
-export default ContentTypeSchemaBuilder;
+export default ContentTypeInfoBuilder;

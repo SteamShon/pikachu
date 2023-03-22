@@ -47,7 +47,7 @@ function AdGroupTable({
     },
   });
 
-  const allCubes = Object.values(serviceTree.serviceConfig?.cubes || {}).map(
+  const allCubes = Object.values(serviceTree?.serviceConfig?.cubes || {}).map(
     ({ segments, ...cube }) => {
       return {
         ...cube,

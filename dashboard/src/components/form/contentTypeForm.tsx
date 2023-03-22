@@ -47,6 +47,7 @@ function ContentTypeForm({
   } = methods;
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { serviceId, contentTypeInfo, source, ...others } = initialData || {};
 
     reset({

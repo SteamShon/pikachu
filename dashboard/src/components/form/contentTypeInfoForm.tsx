@@ -8,7 +8,7 @@ import type {
 import { useFormContext } from "react-hook-form";
 import type { ContentTypeSchemaType } from "../schema/contentType";
 import BuilderIOModelForm from "./builderIOModelForm";
-import ContentTypeSchemaBuilder from "./contentTypeSchemaBuilder";
+import ContentTypeInfoBuilder from "./contentTypeInfoBuilder";
 
 function ContentTypeInfoForm({
   service,
@@ -22,8 +22,6 @@ function ContentTypeInfoForm({
   };
   source: string;
 }) {
-  console.log(contentType);
-  console.log(source);
   const methods = useFormContext<ContentTypeSchemaType>();
   const { register } = methods;
   const detailsBuilder = () => {
@@ -35,7 +33,7 @@ function ContentTypeInfoForm({
       default:
         return (
           <>
-            <ContentTypeSchemaBuilder contentType={contentType} />;
+            <ContentTypeInfoBuilder contentType={contentType} />;
           </>
         );
     }

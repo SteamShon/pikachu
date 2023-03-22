@@ -13,7 +13,8 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type CreativeForm from "../../../components/form/creativeForm";
 import CreativeModal from "../../../components/form/creativeModal";
 import { api } from "../../../utils/api";
-import { extractValue, jsonParseWithFallback } from "../../../utils/json";
+import { extractCode } from "../../../utils/contentTypeInfo";
+import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildAdGroupTree } from "../../../utils/tree";
 function CreativeTable({
@@ -141,10 +142,7 @@ function CreativeTable({
         return (
           <LiveProvider
             code={replacePropsInFunction({
-              code: extractValue({
-                object: content?.contentType?.contentTypeInfo?.details,
-                paths: ["code"],
-              }) as string | undefined,
+              code: extractCode(content?.contentType?.contentTypeInfo),
               contents: [jsonParseWithFallback(content?.values)],
             })}
             noInline={true}

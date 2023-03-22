@@ -15,9 +15,9 @@ import type {
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { LivePreview, LiveProvider } from "react-live";
-import { extractValue, jsonParseWithFallback } from "../../utils/json";
-import { replacePropsInFunction } from "../common/CodeTemplate";
+import { extractCode, extractSchema } from "../../utils/contentTypeInfo";
+import { jsonParseWithFallback } from "../../utils/json";
+import ContentPreview from "../builder/contentPreview";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { CreativeWithAdGroupIdAndContentIdType } from "../schema/creative";
 import { creativeWithAdGroupIdAndContentId } from "../schema/creative";
@@ -194,11 +194,7 @@ function CreativeForm({
                   {content ? (
                     <JsonForms
                       schema={jsonParseWithFallback(
-                        extractValue({
-                          object:
-                            content?.contentType?.contentTypeInfo?.details,
-                          paths: ["schema"],
-                        }) as string | undefined
+                        extractSchema(content?.contentType?.contentTypeInfo)
                       )}
                       //uischema={uiSchema}
                       data={jsonParseWithFallback(content?.values)}
@@ -212,18 +208,10 @@ function CreativeForm({
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Preview</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <LiveProvider
-                    code={replacePropsInFunction({
-                      code: extractValue({
-                        object: content?.contentType?.contentTypeInfo?.details,
-                        paths: ["code"],
-                      }) as string | undefined,
-                      contents: [jsonParseWithFallback(content?.values)],
-                    })}
-                    noInline={true}
-                  >
-                    <LivePreview />
-                  </LiveProvider>
+                  <ContentPreview
+                    contentType={content?.contentType}
+                    contents={[jsonParseWithFallback(content?.values)]}
+                  />
                 </dd>
               </div>
             </dl>

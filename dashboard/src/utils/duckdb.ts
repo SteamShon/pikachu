@@ -2,7 +2,11 @@ import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import * as duckdb from "@duckdb/duckdb-wasm";
 import type { ServiceConfig } from "@prisma/client";
 import { MyCache } from "./cache";
-import { extractValue } from "./json";
+import {
+  extractS3AccessKeyId,
+  extractS3Region,
+  extractS3SecretAccessKey,
+} from "./serviceConfig";
 
 const pool = new MyCache<ServiceConfig, AsyncDuckDB | undefined>({
   max: 3, // # of items
@@ -36,18 +40,9 @@ async function loadDuckDBInner(
   const db = new duckdb.AsyncDuckDB(logger, worker);
   await db.instantiate(bestBundle.mainModule, bestBundle.pthreadWorker);
 
-  const s3Region = extractValue({
-    object: serviceConfig?.s3Config,
-    paths: ["s3Region"],
-  }) as string | undefined;
-  const s3AccessKeyId = extractValue({
-    object: serviceConfig?.s3Config,
-    paths: ["s3AccessKeyId"],
-  }) as string | undefined;
-  const s3SecretAccessKey = extractValue({
-    object: serviceConfig?.s3Config,
-    paths: ["s3SecretAccessKey"],
-  }) as string | undefined;
+  const s3Region = extractS3Region(serviceConfig);
+  const s3AccessKeyId = extractS3AccessKeyId(serviceConfig);
+  const s3SecretAccessKey = extractS3SecretAccessKey(serviceConfig);
   // set s3 config.
   const setQuery = `
 SET home_directory='/tmp/';

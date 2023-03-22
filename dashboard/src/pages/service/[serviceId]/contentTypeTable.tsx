@@ -25,7 +25,13 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type ContentTypeForm from "../../../components/form/contentTypeForm";
 import ContentTypeModal from "../../../components/form/contentTypeModal";
 import { api } from "../../../utils/api";
-import { extractValue, jsonParseWithFallback } from "../../../utils/json";
+import {
+  extractCode,
+  extractDefaultValues,
+  extractSchema,
+} from "../../../utils/contentTypeInfo";
+import { jsonParseWithFallback } from "../../../utils/json";
+import { extractBuilderPublicKey } from "../../../utils/serviceConfig";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypesTree } from "../../../utils/tree";
 
@@ -64,11 +70,7 @@ function ContentTypeTable({
     contentType: ContentType & { contentTypeInfo?: ContentTypeInfo | null }
   ) => {
     if (contentType.source !== "builder.io") return <></>;
-    const publicKey = extractValue({
-      object: service.serviceConfig?.builderConfig,
-      paths: ["publicKey"],
-    }) as string | undefined;
-
+    const publicKey = extractBuilderPublicKey(service.serviceConfig);
     return <BuilderComponent model={contentType.name} apiKey={publicKey} />;
   };
 
@@ -112,17 +114,11 @@ function ContentTypeTable({
         return (
           <JsonForms
             schema={jsonParseWithFallback(
-              extractValue({
-                object: params.row.contentTypeInfo?.details,
-                paths: ["schema"],
-              }) as string | undefined
+              extractSchema(params.row.contentTypeInfo)
             )}
             //uischema={uiSchema}
             data={jsonParseWithFallback(
-              extractValue({
-                object: params.row.contentTypeInfo?.details,
-                paths: ["defaultValues"],
-              }) as string | undefined
+              extractDefaultValues(params.row.contentTypeInfo)
             )}
             renderers={materialRenderers}
             cells={materialCells}
@@ -138,16 +134,10 @@ function ContentTypeTable({
         return params.row.source === "local" ? (
           <LiveProvider
             code={replacePropsInFunction({
-              code: extractValue({
-                object: params.row?.contentTypeInfo?.details,
-                paths: ["code"],
-              }) as string | undefined,
+              code: extractCode(params.row.contentTypeInfo),
               contents: [
                 jsonParseWithFallback(
-                  extractValue({
-                    object: params.row?.contentTypeInfo?.details,
-                    paths: ["defaultValues"],
-                  }) as string | undefined
+                  extractDefaultValues(params.row.contentTypeInfo)
                 ),
               ],
             })}

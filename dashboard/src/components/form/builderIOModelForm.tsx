@@ -9,7 +9,8 @@ import type {
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { getModels } from "../../pages/api/builder.io/builderAdmin";
-import { extractValue } from "../../utils/json";
+import { extractModelId } from "../../utils/contentTypeInfo";
+import { extractBuilderPrivateKey } from "../../utils/serviceConfig";
 import type { ContentTypeSchemaType } from "../schema/contentType";
 
 function BuilderIOModelForm({
@@ -28,10 +29,7 @@ function BuilderIOModelForm({
   const { register, setValue } = useFormContext<ContentTypeSchemaType>();
 
   useEffect(() => {
-    const builderPrivateKey = extractValue({
-      object: service?.serviceConfig?.builderConfig,
-      paths: ["privateKey"],
-    }) as string | undefined;
+    const builderPrivateKey = extractBuilderPrivateKey(service?.serviceConfig);
     if (builderPrivateKey) {
       getModels({ builderPrivateKey }).then((models) => {
         setModels(models);
@@ -40,12 +38,9 @@ function BuilderIOModelForm({
   }, [service]);
 
   useEffect(() => {
-    const modelId = extractValue({
-      object: contentType?.contentTypeInfo?.details,
-      paths: ["id"],
-    }) as string | undefined;
+    const modelId = extractModelId(contentType?.contentTypeInfo);
     setModel(models.find((model) => model.id === modelId));
-  }, [contentType?.contentTypeInfo?.details, models]);
+  }, [contentType?.contentTypeInfo, models]);
 
   const handleSelect = (modelId: string) => {
     const model = models.find((model) => model.id === modelId);

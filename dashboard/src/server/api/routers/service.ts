@@ -13,6 +13,7 @@ export const serviceRouter = createTRPCRouter({
     .input(serviceSchema)
     .mutation(async ({ input }) => {
       const { serviceConfig, ...service } = input;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { serviceId, ...serviceConfigInput } = {
         ...serviceConfig,
         s3Config: serviceConfig?.s3Config as Prisma.JsonObject,
@@ -34,6 +35,7 @@ export const serviceRouter = createTRPCRouter({
     .input(serviceSchema)
     .mutation(async ({ input }) => {
       const { serviceConfig, ...service } = input;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { serviceId, ...serviceConfigInput } = {
         ...serviceConfig,
         s3Config: serviceConfig?.s3Config as Prisma.JsonObject,
@@ -386,12 +388,9 @@ export const serviceRouter = createTRPCRouter({
   addContentType: protectedProcedure
     .input(contentTypeSchema)
     .mutation(async ({ input }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { contentTypeInfo, ...contentTypeInput } = input;
       const { serviceId, ...contentType } = contentTypeInput;
-      const contentTypeInfoJson = {
-        ...contentTypeInfo,
-        details: contentTypeInfo?.details as Prisma.JsonObject,
-      };
 
       const service = await prisma.service.update({
         where: {

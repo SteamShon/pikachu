@@ -15,10 +15,14 @@ import type {
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
-import { LivePreview, LiveProvider } from "react-live";
-import { getContents } from "../../pages/api/builder.io/builderContent";
+import {
+  getContent,
+  getContents,
+} from "../../pages/api/builder.io/builderContent";
+import { extractModelName, extractSchema } from "../../utils/contentTypeInfo";
 import { extractValue, jsonParseWithFallback } from "../../utils/json";
-import { replacePropsInFunction } from "../common/CodeTemplate";
+import { extractBuilderPublicKey } from "../../utils/serviceConfig";
+import ContentPreview from "../builder/contentPreview";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type {
   ContentSchemaType,
@@ -33,11 +37,10 @@ function ContentForm({
   onSubmit,
 }: {
   service: Service & { serviceConfig?: ServiceConfig | null };
-  contentTypes: (ContentType & { contentTypeInfo?: ContentTypeInfo | null })[];
+  contentTypes: (ContentType & { contentTypeInfo: ContentTypeInfo | null })[];
   initialData?: Content & { contentType: ContentType };
   onSubmit: (input: ContentSchemaType & { contentTypeId: string }) => void;
 }) {
-  console.log(initialData);
   const [contentType, setContentType] = useState<
     typeof contentTypes[0] | undefined
   >(undefined);
@@ -51,6 +54,7 @@ function ContentForm({
   const [builderContent, setBuilderContent] = useState<
     BuilderContent<object> | undefined
   >(undefined);
+  const [needUpdate, setNeedUpdate] = useState(false);
 
   const methods = useForm<ContentWithContentTypeSchemaType>({
     resolver: zodResolver(contentWithContentTypeSchema),
@@ -66,68 +70,80 @@ function ContentForm({
   } = methods;
 
   useEffect(() => {
-    const { values, ...others } = initialData || {};
-    const currentContentType = contentTypes.find(
-      (ct) => ct.id === initialData?.contentType?.id
-    );
-    setContentType(currentContentType);
-    const schema = extractValue({
-      object: currentContentType?.contentTypeInfo?.details,
-      paths: ["schema"],
-    }) as string | undefined;
-    setSchema(schema);
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    const parsedValues = jsonParseWithFallback(values) as { [x: string]: {} };
+    if (initialData) {
+      const contentType = contentTypes.find(
+        (ct) => ct.id === initialData.contentType?.id
+      );
+      setContentType(contentType);
+      setSchema(extractSchema(contentType?.contentTypeInfo));
 
-    setDefaultValues(parsedValues);
-    if (currentContentType?.source === "builder.io" && initialData) {
-      setBuilderContent(parsedValues as unknown as BuilderContent);
-    }
-    reset({
-      ...others,
-      contentTypeId: initialData?.contentType.id,
-      values: parsedValues,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reset, initialData]);
+      // eslint-disable-next-line @typescript-eslint/ban-types
+      const parsedValues = jsonParseWithFallback(initialData.values) as {
+        // eslint-disable-next-line @typescript-eslint/ban-types
+        [x: string]: {};
+      };
+      setDefaultValues(parsedValues);
+      if (
+        contentType &&
+        contentType?.source === "builder.io" &&
+        initialData.values
+      ) {
+        const contentId = parsedValues?.id as string | undefined;
+        const lastUpdated = parsedValues?.lastUpdated as number | undefined;
 
-  useEffect(() => {
-    const builderPublicKey = extractValue({
-      object: service?.serviceConfig?.builderConfig,
-      paths: ["publicKey"],
-    }) as string | undefined;
-    const modelName = extractValue({
-      object: contentType?.contentTypeInfo?.details,
-      paths: ["name"],
-    }) as string | undefined;
+        getContent({
+          serviceConfig: service?.serviceConfig,
+          contentType,
+          contentId,
+        }).then((content) => {
+          const newLastUpdated = content?.lastUpdated;
+          if (lastUpdated && lastUpdated < newLastUpdated) {
+            console.log(lastUpdated);
+            console.log(newLastUpdated);
+            setNeedUpdate(true);
+          }
+          setBuilderContent(content);
+          setValue("name", content.name);
+          setValue("values", content as unknown as Record<string, unknown>);
+        });
+      }
 
-    if (builderPublicKey && contentType?.source === "builder.io" && modelName) {
-      getContents({
-        builderPublicKey,
-        modelName,
-      }).then((contents) => {
-        setBuilderContens(contents.map((c) => c as BuilderContent<object>));
+      reset({
+        ...initialData,
+        contentTypeId: initialData?.contentType.id,
+        values: parsedValues,
       });
     }
-  }, [contentType, service?.serviceConfig?.builderConfig]);
 
-  const handleBuilderContentSelect = (contentName: string) => {
-    const content = builderContents.find((c) => c.name === contentName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData]);
 
-    if (content) {
-      setValue("name", content.name);
-      setValue("values", content as unknown as Record<string, unknown>);
-    }
-    setBuilderContent(content);
-  };
-
-  const builderContentPreview = () => {
-    return (
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      <BuilderComponent model={contentType?.name} content={builderContent} />
+  useEffect(() => {
+    getContents({ serviceConfig: service?.serviceConfig, contentType }).then(
+      (contents) => setBuilderContens(contents || [])
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    contentType?.contentTypeInfo,
+    contentType?.source,
+    service?.serviceConfig,
+  ]);
+
+  const handleBuilderContentSelect = async (contentId: string) => {
+    const updatedContent = await getContent({
+      serviceConfig: service?.serviceConfig,
+      contentType,
+      contentId,
+    });
+    // const content = builderContents.find((c) => c.id === contentId);
+
+    if (updatedContent) {
+      setValue("name", updatedContent.name);
+      setValue("values", updatedContent as unknown as Record<string, unknown>);
+    }
+    setBuilderContent(updatedContent);
   };
+
   return (
     <>
       <FormProvider {...methods}>
@@ -136,6 +152,29 @@ function ContentForm({
             <div className="px-4 py-5 sm:px-6">
               <h3 className="text-lg font-medium leading-6 text-gray-900">
                 Content
+                {needUpdate ? (
+                  <span className="inline-flex items-center justify-end rounded-full bg-red-100 px-2.5 py-0.5 text-red-700">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="1.5"
+                      stroke="currentColor"
+                      className="-ml-1 mr-1.5 h-4 w-4"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                      />
+                    </svg>
+
+                    <p className="whitespace-nowrap text-sm">
+                      {" "}
+                      outdated. Save again
+                    </p>
+                  </span>
+                ) : null}
               </h3>
             </div>
             <div className="border-t border-gray-200">
@@ -182,12 +221,16 @@ function ContentForm({
                           onChange={(e) =>
                             handleBuilderContentSelect(e.target.value)
                           }
-                          value={builderContent?.name}
+                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                          // @ts-ignore
+                          value={builderContent?.id}
                         >
                           <option value="">Please choose</option>
                           {builderContents.map((content) => {
                             return (
-                              <option key={content.name} value={content.name}>
+                              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                              // @ts-ignore
+                              <option key={content.name} value={content.id}>
                                 {content.name}
                               </option>
                             );
@@ -288,19 +331,14 @@ function ContentForm({
         </div>
       </div>
       <div className="mx-auto mt-8 mb-0 space-y-4 ">
-        {builderContentPreview()}
-        <LiveProvider
-          code={replacePropsInFunction({
-            code: extractValue({
-              object: contentType?.contentTypeInfo?.details,
-              paths: ["code"],
-            }) as string | undefined,
-            contents: [defaultValues],
-          })}
-          noInline={true}
-        >
-          <LivePreview />
-        </LiveProvider>
+        <ContentPreview
+          contentType={contentType}
+          contents={[
+            builderContent
+              ? (builderContent as unknown as Record<string, unknown>)
+              : defaultValues,
+          ]}
+        />
       </div>
     </>
   );

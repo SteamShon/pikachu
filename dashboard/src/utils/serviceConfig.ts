@@ -40,7 +40,7 @@ export function extractS3Buckets(serviceConfig?: ServiceConfig | null) {
 export function extractBuilderPrivateKey(serviceConfig?: ServiceConfig | null) {
   if (!serviceConfig) return undefined;
 
-  extractValue({
+  return extractValue({
     object: serviceConfig?.builderConfig,
     paths: ["privateKey"],
   }) as string | undefined;
@@ -49,7 +49,7 @@ export function extractBuilderPrivateKey(serviceConfig?: ServiceConfig | null) {
 export function extractBuilderPublicKey(serviceConfig?: ServiceConfig | null) {
   if (!serviceConfig) return undefined;
 
-  extractValue({
+  return extractValue({
     object: serviceConfig?.builderConfig,
     paths: ["publicKey"],
   }) as string | undefined;

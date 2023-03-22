@@ -8,13 +8,13 @@ import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
-import { LivePreview, LiveProvider } from "react-live";
-import { replacePropsInFunction } from "../../../components/common/CodeTemplate";
+import ContentPreview from "../../../components/builder/contentPreview";
 
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type ContentForm from "../../../components/form/contentForm";
 import ContentModal from "../../../components/form/contentModal";
 import { api } from "../../../utils/api";
+import { extractCode } from "../../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypeTree } from "../../../utils/tree";
@@ -112,14 +112,11 @@ function ContentTable({
       headerName: "Preview",
       flex: 4,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        const code = replacePropsInFunction({
-          code: params.row?.contentType?.uiSchema,
-          contents: [jsonParseWithFallback(params.row.values)],
-        });
         return (
-          <LiveProvider code={code} noInline={true}>
-            <LivePreview />
-          </LiveProvider>
+          <ContentPreview
+            contentType={params.row?.contentType}
+            contents={[jsonParseWithFallback(params.row.values)]}
+          />
         );
       },
     },

@@ -1,7 +1,11 @@
 import type { ServiceConfig } from "@prisma/client";
 import type { Buckets, Object as S3Object } from "aws-sdk/clients/s3";
 import S3 from "aws-sdk/clients/s3";
-import { extractValue } from "./json";
+import {
+  extractS3AccessKeyId,
+  extractS3Region,
+  extractS3SecretAccessKey,
+} from "./serviceConfig";
 
 export type TreeNode = {
   name: string;
@@ -9,18 +13,9 @@ export type TreeNode = {
   children: TreeNode[];
 };
 export function loadS3(serviceConfig: ServiceConfig): S3 {
-  const s3Region = extractValue({
-    object: serviceConfig?.s3Config,
-    paths: ["s3Region"],
-  }) as string | undefined;
-  const s3AccessKeyId = extractValue({
-    object: serviceConfig?.s3Config,
-    paths: ["s3AccessKeyId"],
-  }) as string | undefined;
-  const s3SecretAccessKey = extractValue({
-    object: serviceConfig?.s3Config,
-    paths: ["s3SecretAccessKey"],
-  }) as string | undefined;
+  const s3Region = extractS3Region(serviceConfig);
+  const s3AccessKeyId = extractS3AccessKeyId(serviceConfig);
+  const s3SecretAccessKey = extractS3SecretAccessKey(serviceConfig);
 
   return new S3({
     region: s3Region,

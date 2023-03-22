@@ -17,7 +17,7 @@ import {
   partitionBucketPrefix,
 } from "../../utils/aws";
 import { fetchParquetSchema } from "../../utils/duckdb";
-import { extractValue } from "../../utils/json";
+import { extractS3Buckets } from "../../utils/serviceConfig";
 import type { DatasetSchemaType } from "../schema/dataset";
 import JoinConditionBuilder from "./joinConditionBuilder";
 import type { TableMetadata } from "./sqlBuilder";
@@ -89,10 +89,7 @@ function JoinCandidateBuilder({
   };
 
   const s3Buckets = () => {
-    const s3Buckets = extractValue({
-      object: serviceConfig?.s3Config,
-      paths: ["s3Buckets"],
-    }) as string | undefined;
+    const s3Buckets = extractS3Buckets(serviceConfig);
 
     return s3Buckets?.split(",") || [];
   };

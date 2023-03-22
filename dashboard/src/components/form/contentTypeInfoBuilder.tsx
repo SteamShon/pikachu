@@ -7,12 +7,15 @@ import JsonSchemaEditor from "@optum/json-schema-editor";
 import type { Content, ContentType, ContentTypeInfo } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-import { LiveEditor, LiveError, LivePreview, LiveProvider } from "react-live";
-import { extractValue, jsonParseWithFallback } from "../../utils/json";
+// import { LiveEditor, LiveError, LivePreview, LiveProvider } from "react-live";
 import {
-  removeRenderFunction,
-  replacePropsInFunction,
-} from "../common/CodeTemplate";
+  extractCode,
+  extractDefaultValues,
+  extractSchema,
+} from "../../utils/contentTypeInfo";
+import { jsonParseWithFallback } from "../../utils/json";
+import CodeEditor from "../builder/codeEditor";
+import { removeRenderFunction } from "../common/CodeTemplate";
 
 function ContentTypeInfoBuilder({
   contentType,
@@ -30,14 +33,12 @@ function ContentTypeInfoBuilder({
 
   const methods = useFormContext();
   const { control, register } = methods;
-  const initialSchema = (extractValue({
-    object: contentType?.contentTypeInfo?.details,
-    paths: ["schema"],
-  }) || "{}") as string;
-  const initialDefaultValues = (extractValue({
-    object: contentType?.contentTypeInfo?.details,
-    paths: ["defaultValues"],
-  }) || "{}") as string;
+  const initialSchema = extractSchema(contentType?.contentTypeInfo);
+  const initialDefaultValues = extractDefaultValues(
+    contentType?.contentTypeInfo
+  );
+  const initialCode = extractCode(contentType?.contentTypeInfo);
+
   const currentSchema = () => {
     return schema
       ? jsonParseWithFallback(schema)
@@ -48,24 +49,18 @@ function ContentTypeInfoBuilder({
       ? jsonParseWithFallback(defaultValues)
       : jsonParseWithFallback(initialDefaultValues);
   };
+  const currentCode = () => {
+    return code || initialCode;
+  };
   useEffect(() => {
-    const schema = (extractValue({
-      object: contentType?.contentTypeInfo?.details,
-      paths: ["schema"],
-    }) || "{}") as string;
-    const defaultValues = (extractValue({
-      object: contentType?.contentTypeInfo?.details,
-      paths: ["defaultValues"],
-    }) || "{}") as string;
-    const code = extractValue({
-      object: contentType?.contentTypeInfo?.details,
-      paths: ["code"],
-    }) as string | undefined;
+    const schema = extractSchema(contentType?.contentTypeInfo) || "{}";
+    const defaultValues = extractDefaultValues(contentType?.contentTypeInfo);
+    const code = extractCode(contentType?.contentTypeInfo);
 
     setSchema(schema);
     setDefaultValues(defaultValues);
     setCode(code);
-  }, [contentType?.contentTypeInfo?.details]);
+  }, [contentType?.contentTypeInfo]);
 
   return (
     <div className="overflow-hidden bg-white shadow sm:rounded-lg">
@@ -137,7 +132,7 @@ function ContentTypeInfoBuilder({
             <dt className="text-sm font-medium text-gray-500">
               Render Component Code
             </dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            {/* <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
               <Controller
                 name="contentTypeInfo.details.code"
                 control={control}
@@ -145,7 +140,7 @@ function ContentTypeInfoBuilder({
                 render={({ field }) => (
                   <LiveProvider
                     code={replacePropsInFunction({
-                      code,
+                      code: currentCode(),
                       contents: [jsonParseWithFallback(defaultValues)],
                     })}
                     noInline={true}
@@ -189,6 +184,37 @@ function ContentTypeInfoBuilder({
                       </div>
                     </dl>
                   </LiveProvider>
+                )}
+              />
+            </dd> */}
+            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+              <Controller
+                name="contentTypeInfo.details.code"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <CodeEditor
+                    code={currentCode()}
+                    contents={[jsonParseWithFallback(defaultValues)]}
+                    options={{
+                      editor: {
+                        disable: false,
+                        onChange: (newCode: string) => {
+                          console.log(newCode);
+                          const newCodeWithoutRender =
+                            removeRenderFunction(newCode);
+
+                          setCode(newCodeWithoutRender);
+                          // setValue(
+                          //   "contentTypeInfo.details.code",
+                          //   newCodeWithoutRender
+                          // );
+                          field.onChange(newCodeWithoutRender);
+                          //setCode(newCodeWithoutRender);
+                        },
+                      },
+                    }}
+                  />
                 )}
               />
             </dd>

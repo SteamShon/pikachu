@@ -1,5 +1,4 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Content, ContentType } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { adGroupRouter } from "../../server/api/routers/adGroup";

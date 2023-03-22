@@ -1,5 +1,4 @@
 import type { BuilderContent } from "@builder.io/react";
-import { BuilderComponent } from "@builder.io/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   materialCells,
@@ -19,9 +18,8 @@ import {
   getContent,
   getContents,
 } from "../../pages/api/builder.io/builderContent";
-import { extractModelName, extractSchema } from "../../utils/contentTypeInfo";
-import { extractValue, jsonParseWithFallback } from "../../utils/json";
-import { extractBuilderPublicKey } from "../../utils/serviceConfig";
+import { extractSchema } from "../../utils/contentTypeInfo";
+import { jsonParseWithFallback } from "../../utils/json";
 import ContentPreview from "../builder/contentPreview";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type {

@@ -10,7 +10,6 @@ import {
   Typography,
 } from "@mui/material";
 import React from "react";
-import { useState } from "react";
 import SideMenu from "./sideMenu";
 
 function PublisherStep() {

@@ -33,9 +33,16 @@ function ContentSync({
         contentId: builderContent?.id,
       }).then((fetched) => {
         const lastUpdated = (contents[0]?.lastUpdated ||
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          //@ts-ignore
           fetched?.lastUpdated) as number | undefined;
         if (lastUpdated) {
-          setNeedUpdate(lastUpdated < fetched?.lastUpdated);
+          setNeedUpdate(
+            lastUpdated <
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              //@ts-ignore
+              fetched?.lastUpdated
+          );
         }
       });
     }

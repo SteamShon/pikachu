@@ -2,8 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::db::{
-    ad_group, campaign, content, creative, cube_config, placement, placement_group, service,
-    PrismaClient,
+    ad_group, campaign, content, creative, placement, service, service_config, PrismaClient,
 };
 use filter::filter::{TargetFilter, UserInfo};
 use filter::filterable::Filterable;
@@ -38,7 +37,6 @@ pub struct SearchResult {
 #[derive(Debug, Clone)]
 pub struct UpdateInfo {
     pub services: DateTime<FixedOffset>,
-    pub placement_groups: DateTime<FixedOffset>,
     pub placements: DateTime<FixedOffset>,
     pub campaigns: DateTime<FixedOffset>,
     pub ad_groups: DateTime<FixedOffset>,
@@ -49,7 +47,6 @@ impl Default for UpdateInfo {
     fn default() -> Self {
         Self {
             services: Default::default(),
-            placement_groups: Default::default(),
             placements: Default::default(),
             campaigns: Default::default(),
             ad_groups: Default::default(),
@@ -62,7 +59,6 @@ impl Default for UpdateInfo {
 #[derive(Debug, Clone)]
 pub struct AdState {
     pub services: HashMap<String, service::Data>,
-    pub placement_groups: HashMap<String, placement_group::Data>,
     pub placements: HashMap<String, placement::Data>,
     pub campaigns: HashMap<String, campaign::Data>,
     pub ad_groups: HashMap<String, ad_group::Data>,
@@ -75,7 +71,6 @@ impl Default for AdState {
     fn default() -> Self {
         Self {
             services: Default::default(),
-            placement_groups: Default::default(),
             placements: Default::default(),
             campaigns: Default::default(),
             ad_groups: Default::default(),
@@ -98,15 +93,8 @@ impl AdState {
         self.placements
             .get(&self.get_campaign(ad_group)?.placement_id)
     }
-    fn get_placement_group(&self, ad_group: &ad_group::Data) -> Option<&placement_group::Data> {
-        let placement_group_id = &self.get_placement(ad_group)?.placement_group_id;
-        match placement_group_id {
-            None => None,
-            Some(id) => self.placement_groups.get(id),
-        }
-    }
     fn get_service(&self, ad_group: &ad_group::Data) -> Option<&service::Data> {
-        let service_id = &self.get_placement_group(ad_group)?.service_id;
+        let service_id = &self.get_placement(ad_group)?.service_id;
         match service_id {
             None => None,
             Some(id) => self.services.get(id),
@@ -119,21 +107,8 @@ impl AdState {
         client
             .service()
             .find_many(vec![service::updated_at::gt(last_updated_at)])
-            .with(service::cube_configs::fetch(vec![]).with(cube_config::cubes::fetch(vec![])))
+            .with(service::service_config::fetch().with(service_config::cubes::fetch(vec![])))
             .order_by(service::updated_at::order(Direction::Desc))
-            .exec()
-            .await
-            .unwrap()
-    }
-    async fn fetch_placement_groups(
-        client: Arc<PrismaClient>,
-        last_updated_at: DateTime<FixedOffset>,
-    ) -> Vec<placement_group::Data> {
-        //TODO: add index on updated_at to avoid full scan on a table.
-        client
-            .placement_group()
-            .find_many(vec![placement_group::updated_at::gt(last_updated_at)])
-            .order_by(placement_group::updated_at::order(Direction::Desc))
             .exec()
             .await
             .unwrap()
@@ -207,19 +182,6 @@ impl AdState {
         }
         for service in new_services {
             services.insert(service.id.clone(), service.clone());
-        }
-    }
-    pub fn update_placement_groups(
-        &mut self,
-        new_placement_groups: &Vec<placement_group::Data>,
-    ) -> () {
-        let placement_groups = &mut self.placement_groups;
-        if let Some(latest_updated_placement_group) = new_placement_groups.first() {
-            let update_info = &mut self.update_info;
-            update_info.placement_groups = latest_updated_placement_group.updated_at;
-        }
-        for placement_group in new_placement_groups {
-            placement_groups.insert(placement_group.id.clone(), placement_group.clone());
         }
     }
     pub fn update_placements(&mut self, new_placements: &Vec<placement::Data>) -> () {
@@ -321,17 +283,6 @@ impl AdState {
         println!("[new_services]: {:?}", new_services.len());
         self.update_services(new_services);
     }
-    pub async fn fetch_and_update_placement_groups(
-        &mut self,
-        client: Arc<PrismaClient>,
-        last_updated_at: Option<DateTime<FixedOffset>>,
-    ) -> () {
-        let last_updated_at_value = last_updated_at.unwrap_or(self.update_info.placement_groups);
-        let new_placement_groups =
-            &Self::fetch_placement_groups(client, last_updated_at_value).await;
-        println!("[new_placement_groups]: {:?}", new_placement_groups.len());
-        self.update_placement_groups(new_placement_groups);
-    }
     pub async fn fetch_and_update_placements(
         &mut self,
         client: Arc<PrismaClient>,
@@ -388,8 +339,6 @@ impl AdState {
     }
     pub async fn load(&mut self, client: Arc<PrismaClient>) -> () {
         self.fetch_and_update_services(client.clone(), None).await;
-        self.fetch_and_update_placement_groups(client.clone(), None)
-            .await;
         self.fetch_and_update_placements(client.clone(), None).await;
         self.fetch_and_update_campaigns(client.clone(), None).await;
         self.fetch_and_update_ad_groups(client.clone(), None).await;
@@ -428,7 +377,7 @@ impl AdState {
     pub fn search(
         &self,
         service_id: &str,
-        placement_group_id: &str,
+        placement_id: &str,
         user_info_json: &serde_json::Value,
     ) -> SearchResult {
         let user_info = Self::parse_user_info(user_info_json).unwrap();
@@ -439,11 +388,11 @@ impl AdState {
         println!("{:?}", self.filter_index.get(service_id));
         println!("[ids]: {:?}", matched_ids);
 
-        let matched_ads = self.transform_ids_to_ads_grouped(placement_group_id, matched_ids.iter());
+        let matched_ads = self.transform_ids_to_ads_grouped(placement_id, matched_ids.iter());
         let non_filter_ads = match self.filter_index.get(service_id) {
             None => Vec::new(),
             Some(index) => {
-                self.transform_ids_to_ads_grouped(placement_group_id, index.non_filter_ids.iter())
+                self.transform_ids_to_ads_grouped(placement_id, index.non_filter_ids.iter())
             }
         };
 
@@ -482,7 +431,7 @@ impl AdState {
     }
     pub fn merge_ids_with_ad_metas<'a, I>(
         &self,
-        placement_group_id: &str,
+        placement_id: &str,
         ids: I,
     ) -> HashMap<String, HashMap<String, Vec<ad_group::Data>>>
     where
@@ -523,17 +472,15 @@ impl AdState {
         for ad_group in new_ad_groups.iter() {
             if let Some(campaign) = campaigns.get(&ad_group.campaign_id) {
                 if let Some(placement) = placements.get(&campaign.placement_id) {
-                    for current_placement_group_id in placement.placement_group_id.iter() {
-                        if current_placement_group_id == placement_group_id
-                            && Self::is_active_campaign(campaign)
-                            && Self::is_active_placement(placement)
-                        {
-                            tree.entry(placement.id.clone())
-                                .or_insert_with(|| HashMap::new())
-                                .entry(campaign.id.clone())
-                                .or_insert_with(|| Vec::new())
-                                .push(ad_group.clone())
-                        }
+                    if placement.id == placement_id
+                        && Self::is_active_campaign(campaign)
+                        && Self::is_active_placement(placement)
+                    {
+                        tree.entry(placement.id.clone())
+                            .or_insert_with(|| HashMap::new())
+                            .entry(campaign.id.clone())
+                            .or_insert_with(|| Vec::new())
+                            .push(ad_group.clone())
                     }
                 }
             }
@@ -544,13 +491,13 @@ impl AdState {
 
     fn transform_ids_to_ads_grouped<'a, I>(
         &self,
-        placement_group_id: &str,
+        placement_id: &str,
         ids: I,
     ) -> Vec<placement::Data>
     where
         I: Iterator<Item = &'a String>,
     {
-        let meta_tree = self.merge_ids_with_ad_metas(placement_group_id, ids);
+        let meta_tree = self.merge_ids_with_ad_metas(placement_id, ids);
 
         self.build_placement_tree(&meta_tree)
     }

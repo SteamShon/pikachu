@@ -78,6 +78,7 @@ function CreativeForm({
     const valid = contents.filter(
       (c) => c.contentTypeId === adGroup?.campaign?.placement?.contentTypeId
     );
+
     setValidContents(valid);
   }, [adGroup, contents]);
 

@@ -28,6 +28,9 @@ function ContentPreview({
     if (builderContent) {
       return (
         <BuilderComponent
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          key={builderContent.id}
           model={contentType?.name}
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore

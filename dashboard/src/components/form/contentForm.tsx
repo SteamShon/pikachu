@@ -124,15 +124,16 @@ function ContentForm({
 
   const handleContentTypeSelect = async (contentTypeId: string) => {
     console.log("contentType changed!!!");
-    const contentType = contentTypes.find(
+    const newContenType = contentTypes.find(
       (contentType) => contentType.id === contentTypeId
     );
-    setContentType(contentType);
+    setContentType(newContenType);
+    setSchema(extractSchema(newContenType?.contentTypeInfo));
 
-    if (contentType?.source === "builder.io") {
+    if (newContenType?.source === "builder.io") {
       const contents = await getContents({
         serviceConfig: service?.serviceConfig,
-        contentType,
+        contentType: newContenType,
       });
       setBuilderContens(contents || []);
     }

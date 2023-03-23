@@ -71,7 +71,13 @@ function ContentTypeTable({
   ) => {
     if (contentType.source !== "builder.io") return <></>;
     const publicKey = extractBuilderPublicKey(service.serviceConfig);
-    return <BuilderComponent model={contentType.name} apiKey={publicKey} />;
+    return (
+      <BuilderComponent
+        key={contentType.id}
+        model={contentType.name}
+        apiKey={publicKey}
+      />
+    );
   };
 
   const rows = serviceTree?.contentTypes

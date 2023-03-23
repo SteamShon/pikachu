@@ -3,15 +3,15 @@ import type {
   Campaign,
   Content,
   ContentType,
+  ContentTypeInfo,
   Creative,
   Cube,
-  CubeConfig,
   Customset,
   CustomsetInfo,
   Placement,
-  PlacementGroup,
   Segment,
   Service,
+  ServiceConfig,
 } from "@prisma/client";
 
 type Item = {
@@ -26,67 +26,40 @@ function arrayToRecord(array?: Item[]): Record<string, unknown> {
   }, {} as Record<string, unknown>);
 }
 
-export function buildTree(
-  services: (Service & {
-    placementGroups: (PlacementGroup & {
-      placements: (Placement & {
-        campaigns: (Campaign & {
-          adGroups: (AdGroup & {
-            creatives: (Creative & {
-              content: Content;
-            })[];
-          })[];
-        })[];
-        contentType: ContentType;
-      })[];
-    })[];
-    contentTypes: (ContentType & {
-      contents: (Content & { creatives: Creative[] })[];
-    })[];
-    customsets: (Customset & { customsetInfo: CustomsetInfo })[];
-    cubeConfigs: (CubeConfig & { cubes: (Cube & { segments: Segment[] })[] })[];
-  })[]
-): Record<string, ReturnType<typeof buildServiceTree>> {
-  const tree = arrayToRecord(
-    services.map((service) => {
-      return buildServiceTree(service);
-    })
-  ) as Record<string, ReturnType<typeof buildServiceTree>>;
-
-  return tree;
-}
-
 export function buildServiceTree(
   service: Service & {
-    placementGroups: (PlacementGroup & {
-      placements: (Placement & {
-        campaigns: (Campaign & {
-          adGroups: (AdGroup & {
-            creatives: (Creative & {
-              content: Content;
-            })[];
+    placements: (Placement & {
+      campaigns: (Campaign & {
+        adGroups: (AdGroup & {
+          creatives: (Creative & {
+            content: Content;
           })[];
         })[];
-        contentType: ContentType;
       })[];
+      contentType: ContentType | null;
     })[];
     contentTypes: (ContentType & {
+      contentTypeInfo: ContentTypeInfo | null;
       contents: (Content & { creatives: Creative[] })[];
     })[];
     customsets: (Customset & { customsetInfo: CustomsetInfo })[];
-    cubeConfigs: (CubeConfig & { cubes: (Cube & { segments: Segment[] })[] })[];
+    serviceConfig:
+      | (ServiceConfig & {
+          cubes: (Cube & { segments: Segment[] })[];
+        })
+      | null;
   }
 ): Service & {
-  placementGroups: Record<string, ReturnType<typeof buildPlacementGroupTree>>;
+  placements: Record<string, ReturnType<typeof buildPlacementTree>>;
   contentTypes: Record<string, ReturnType<typeof buildContentTypeTree>>;
   customsets: Record<string, Customset & { customsetInfo: CustomsetInfo }>;
-  cubeConfigs: Record<string, ReturnType<typeof buildCubeConfigTree>>;
+  serviceConfig: ReturnType<typeof buildServiceConfigTree>;
 } {
-  const placementGroups = arrayToRecord(
-    service.placementGroups.map((placementGroup) => {
-      return buildPlacementGroupTree(placementGroup);
+  const placements = arrayToRecord(
+    service.placements.map((placement) => {
+      return buildPlacementTree(placement);
     })
-  ) as Record<string, ReturnType<typeof buildPlacementGroupTree>>;
+  ) as Record<string, ReturnType<typeof buildPlacementTree>>;
 
   const contentTypes = arrayToRecord(
     service.contentTypes.map((contentType) => {
@@ -96,34 +69,9 @@ export function buildServiceTree(
 
   const customsets = buildCustomsetsTree(service.customsets);
 
-  const cubeConfigs = buildCubeConfigsTree(service.cubeConfigs);
+  const serviceConfig = buildServiceConfigTree(service.serviceConfig);
 
-  return { ...service, placementGroups, contentTypes, customsets, cubeConfigs };
-}
-
-export function buildPlacementGroupTree(
-  placementGroup: PlacementGroup & {
-    placements: (Placement & {
-      campaigns: (Campaign & {
-        adGroups: (AdGroup & {
-          creatives: (Creative & {
-            content: Content;
-          })[];
-        })[];
-      })[];
-      contentType: ContentType;
-    })[];
-  }
-): PlacementGroup & {
-  placements: Record<string, ReturnType<typeof buildPlacementTree>>;
-} {
-  const placements = arrayToRecord(
-    placementGroup.placements.map((placement) => {
-      return buildPlacementTree(placement);
-    })
-  ) as Record<string, ReturnType<typeof buildPlacementTree>>;
-
-  return { ...placementGroup, placements };
+  return { ...service, placements, contentTypes, customsets, serviceConfig };
 }
 
 export function buildPlacementTree(
@@ -135,11 +83,11 @@ export function buildPlacementTree(
         })[];
       })[];
     })[];
-    contentType: ContentType;
+    contentType: ContentType | null;
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
-  contentType: ContentType;
+  contentType: ContentType | null;
 } {
   const campaigns = arrayToRecord(
     placement.campaigns.map((campaign) => {
@@ -193,6 +141,7 @@ export function buildAdGroupTree(
 }
 export function buildContentTypesTree(
   contentTypes: (ContentType & {
+    contentTypeInfo: ContentTypeInfo | null;
     contents: (Content & { creatives: Creative[] })[];
   })[]
 ): Record<string, ReturnType<typeof buildContentTypeTree>> {
@@ -205,9 +154,11 @@ export function buildContentTypesTree(
 
 export function buildContentTypeTree(
   contentType: ContentType & {
+    contentTypeInfo: ContentTypeInfo | null;
     contents: (Content & { creatives: Creative[] })[];
   }
 ): ContentType & {
+  contentTypeInfo: ContentTypeInfo | null;
   contents: Record<string, Content & { creatives: Creative[] }>;
 } {
   const contents = arrayToRecord(contentType.contents) as Record<
@@ -238,53 +189,22 @@ export function buildCubeTree(
   return { ...cube, segments };
 }
 
-export function buildCubeConfigTree(
-  cubeConfig: CubeConfig & {
-    cubes: (Cube & { segments: Segment[] })[];
-  }
-): CubeConfig & {
-  cubes: Record<string, ReturnType<typeof buildCubeTree>>;
-} {
+export function buildServiceConfigTree(
+  serviceConfig:
+    | (ServiceConfig & {
+        cubes: (Cube & { segments: Segment[] })[];
+      })
+    | null
+):
+  | (ServiceConfig & {
+      cubes: Record<string, ReturnType<typeof buildCubeTree>>;
+    })
+  | null {
   const cubes = arrayToRecord(
-    cubeConfig.cubes.map((cube) => {
+    serviceConfig?.cubes.map((cube) => {
       return buildCubeTree(cube);
     })
   ) as Record<string, ReturnType<typeof buildCubeTree>>;
 
-  return { ...cubeConfig, cubes };
-}
-
-export function buildCubeConfigsTree(
-  cubeConfigs: (CubeConfig & { cubes: (Cube & { segments: Segment[] })[] })[]
-): Record<string, ReturnType<typeof buildCubeConfigTree>> {
-  return arrayToRecord(
-    cubeConfigs.map((cubeConfig) => {
-      return buildCubeConfigTree(cubeConfig);
-    })
-  ) as Record<string, ReturnType<typeof buildCubeConfigTree>>;
-}
-export type ServiceCubeConfigsCubesType = Service & {
-  cubeConfigs: (CubeConfig & {
-    cubes: (Cube & { segments: Segment[] })[];
-  })[];
-};
-export function buildCubesWithPath(
-  services: ServiceCubeConfigsCubesType[]
-): (Cube & { cubeConfig: CubeConfig & { service: Service } })[] {
-  const cubes = services.flatMap(({ cubeConfigs, ...service }) => {
-    return cubeConfigs.flatMap(({ cubes, ...cubeConfig }) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      return cubes.map(({ segments, ...cube }) => {
-        return {
-          ...cube,
-          cubeConfig: {
-            ...cubeConfig,
-            service,
-          },
-        };
-      });
-    });
-  });
-
-  return cubes;
+  return serviceConfig ? { ...serviceConfig, cubes } : null;
 }

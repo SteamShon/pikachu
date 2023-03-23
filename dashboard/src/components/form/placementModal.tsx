@@ -1,24 +1,25 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { ContentType } from "@prisma/client";
+import type { ContentType, Service } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import type { placementGroupRouter } from "../../server/api/routers/placementGroup";
+import type { serviceRouter } from "../../server/api/routers/service";
 import { api } from "../../utils/api";
-import type { buildServiceTree } from "../../utils/tree";
-import { buildPlacementGroupTree } from "../../utils/tree";
-import type { PlacementWithPlacementGroupSchemaType } from "../schema/placement";
+import { buildServiceTree } from "../../utils/tree";
+import type { PlacementSchemaType } from "../schema/placement";
 import PlacementForm from "./placementForm";
 
 function PlacementModal({
-  placementGroups,
+  service,
   contentTypes,
+  cubes,
   initialData,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
-  placementGroups: ReturnType<typeof buildPlacementGroupTree>[];
-  contentTypes: ContentType[];
+  service: Parameters<typeof PlacementForm>[0]["service"];
+  contentTypes: Parameters<typeof PlacementForm>[0]["contentTypes"];
+  cubes: Parameters<typeof PlacementForm>[0]["cubes"];
   initialData?: Parameters<typeof PlacementForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -26,31 +27,29 @@ function PlacementModal({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  type RouterOutput = inferRouterOutputs<typeof placementGroupRouter>;
+  type RouterOutput = inferRouterOutputs<typeof serviceRouter>;
   type OutputType = RouterOutput["addPlacement"];
 
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
       if (!prev) return prev;
-
-      prev.placementGroups[created.id] = buildPlacementGroupTree(created);
-      return prev;
+      return buildServiceTree(created);
     });
     setModalOpen(false);
   };
 
-  const { mutate: create } = api.placementGroup.addPlacement.useMutation({
+  const { mutate: create } = api.service.addPlacement.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
-  const { mutate: update } = api.placementGroup.updatePlacement.useMutation({
+  const { mutate: update } = api.service.updatePlacement.useMutation({
     onSuccess(updated) {
       handleSuccess(updated);
     },
   });
 
-  const onSubmit = (input: PlacementWithPlacementGroupSchemaType) => {
+  const onSubmit = (input: PlacementSchemaType) => {
     if (initialData) update(input);
     else create(input);
   };
@@ -64,11 +63,11 @@ function PlacementModal({
     >
       <DialogContent>
         <PlacementForm
-          placementGroups={placementGroups}
+          service={service}
           contentTypes={contentTypes}
+          cubes={cubes}
           initialData={initialData}
           onSubmit={onSubmit}
-          //onClose={() => setModalOpen(false)}
         />
       </DialogContent>
     </Dialog>

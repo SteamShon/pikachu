@@ -1,5 +1,4 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Content, ContentType } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { adGroupRouter } from "../../server/api/routers/adGroup";
@@ -10,6 +9,7 @@ import type { CreativeWithAdGroupIdAndContentIdType } from "../schema/creative";
 import CreativeForm from "./creativeForm";
 
 function CreativeModal({
+  service,
   adGroups,
   contents,
   initialData,
@@ -17,8 +17,9 @@ function CreativeModal({
   setModalOpen,
   setServiceTree,
 }: {
-  adGroups: ReturnType<typeof buildAdGroupTree>[];
-  contents: (Content & { contentType: ContentType })[];
+  service: Parameters<typeof CreativeForm>[0]["service"];
+  adGroups: Parameters<typeof CreativeForm>[0]["adGroups"];
+  contents: Parameters<typeof CreativeForm>[0]["contents"];
   initialData?: Parameters<typeof CreativeForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -32,10 +33,8 @@ function CreativeModal({
     setServiceTree((prev) => {
       if (!prev) return prev;
       const adGroups =
-        prev.placementGroups[
-          created?.campaign?.placement?.placementGroup?.id || ""
-        ]?.placements[created?.campaign?.placement?.id || ""]?.campaigns[
-          created?.campaign?.id || ""
+        prev?.placements?.[created.campaign.placementId]?.campaigns?.[
+          created.campaignId
         ]?.adGroups;
       if (!adGroups) return prev;
       adGroups[created.id] = buildAdGroupTree(created);
@@ -69,6 +68,7 @@ function CreativeModal({
     >
       <DialogContent>
         <CreativeForm
+          service={service}
           adGroups={adGroups}
           contents={contents}
           initialData={initialData}

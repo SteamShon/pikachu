@@ -4,7 +4,6 @@ import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import moment from "moment";
-import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
@@ -12,62 +11,48 @@ import type CubeForm from "../../../components/form/cubeForm";
 import CubeModal from "../../../components/form/cubeModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
-import { buildCubeConfigTree } from "../../../utils/tree";
 
 function CubeTable({
+  service,
   serviceTree,
   setServiceTree,
 }: {
+  service: Parameters<typeof CubeForm>[0]["service"];
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const { cubeConfigIds } = router.query;
+
   const [cube, setCube] =
     useState<Parameters<typeof CubeForm>[0]["initialData"]>(undefined);
-  const selectedIds = (cubeConfigIds || []) as string[];
 
-  const { mutate: deleteCube } = api.cubeConfig.removeCube.useMutation({
+  const { mutate: deleteCube } = api.cube.remove.useMutation({
     onSuccess(deleted) {
       setServiceTree((prev) => {
-        if (!prev) return undefined;
+        if (!prev) return prev;
+        if (!prev.serviceConfig?.cubes) return prev;
 
-        prev.cubeConfigs[deleted.id] = buildCubeConfigTree(deleted);
+        delete prev.serviceConfig?.cubes[deleted.id];
         return prev;
       });
       setModalOpen(false);
     },
   });
-  const allCubeConfigs = serviceTree
-    ? Object.values(serviceTree.cubeConfigs)
-    : [];
-
-  const cubeConfigs =
-    selectedIds.length === 0
-      ? allCubeConfigs
-      : allCubeConfigs.filter((cubeConfig) => {
-          return selectedIds.includes(cubeConfig.id);
-        });
-
-  const rows = cubeConfigs.flatMap(({ cubes, ...cubeConfig }) => {
-    return Object.values(cubes).map(({ segments, ...cube }) => {
-      return { ...cube, cubeConfig, segments: Object.values(segments) };
-    });
-  });
+  const cubes = Object.values(serviceTree?.serviceConfig?.cubes || {}).map(
+    ({ segments, ...cube }) => {
+      return {
+        ...cube,
+        serviceConfig: { ...(serviceTree?.serviceConfig || {}) },
+        segments: Object.values(segments),
+      };
+    }
+  );
+  const rows = cubes;
 
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", width: 90 },
-    {
-      field: "cubeConfig.name",
-      headerName: "CubeConfig",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.cubeConfig.name;
-      },
-    },
     {
       field: "name",
       headerName: "Name",
@@ -114,7 +99,6 @@ function CubeTable({
                 e.stopPropagation();
                 if (confirm("Are you sure?")) {
                   deleteCube({
-                    cubeConfigId: params.row.cubeConfigId,
                     id: params.row.id,
                   });
                 }
@@ -168,7 +152,7 @@ function CubeTable({
       </div>
       <CubeModal
         key="cubeConfigModal"
-        cubeConfigs={cubeConfigs}
+        service={service}
         modalOpen={modalOpen}
         setModalOpen={setModalOpen}
         initialData={cube}

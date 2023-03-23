@@ -20,7 +20,7 @@ use crate::ad_state::AdState;
 #[derive(Deserialize)]
 struct Request {
     service_id: String,
-    placement_group_id: String,
+    placement_id: String,
     user_info: Value,
 }
 // copy prev shared state into new struct on heap. then atomically replace Arc using ArcSwap
@@ -28,7 +28,6 @@ async fn load_ad_meta(data: web::Data<ArcSwap<Arc<AdState>>>, client: web::Data<
     let prev = data.load();
     let mut new_ad_state = AdState {
         services: prev.services.clone(),
-        placement_groups: prev.placement_groups.clone(),
         placements: prev.placements.clone(),
         campaigns: prev.campaigns.clone(),
         ad_groups: prev.ad_groups.clone(),
@@ -68,7 +67,7 @@ async fn search(
 ) -> impl Responder {
     let matched_ad_groups = data.load().search(
         &request.service_id,
-        &request.placement_group_id,
+        &request.placement_id,
         &request.user_info,
     );
 

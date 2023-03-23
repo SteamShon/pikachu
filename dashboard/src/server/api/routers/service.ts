@@ -1,7 +1,8 @@
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { contentTypeSchema } from "../../../components/schema/contentType";
 import { customsetWithServiceSchema } from "../../../components/schema/customset";
-import { placementGroupWithServiceSchema } from "../../../components/schema/placementGroup";
+import { placementSchema } from "../../../components/schema/placement";
 
 import { serviceSchema } from "../../../components/schema/service";
 import { prisma } from "../../db";
@@ -11,40 +12,52 @@ export const serviceRouter = createTRPCRouter({
   create: protectedProcedure
     .input(serviceSchema)
     .mutation(async ({ input }) => {
-      const service = await prisma.service.create({
+      const { serviceConfig, ...service } = input;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { serviceId, ...serviceConfigInput } = {
+        ...serviceConfig,
+        s3Config: serviceConfig?.s3Config as Prisma.JsonObject,
+        builderConfig: serviceConfig?.builderConfig as Prisma.JsonObject,
+      };
+      return await prisma.service.create({
         data: {
-          name: input.name,
-          description: input.description,
-          status: input.status,
+          ...service,
+          serviceConfig: {
+            create: serviceConfigInput,
+          },
         },
-        /*
         include: {
-          placementGroups: {
-            include: {
-              placements: true,
-            },
-          },
-          contentTypes: {
-            include: {
-              contents: true,
-            },
-          },
+          serviceConfig: true,
         },
-        */
       });
-
-      return service;
     }),
   update: protectedProcedure
     .input(serviceSchema)
     .mutation(async ({ input }) => {
-      const service = await prisma.service.update({
+      const { serviceConfig, ...service } = input;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { serviceId, ...serviceConfigInput } = {
+        ...serviceConfig,
+        s3Config: serviceConfig?.s3Config as Prisma.JsonObject,
+        builderConfig: serviceConfig?.builderConfig as Prisma.JsonObject,
+      };
+      return await prisma.service.update({
         where: {
-          id: input?.id || "",
+          id: service.id,
         },
-        data: input,
+        data: {
+          ...service,
+          serviceConfig: {
+            upsert: {
+              update: serviceConfigInput,
+              create: serviceConfigInput,
+            },
+          },
+        },
+        include: {
+          serviceConfig: true,
+        },
       });
-      return service;
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
@@ -85,18 +98,19 @@ export const serviceRouter = createTRPCRouter({
       return services;
     }),
   getAllOnlyServices: protectedProcedure.query(async ({}) => {
-    return await prisma.service.findMany();
+    return await prisma.service.findMany({
+      include: {
+        serviceConfig: true,
+      },
+    });
   }),
   getAll: protectedProcedure.query(async ({}) => {
     const services = await prisma.service.findMany({
       include: {
-        placementGroups: {
-          include: {
-            placements: true,
-          },
-        },
+        placements: true,
         contentTypes: {
           include: {
+            contentTypeInfo: true,
             contents: true,
           },
         },
@@ -117,20 +131,16 @@ export const serviceRouter = createTRPCRouter({
           id: input.id,
         },
         include: {
-          placementGroups: {
+          placements: {
             include: {
-              placements: {
+              contentType: true,
+              campaigns: {
                 include: {
-                  contentType: true,
-                  campaigns: {
+                  adGroups: {
                     include: {
-                      adGroups: {
+                      creatives: {
                         include: {
-                          creatives: {
-                            include: {
-                              content: true,
-                            },
-                          },
+                          content: true,
                         },
                       },
                     },
@@ -141,6 +151,7 @@ export const serviceRouter = createTRPCRouter({
           },
           contentTypes: {
             include: {
+              contentTypeInfo: true,
               contents: {
                 include: {
                   creatives: true,
@@ -154,7 +165,7 @@ export const serviceRouter = createTRPCRouter({
               createdBy: true,
             },
           },
-          cubeConfigs: {
+          serviceConfig: {
             include: {
               cubes: {
                 include: {
@@ -167,42 +178,38 @@ export const serviceRouter = createTRPCRouter({
       });
     }),
 
-  addPlacementGroup: protectedProcedure
-    .input(placementGroupWithServiceSchema)
+  addPlacement: protectedProcedure
+    .input(placementSchema)
     .mutation(async ({ input }) => {
-      const { serviceId, ...placementGroupInput } = input;
+      const { serviceId, ...placement } = input;
       const service = await prisma.service.update({
         where: {
           id: serviceId,
         },
         data: {
-          placementGroups: {
+          placements: {
             connectOrCreate: {
               where: {
                 serviceId_name: {
                   serviceId: serviceId,
-                  name: placementGroupInput.name,
+                  name: placement.name,
                 },
               },
-              create: placementGroupInput,
+              create: placement,
             },
           },
         },
         include: {
-          placementGroups: {
+          placements: {
             include: {
-              placements: {
+              contentType: true,
+              campaigns: {
                 include: {
-                  contentType: true,
-                  campaigns: {
+                  adGroups: {
                     include: {
-                      adGroups: {
+                      creatives: {
                         include: {
-                          creatives: {
-                            include: {
-                              content: true,
-                            },
-                          },
+                          content: true,
                         },
                       },
                     },
@@ -213,6 +220,7 @@ export const serviceRouter = createTRPCRouter({
           },
           contentTypes: {
             include: {
+              contentTypeInfo: true,
               contents: {
                 include: {
                   creatives: true,
@@ -226,7 +234,7 @@ export const serviceRouter = createTRPCRouter({
               createdBy: true,
             },
           },
-          cubeConfigs: {
+          serviceConfig: {
             include: {
               cubes: {
                 include: {
@@ -240,39 +248,35 @@ export const serviceRouter = createTRPCRouter({
 
       return service;
     }),
-  updatePlacementGroup: protectedProcedure
-    .input(placementGroupWithServiceSchema)
+  updatePlacement: protectedProcedure
+    .input(placementSchema)
     .mutation(async ({ input }) => {
-      const { serviceId, ...placementGroupInput } = input;
+      const { serviceId, ...placement } = input;
       const service = await prisma.service.update({
         where: {
           id: serviceId,
         },
         data: {
-          placementGroups: {
+          placements: {
             update: {
               where: {
-                id: placementGroupInput.id || "",
+                id: placement.id,
               },
-              data: placementGroupInput,
+              data: placement,
             },
           },
         },
         include: {
-          placementGroups: {
+          placements: {
             include: {
-              placements: {
+              contentType: true,
+              campaigns: {
                 include: {
-                  contentType: true,
-                  campaigns: {
+                  adGroups: {
                     include: {
-                      adGroups: {
+                      creatives: {
                         include: {
-                          creatives: {
-                            include: {
-                              content: true,
-                            },
-                          },
+                          content: true,
                         },
                       },
                     },
@@ -283,6 +287,7 @@ export const serviceRouter = createTRPCRouter({
           },
           contentTypes: {
             include: {
+              contentTypeInfo: true,
               contents: {
                 include: {
                   creatives: true,
@@ -296,7 +301,7 @@ export const serviceRouter = createTRPCRouter({
               createdBy: true,
             },
           },
-          cubeConfigs: {
+          serviceConfig: {
             include: {
               cubes: {
                 include: {
@@ -310,43 +315,37 @@ export const serviceRouter = createTRPCRouter({
 
       return service;
     }),
-  removePlacementGroup: protectedProcedure
+  removePlacement: protectedProcedure
     .input(
       z.object({
         serviceId: z.string(),
-        name: z.string(),
+        id: z.string(),
       })
     )
     .mutation(async ({ input }) => {
+      const { serviceId, id } = input;
       const service = await prisma.service.update({
         where: {
-          id: input.serviceId,
+          id: serviceId,
         },
         data: {
-          placementGroups: {
+          placements: {
             delete: {
-              serviceId_name: {
-                serviceId: input.serviceId,
-                name: input.name,
-              },
+              id,
             },
           },
         },
         include: {
-          placementGroups: {
+          placements: {
             include: {
-              placements: {
+              contentType: true,
+              campaigns: {
                 include: {
-                  contentType: true,
-                  campaigns: {
+                  adGroups: {
                     include: {
-                      adGroups: {
+                      creatives: {
                         include: {
-                          creatives: {
-                            include: {
-                              content: true,
-                            },
-                          },
+                          content: true,
                         },
                       },
                     },
@@ -357,6 +356,7 @@ export const serviceRouter = createTRPCRouter({
           },
           contentTypes: {
             include: {
+              contentTypeInfo: true,
               contents: {
                 include: {
                   creatives: true,
@@ -370,7 +370,7 @@ export const serviceRouter = createTRPCRouter({
               createdBy: true,
             },
           },
-          cubeConfigs: {
+          serviceConfig: {
             include: {
               cubes: {
                 include: {
@@ -386,9 +386,12 @@ export const serviceRouter = createTRPCRouter({
     }),
 
   addContentType: protectedProcedure
-    .input(contentTypeSchema.extend({ serviceId: z.string() }))
+    .input(contentTypeSchema)
     .mutation(async ({ input }) => {
-      const { serviceId, ...contentTypeInput } = input;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { contentTypeInfo, ...contentTypeInput } = input;
+      const { serviceId, ...contentType } = contentTypeInput;
+
       const service = await prisma.service.update({
         where: {
           id: serviceId,
@@ -398,32 +401,35 @@ export const serviceRouter = createTRPCRouter({
             connectOrCreate: {
               where: {
                 serviceId_name: {
-                  serviceId,
-                  name: contentTypeInput.name,
+                  serviceId: serviceId,
+                  name: contentType.name,
                 },
               },
               create: {
-                ...contentTypeInput,
-                defaultValues: JSON.stringify(contentTypeInput.defaultValues),
+                ...contentType,
+                // contentTypeInfo: {
+                //   connectOrCreate: {
+                //     where: {
+                //       id: contentTypeInfo?.id,
+                //     },
+                //     create: contentTypeInfoJson,
+                //   },
+                // },
               },
             },
           },
         },
         include: {
-          placementGroups: {
+          placements: {
             include: {
-              placements: {
+              contentType: true,
+              campaigns: {
                 include: {
-                  contentType: true,
-                  campaigns: {
+                  adGroups: {
                     include: {
-                      adGroups: {
+                      creatives: {
                         include: {
-                          creatives: {
-                            include: {
-                              content: true,
-                            },
-                          },
+                          content: true,
                         },
                       },
                     },
@@ -434,9 +440,25 @@ export const serviceRouter = createTRPCRouter({
           },
           contentTypes: {
             include: {
+              contentTypeInfo: true,
               contents: {
                 include: {
                   creatives: true,
+                },
+              },
+            },
+          },
+          customsets: {
+            include: {
+              customsetInfo: true,
+              createdBy: true,
+            },
+          },
+          serviceConfig: {
+            include: {
+              cubes: {
+                include: {
+                  segments: true,
                 },
               },
             },
@@ -447,9 +469,15 @@ export const serviceRouter = createTRPCRouter({
       return service;
     }),
   updateContentType: protectedProcedure
-    .input(contentTypeSchema.extend({ serviceId: z.string() }))
+    .input(contentTypeSchema)
     .mutation(async ({ input }) => {
-      const { serviceId, ...contentTypeInput } = input;
+      const { contentTypeInfo, ...contentTypeInput } = input;
+      const { serviceId, ...contentType } = contentTypeInput;
+      const contentTypeInfoJson = {
+        id: contentTypeInfo?.id,
+        details: contentTypeInfo?.details as Prisma.JsonObject,
+      };
+
       const service = await prisma.service.update({
         where: {
           id: serviceId,
@@ -458,30 +486,31 @@ export const serviceRouter = createTRPCRouter({
           contentTypes: {
             update: {
               where: {
-                id: contentTypeInput.id || "",
+                id: contentType.id,
               },
               data: {
-                ...contentTypeInput,
-                defaultValues: JSON.stringify(contentTypeInput.defaultValues),
+                ...contentType,
+                contentTypeInfo: {
+                  upsert: {
+                    update: contentTypeInfoJson,
+                    create: contentTypeInfoJson,
+                  },
+                },
               },
             },
           },
         },
         include: {
-          placementGroups: {
+          placements: {
             include: {
-              placements: {
+              contentType: true,
+              campaigns: {
                 include: {
-                  contentType: true,
-                  campaigns: {
+                  adGroups: {
                     include: {
-                      adGroups: {
+                      creatives: {
                         include: {
-                          creatives: {
-                            include: {
-                              content: true,
-                            },
-                          },
+                          content: true,
                         },
                       },
                     },
@@ -492,9 +521,25 @@ export const serviceRouter = createTRPCRouter({
           },
           contentTypes: {
             include: {
+              contentTypeInfo: true,
               contents: {
                 include: {
                   creatives: true,
+                },
+              },
+            },
+          },
+          customsets: {
+            include: {
+              customsetInfo: true,
+              createdBy: true,
+            },
+          },
+          serviceConfig: {
+            include: {
+              cubes: {
+                include: {
+                  segments: true,
                 },
               },
             },
@@ -508,30 +553,62 @@ export const serviceRouter = createTRPCRouter({
     .input(
       z.object({
         serviceId: z.string(),
-        name: z.string(),
+        id: z.string(),
       })
     )
     .mutation(async ({ input }) => {
+      const { serviceId, id } = input;
       const service = await prisma.service.update({
         where: {
-          id: input.serviceId,
+          id: serviceId,
         },
         data: {
           contentTypes: {
             delete: {
-              serviceId_name: {
-                serviceId: input.serviceId,
-                name: input.name,
-              },
+              id,
             },
           },
         },
         include: {
+          placements: {
+            include: {
+              contentType: true,
+              campaigns: {
+                include: {
+                  adGroups: {
+                    include: {
+                      creatives: {
+                        include: {
+                          content: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           contentTypes: {
             include: {
+              contentTypeInfo: true,
               contents: {
                 include: {
                   creatives: true,
+                },
+              },
+            },
+          },
+          customsets: {
+            include: {
+              customsetInfo: true,
+              createdBy: true,
+            },
+          },
+          serviceConfig: {
+            include: {
+              cubes: {
+                include: {
+                  segments: true,
                 },
               },
             },

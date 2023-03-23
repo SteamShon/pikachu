@@ -1,8 +1,6 @@
 use super::AdState;
 
-use crate::db::{
-    ad_group, campaign, content, content_type, creative, placement, placement_group, service,
-};
+use crate::db::{ad_group, campaign, content, content_type, creative, placement, service};
 use lazy_static::lazy_static;
 use prisma_client_rust::chrono::FixedOffset;
 use serde_json::json;
@@ -16,24 +14,11 @@ lazy_static! {
         name: String::from("s1"),
         description: None,
         status: String::from("published"),
-        placement_groups: None,
+        placements: None,
         users: None,
         content_types: None,
-        cube_configs: None,
+        service_config: None,
         customsets: None,
-        created_at: *NOW,
-        updated_at: *NOW,
-    };
-    pub static ref PLACEMENT_GROUP: placement_group::Data = placement_group::Data {
-        id: String::from("placement_group_1"),
-        name: String::from("pg1"),
-        description: None,
-        status: String::from("published"),
-        cube: None,
-        cube_id: None,
-        placements: None,
-        service: None,
-        service_id: Some(SERVICE.id.clone()),
         created_at: *NOW,
         updated_at: *NOW,
     };
@@ -45,9 +30,11 @@ lazy_static! {
         advertisers_on_placements: None,
         campaigns: None,
         content_type: None,
-        content_type_id: CONTENT_TYPE.id.clone(),
-        placement_group: None,
-        placement_group_id: Some(PLACEMENT_GROUP.id.clone()),
+        content_type_id: Some(CONTENT_TYPE.id.clone()),
+        cube: None,
+        cube_id: None,
+        service: None,
+        service_id: Some(SERVICE.id.clone()),
         created_at: *NOW,
         updated_at: *NOW,
     };
@@ -99,9 +86,8 @@ lazy_static! {
         description: None,
         contents: None,
         placements: None,
-        default_values: None,
-        schema: None,
-        ui_schema: None,
+        content_type_info: None,
+        source: String::from("local"),
         status: String::from("published"),
         created_at: *NOW,
         updated_at: *NOW,
@@ -131,7 +117,6 @@ lazy_static! {
 }
 fn init_test_ad_state(ad_state: &mut AdState) {
     ad_state.update_services(&vec![SERVICE.clone()]);
-    ad_state.update_placement_groups(&vec![PLACEMENT_GROUP.clone()]);
     ad_state.update_placements(&vec![PLACEMENT.clone()]);
     ad_state.update_campaigns(&vec![CAMPAIGN.clone()]);
     ad_state.update_ad_groups(&vec![AD_GROUP.clone()]);
@@ -158,13 +143,12 @@ fn test_ad_state_and_search_result_after_update() {
     init_test_ad_state(&mut ad_state);
 
     let ad_group_id = String::from(AD_GROUP.id.clone());
-    let placement_group_id = PLACEMENT_GROUP.id.clone();
     let placement_id = PLACEMENT.id.clone();
     let campaign_id = CAMPAIGN.id.clone();
     let ids = vec![ad_group_id];
 
     // before update.
-    let placement_ids = ad_state.merge_ids_with_ad_metas(&placement_group_id, ids.iter());
+    let placement_ids = ad_state.merge_ids_with_ad_metas(&placement_id, ids.iter());
 
     assert_eq!(placement_ids.contains_key(&placement_id), true);
     let campaign_ids = placement_ids.get(&placement_id).unwrap();
@@ -180,7 +164,7 @@ fn test_ad_state_and_search_result_after_update() {
     // search result: match since user_info {"age": 10} matches to original
     // filter {"in": [{"var": "age"}, ["10"]]}
 
-    let search_result = ad_state.search(&SERVICE.id, &placement_group_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &placement_id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() > 0, true);
 
     // update ad_group/creative including target filter conditions.
@@ -204,7 +188,7 @@ fn test_ad_state_and_search_result_after_update() {
     ad_state.update_creatives(&vec![new_creative]);
     println!("{:?}", ad_state.filter_index);
 
-    let new_placement_ids = ad_state.merge_ids_with_ad_metas(&placement_group_id, ids.iter());
+    let new_placement_ids = ad_state.merge_ids_with_ad_metas(&placement_id, ids.iter());
 
     for ad_group in new_placement_ids
         .get(&placement_id)
@@ -219,7 +203,7 @@ fn test_ad_state_and_search_result_after_update() {
     }
     // after update, ad_group should not matched since filter changed from
     // age.10 to age.30 and user_info has age.10
-    let search_result = ad_state.search(&SERVICE.id, &placement_group_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &placement_id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() == 0, true);
 
     println!("{:?}", new_placement_ids);
@@ -236,9 +220,8 @@ fn test_update_ad_group_filter_and_status_change() {
     let mut ad_state = AdState::default();
     init_test_ad_state(&mut ad_state);
 
-    let placement_group_id = PLACEMENT_GROUP.id.clone();
     // result should contain AD_GROUP since age.10
-    let search_result = ad_state.search(&SERVICE.id, &placement_group_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() > 0, true);
 
     // update ad_group's status to exlucde it from index.
@@ -253,7 +236,7 @@ fn test_update_ad_group_filter_and_status_change() {
     ad_state.update_ad_groups(&vec![new_ad_group]);
     // after update, AD_GROUP should be excluded from result since
     // our index suppose to exlude filters_to_delete.
-    let search_result = ad_state.search(&SERVICE.id, &placement_group_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() == 0, true);
 
     // back to status published.
@@ -266,6 +249,6 @@ fn test_update_ad_group_filter_and_status_change() {
     ad_state.update_ad_groups(&vec![new_ad_group]);
     // after update, AD_GROUP should be included in result.
     // since ad_group's status has been change back to published.
-    let search_result = ad_state.search(&SERVICE.id, &placement_group_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json);
     assert_eq!(search_result.matched_ads.len() > 0, true);
 }

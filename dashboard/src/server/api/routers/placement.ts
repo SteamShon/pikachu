@@ -1,41 +1,34 @@
 import { z } from "zod";
 
 import { campaignWithPlacementSchema } from "../../../components/schema/campaign";
-import { placementSchema } from "../../../components/schema/placement";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const placementRouter = createTRPCRouter({
-  update: protectedProcedure
-    .input(placementSchema)
-    .mutation(async ({ input }) => {
-      const placement = await prisma.placement.update({
+  list: protectedProcedure
+    .input(z.object({ serviceId: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const { serviceId } = input;
+      const placements = await prisma.placement.findMany({
         where: {
-          id: input.id || "",
+          serviceId,
         },
-        data: input,
         include: {
-          contentType: true,
-          campaigns: {
-            orderBy: {
-              updatedAt: "desc",
-            },
+          cube: {
             include: {
-              adGroups: {
-                include: {
-                  creatives: {
-                    include: {
-                      content: true,
-                    },
-                  },
-                },
-              },
+              serviceConfig: true,
+            },
+          },
+          contentType: {
+            include: {
+              contentTypeInfo: true,
+              contents: true,
             },
           },
         },
       });
 
-      return placement;
+      return placements;
     }),
   addCampaign: protectedProcedure
     .input(campaignWithPlacementSchema)
@@ -60,11 +53,7 @@ export const placementRouter = createTRPCRouter({
           },
         },
         include: {
-          placementGroup: {
-            include: {
-              service: true,
-            },
-          },
+          service: true,
           contentType: true,
           campaigns: {
             orderBy: {
@@ -107,11 +96,7 @@ export const placementRouter = createTRPCRouter({
           },
         },
         include: {
-          placementGroup: {
-            include: {
-              service: true,
-            },
-          },
+          service: true,
           contentType: true,
           campaigns: {
             orderBy: {
@@ -159,11 +144,7 @@ export const placementRouter = createTRPCRouter({
           },
         },
         include: {
-          placementGroup: {
-            include: {
-              service: true,
-            },
-          },
+          service: true,
           contentType: true,
           campaigns: {
             orderBy: {

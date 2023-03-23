@@ -4,16 +4,13 @@ import type {
   AdGroup,
   Campaign,
   Cube,
-  CubeConfig,
   Placement,
-  PlacementGroup,
+  ServiceConfig,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
-import type { RuleGroupType } from "react-querybuilder";
 import { formatQuery, parseJsonLogic } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
-import type { buildCampaignTree } from "../../utils/tree";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { AdGroupWithCampaignSchemaType } from "../schema/adGroup";
 import { adGroupWithCampaignSchema } from "../schema/adGroup";
@@ -21,22 +18,16 @@ import SegmentQueryBuilder from "./segmentQueryBuilder";
 
 function AdGroupForm({
   campaigns,
+  cubes,
   onSubmit,
   initialData,
 }: {
-  campaigns: (ReturnType<typeof buildCampaignTree> & {
-    placement: Placement & {
-      placementGroup: PlacementGroup & {
-        cube?: Cube & { cubeConfig: CubeConfig };
-      };
-    };
-  })[];
+  campaigns: (Campaign & { placement: Placement })[];
+  cubes: (Cube & { serviceConfig: ServiceConfig })[];
   onSubmit: (input: AdGroupWithCampaignSchemaType) => void;
   initialData?: AdGroup & { campaign: Campaign };
 }) {
-  const [cube, setCube] = useState<
-    (Cube & { cubeConfig: CubeConfig }) | undefined
-  >(undefined);
+  const [cube, setCube] = useState<typeof cubes[0] | undefined>(undefined);
 
   const methods = useForm<AdGroupWithCampaignSchemaType>({
     resolver: zodResolver(adGroupWithCampaignSchema),
@@ -61,10 +52,10 @@ function AdGroupForm({
       const campaign = campaigns.find(
         (campaign) => campaign.id === initialData?.campaignId
       );
-
-      setCube(campaign?.placement.placementGroup.cube);
+      const cube = cubes.find((c) => c.id === campaign?.placement.cubeId);
+      setCube(cube);
     }
-  }, [reset, initialData, campaigns]);
+  }, [reset, initialData, campaigns, cubes]);
 
   return (
     <FormProvider {...methods}>
@@ -85,11 +76,13 @@ function AdGroupForm({
                     defaultValue={initialData?.campaignId}
                     disabled={initialData ? true : false}
                     onChange={(e) => {
-                      setCube(
-                        campaigns.find(
-                          (campaign) => campaign.id === e.target.value
-                        )?.placement.placementGroup.cube
+                      const campaign = campaigns.find(
+                        (campaign) => campaign.id === e.target.value
                       );
+                      const cube = cubes.find(
+                        (c) => c.id === campaign?.placement?.cubeId
+                      );
+                      setCube(cube);
                     }}
                   >
                     <option value="">Please choose</option>

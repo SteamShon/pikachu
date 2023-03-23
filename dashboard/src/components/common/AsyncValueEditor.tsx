@@ -22,7 +22,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
       debounce((prefix?: string) => {
         (async () => {
           const values = (
-            await fetchValues(cube.cubeConfig, cube.sql, props.field, prefix)
+            await fetchValues(cube.serviceConfig, cube.sql, props.field, prefix)
           ).map((value) => String(value));
 
           setOptions(values);

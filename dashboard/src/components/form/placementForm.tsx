@@ -1,25 +1,26 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ContentType, Placement, PlacementGroup } from "@prisma/client";
+import type { ContentType, Cube, Placement, Service } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import type { buildPlacementGroupTree } from "../../utils/tree";
 import CustomLoadingButton from "../common/CustomLoadingButton";
-import type { PlacementWithPlacementGroupSchemaType } from "../schema/placement";
-import { placementWithPlacementGroupSchema } from "../schema/placement";
+import type { PlacementSchemaType } from "../schema/placement";
+import { placementSchema } from "../schema/placement";
 
 function PlacementForm({
-  placementGroups,
+  service,
   contentTypes,
+  cubes,
   initialData,
   onSubmit,
 }: {
-  placementGroups: ReturnType<typeof buildPlacementGroupTree>[];
+  service: Service;
   contentTypes: ContentType[];
-  initialData?: Placement & { placementGroup: PlacementGroup };
-  onSubmit: (input: PlacementWithPlacementGroupSchemaType) => void;
+  cubes: Cube[];
+  initialData?: Placement;
+  onSubmit: (input: PlacementSchemaType) => void;
 }) {
-  const methods = useForm<PlacementWithPlacementGroupSchemaType>({
-    resolver: zodResolver(placementWithPlacementGroupSchema),
+  const methods = useForm<PlacementSchemaType>({
+    resolver: zodResolver(placementSchema),
   });
 
   const {
@@ -32,7 +33,7 @@ function PlacementForm({
   useEffect(() => {
     reset({
       ...(initialData ? initialData : {}),
-      placementGroupId: initialData?.placementGroup?.id,
+      serviceId: initialData?.serviceId || undefined,
     });
   }, [reset, initialData]);
 
@@ -48,31 +49,11 @@ function PlacementForm({
           <div className="border-t border-gray-200">
             <dl>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">
-                  PlacementGroup
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <select
-                    {...register("placementGroupId")}
-                    defaultValue={initialData?.placementGroupId || undefined}
-                    disabled={initialData ? true : false}
-                  >
-                    <option value="">Please choose</option>
-                    {placementGroups.map((placementGroup) => {
-                      return (
-                        <option
-                          key={placementGroup.id}
-                          value={placementGroup.id}
-                        >
-                          {placementGroup.name}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {errors.placementGroupId && (
-                    <p role="alert">{errors.placementGroupId?.message}</p>
-                  )}
-                </dd>
+                <input
+                  type="hidden"
+                  {...register(`serviceId`)}
+                  value={service.id}
+                />
               </div>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Name</dt>
@@ -125,13 +106,34 @@ function PlacementForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("contentTypeId")}
-                    defaultValue={initialData?.contentTypeId}
+                    defaultValue={initialData?.contentTypeId || undefined}
                   >
                     <option value="">Please choose</option>
                     {contentTypes.map((contentType) => {
                       return (
                         <option key={contentType.id} value={contentType.id}>
                           {contentType.name}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {errors.contentTypeId && (
+                    <p role="alert">{errors.contentTypeId?.message}</p>
+                  )}
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Cube</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <select
+                    {...register("cubeId")}
+                    defaultValue={initialData?.cubeId || undefined}
+                  >
+                    <option value="">Please choose</option>
+                    {cubes.map((cube) => {
+                      return (
+                        <option key={cube.id} value={cube.id}>
+                          {cube.name}
                         </option>
                       );
                     })}

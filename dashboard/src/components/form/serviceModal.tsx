@@ -1,6 +1,8 @@
 import { Dialog, DialogContent } from "@mui/material";
 import type { Service } from "@prisma/client";
+import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
+import type { serviceRouter } from "../../server/api/routers/service";
 import { api } from "../../utils/api";
 import type { ServiceSchemaType } from "../schema/service";
 import ServiceForm from "./serviceForm";
@@ -16,23 +18,25 @@ function ServiceModal({
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServices: Dispatch<SetStateAction<Service[]>>;
 }) {
+  type RouterOutput = inferRouterOutputs<typeof serviceRouter>;
+  type OutputType = RouterOutput["create"];
+  const handleSuccess = (created: OutputType): void => {
+    setServices((prev) => {
+      return [...prev.filter((service) => service.id !== service.id), created];
+    });
+
+    setModalOpen(false);
+  };
+
   const { mutate: create } = api.service.create.useMutation({
     onSuccess(service) {
-      setServices((prev) => [...prev, service]);
-      setModalOpen(false);
+      handleSuccess(service);
     },
   });
 
   const { mutate: update } = api.service.update.useMutation({
     onSuccess(service) {
-      setServices((prev) => {
-        return [
-          ...prev.filter((service) => service.id !== service.id),
-          service,
-        ];
-      });
-
-      setModalOpen(false);
+      handleSuccess(service);
     },
   });
 

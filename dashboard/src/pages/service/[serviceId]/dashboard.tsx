@@ -9,13 +9,12 @@ import CampaignTable from "./campaignTable";
 import ContentTable from "./contentTable";
 import ContentTypeTable from "./contentTypeTable";
 import CreativeTable from "./creativeTable";
-import CubeConfigTable from "./cubeConfigTable";
 import CubeTable from "./cubeTable";
 import CustomsetTable from "./customsetTable";
-import PlacementGroupTable from "./placementGroupTable";
+
 import PlacementTable from "./placementTable";
 import RenderPreview from "./renderPreview";
-import SegmentTable from "./segmentTable";
+
 import SideMenu from "./sideMenu";
 
 function Dashboard() {
@@ -39,23 +38,15 @@ function Dashboard() {
 
   const steps = [
     {
-      label: "PlacementGroups",
-      description: `placementGroups`,
-      table: () =>
-        service ? (
-          <PlacementGroupTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
-        ) : null,
-    },
-    {
       label: "Placements",
       description: `placements`,
       table: () =>
         service ? (
-          <PlacementTable setServiceTree={setTree} serviceTree={tree} />
+          <PlacementTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
         ) : null,
     },
     {
@@ -70,7 +61,7 @@ function Dashboard() {
       label: "AdGroups",
       description: `adGroups`,
       table: () =>
-        service ? (
+        service && tree ? (
           <AdGroupTable setServiceTree={setTree} serviceTree={tree} />
         ) : null,
     },
@@ -79,7 +70,11 @@ function Dashboard() {
       description: `creatives`,
       table: () =>
         service ? (
-          <CreativeTable setServiceTree={setTree} serviceTree={tree} />
+          <CreativeTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
         ) : null,
     },
     {
@@ -99,7 +94,11 @@ function Dashboard() {
       description: `contents`,
       table: () =>
         service ? (
-          <ContentTable setServiceTree={setTree} serviceTree={tree} />
+          <ContentTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
         ) : null,
     },
     {
@@ -115,33 +114,18 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "CubeConfigs",
-      description: `cubeConfigs`,
+      label: "Cubes",
+      description: `cubes`,
       table: () =>
         service ? (
-          <CubeConfigTable
+          <CubeTable
             service={service}
             setServiceTree={setTree}
             serviceTree={tree}
           />
         ) : null,
     },
-    {
-      label: "Cubes",
-      description: `cubes`,
-      table: () =>
-        service ? (
-          <CubeTable setServiceTree={setTree} serviceTree={tree} />
-        ) : null,
-    },
-    {
-      label: "Segments",
-      description: `segments`,
-      table: () =>
-        service ? (
-          <SegmentTable setServiceTree={setTree} serviceTree={tree} />
-        ) : null,
-    },
+
     {
       label: "RenderPreview",
       description: `renderPreview`,

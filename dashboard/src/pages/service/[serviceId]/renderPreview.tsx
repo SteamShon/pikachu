@@ -17,10 +17,9 @@ import { search, buildUserInfo } from "../../../utils/search";
 
 function RenderPreview({ serviceId }: { serviceId: string }) {
   const { enqueueSnackbar } = useSnackbar();
-  const { data: placementGroups } = api.placementGroup.list.useQuery({
+  const { data: placements } = api.placement.list.useQuery({
     serviceId: serviceId as string,
   });
-
   const [matchedAds, setMatchedAds] = useState<SearchResult[]>([]);
   const [payload, setPayload] = useState<SearchRequestSchemaType | undefined>(
     undefined
@@ -41,7 +40,12 @@ function RenderPreview({ serviceId }: { serviceId: string }) {
       .catch((e) => console.error(e));
   };
   const buildCurlCommand = () => {
-    const data = payload ? buildUserInfo(payload) : {};
+    const userInfo = payload ? buildUserInfo(payload) : {};
+    const data = {
+      service_id: serviceId,
+      placement_id: payload?.placementId,
+      user_info: userInfo,
+    };
     const request = JSON.stringify(data, null, 2);
     return `
     CURL -X POST -H 'content-type:application/json' ${payload?.apiServerHost}/search -d '${request}'
@@ -50,7 +54,7 @@ function RenderPreview({ serviceId }: { serviceId: string }) {
   return (
     <>
       <SearchRequestForm
-        placementGroups={placementGroups}
+        placements={placements}
         setMatchedAds={setMatchedAds}
         onSubmit={(data) => {
           searchMatchedAds(data);

@@ -3,6 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
+import type { Service, ServiceConfig } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -13,13 +14,16 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type CreativeForm from "../../../components/form/creativeForm";
 import CreativeModal from "../../../components/form/creativeModal";
 import { api } from "../../../utils/api";
+import { extractCode } from "../../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildAdGroupTree } from "../../../utils/tree";
 function CreativeTable({
+  service,
   serviceTree,
   setServiceTree,
 }: {
+  service: Service & { serviceConfig?: ServiceConfig | null };
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -38,12 +42,9 @@ function CreativeTable({
       setServiceTree((prev) => {
         if (!prev) return prev;
         const adGroups =
-          prev.placementGroups[
-            created?.campaign?.placement?.placementGroup?.id || ""
-          ]?.placements[created?.campaign?.placement?.id || ""]?.campaigns[
-            created?.campaign?.id || ""
+          prev?.placements?.[created.campaign.placementId]?.campaigns?.[
+            created.campaignId
           ]?.adGroups;
-
         if (!adGroups) return prev;
         adGroups[created.id] = buildAdGroupTree(created);
         return prev;
@@ -53,31 +54,22 @@ function CreativeTable({
     },
   });
 
-  const allAdGroups = serviceTree
-    ? Object.values(serviceTree.placementGroups).flatMap((placementGroup) => {
-        const { placements, ...placementGroupData } = placementGroup;
-        return Object.values(placements).flatMap((placement) => {
-          const { campaigns, ...placementData } = placement;
-          return Object.values(campaigns).flatMap((campaign) => {
-            const { adGroups, ...campaignData } = campaign;
-            return Object.values(adGroups).map((adGroup) => {
-              const { creatives, ...adGroupData } = adGroup;
-              return {
-                ...adGroupData,
-                campaign: {
-                  ...campaignData,
-                  placement: {
-                    ...placementData,
-                    placementGroup: placementGroupData,
-                  },
-                },
-                creatives,
-              };
-            });
-          });
+  const allAdGroups = Object.values(serviceTree?.placements || []).flatMap(
+    ({ campaigns, ...placement }) => {
+      return Object.values(campaigns).flatMap(({ adGroups, ...campaign }) => {
+        return Object.values(adGroups).map(({ creatives, ...adGroup }) => {
+          return {
+            ...adGroup,
+            campaign: {
+              ...campaign,
+              placement,
+            },
+            creatives,
+          };
         });
-      })
-    : [];
+      });
+    }
+  );
 
   const adGroups =
     selectedIds.length === 0
@@ -103,14 +95,6 @@ function CreativeTable({
 
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", flex: 1 },
-    {
-      field: "placementGroup.name",
-      headerName: "PlacementGroup",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.adGroup.campaign.placement.placementGroup.name;
-      },
-    },
     {
       field: "placement.name",
       headerName: "Placement",
@@ -161,7 +145,7 @@ function CreativeTable({
         return (
           <LiveProvider
             code={replacePropsInFunction({
-              code: content?.contentType?.uiSchema || undefined,
+              code: extractCode(content?.contentType?.contentTypeInfo),
               contents: [jsonParseWithFallback(content?.values)],
             })}
             noInline={true}
@@ -256,6 +240,7 @@ function CreativeTable({
         key="campaignModal"
         modalOpen={modalOpen}
         setModalOpen={setModalOpen}
+        service={service}
         adGroups={adGroups}
         contents={contents}
         initialData={creative}

@@ -10,12 +10,14 @@ import AdGroupForm from "./adGroupForm";
 
 function AdGroupModal({
   campaigns,
+  cubes,
   initialData,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
   campaigns: Parameters<typeof AdGroupForm>[0]["campaigns"];
+  cubes: Parameters<typeof AdGroupForm>[0]["cubes"];
   initialData?: Parameters<typeof AdGroupForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -29,9 +31,7 @@ function AdGroupModal({
     setServiceTree((prev) => {
       if (!prev) return prev;
 
-      const campaigns =
-        prev.placementGroups[created?.placement?.placementGroup?.id || ""]
-          ?.placements[created?.placement?.id || ""]?.campaigns;
+      const campaigns = prev?.placements?.[created.placementId]?.campaigns;
       if (!campaigns) return prev;
 
       campaigns[created.id] = buildCampaignTree(created);
@@ -67,6 +67,7 @@ function AdGroupModal({
       <DialogContent>
         <AdGroupForm
           campaigns={campaigns}
+          cubes={cubes}
           initialData={initialData}
           onSubmit={onSubmit}
           //onClose={() => setModalOpen(false)}

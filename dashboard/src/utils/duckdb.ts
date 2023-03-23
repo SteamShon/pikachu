@@ -1,14 +1,19 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import * as duckdb from "@duckdb/duckdb-wasm";
-import type { CubeConfig } from "@prisma/client";
+import type { ServiceConfig } from "@prisma/client";
 import { MyCache } from "./cache";
+import {
+  extractS3AccessKeyId,
+  extractS3Region,
+  extractS3SecretAccessKey,
+} from "./serviceConfig";
 
-const pool = new MyCache<CubeConfig, AsyncDuckDB | undefined>({
+const pool = new MyCache<ServiceConfig, AsyncDuckDB | undefined>({
   max: 3, // # of items
   ttl: 10 * 60 * 1000, // expiration in ms (10 min)
 });
 const queryCache = new MyCache<
-  { cubeConfig: CubeConfig; query: string },
+  { serviceConfig: ServiceConfig; query: string },
   Record<string, unknown>[]
 >({
   max: 50, // # of items
@@ -16,12 +21,14 @@ const queryCache = new MyCache<
 });
 
 async function loadDuckDBInner(
-  cubeConfig: CubeConfig
+  serviceConfig: ServiceConfig
 ): Promise<AsyncDuckDB | undefined> {
   const allBundles = duckdb.getJsDelivrBundles();
   const bestBundle = await duckdb.selectBundle(allBundles);
 
   console.log(bestBundle);
+  console.log(serviceConfig);
+
   if (!bestBundle.mainWorker) {
     console.error("can't initialize workder");
     return Promise.resolve(undefined);
@@ -33,12 +40,15 @@ async function loadDuckDBInner(
   const db = new duckdb.AsyncDuckDB(logger, worker);
   await db.instantiate(bestBundle.mainModule, bestBundle.pthreadWorker);
 
+  const s3Region = extractS3Region(serviceConfig);
+  const s3AccessKeyId = extractS3AccessKeyId(serviceConfig);
+  const s3SecretAccessKey = extractS3SecretAccessKey(serviceConfig);
   // set s3 config.
   const setQuery = `
 SET home_directory='/tmp/';
-SET s3_region='${cubeConfig.s3Region}';
-SET s3_access_key_id='${cubeConfig.s3AccessKeyId}';
-SET s3_secret_access_key='${cubeConfig.s3SecretAccessKey}';
+SET s3_region='${s3Region}';
+SET s3_access_key_id='${s3AccessKeyId}';
+SET s3_secret_access_key='${s3SecretAccessKey}';
   `;
 
   const conn = await db.connect();
@@ -48,20 +58,20 @@ SET s3_secret_access_key='${cubeConfig.s3SecretAccessKey}';
   return db;
 }
 export async function loadDuckDB(
-  cubeConfig: CubeConfig
+  serviceConfig: ServiceConfig
 ): Promise<AsyncDuckDB | undefined> {
-  return pool.get(cubeConfig, loadDuckDBInner);
+  return pool.get(serviceConfig, loadDuckDBInner);
 }
 
 async function executeQueryInner({
-  cubeConfig,
+  serviceConfig,
   query,
 }: {
-  cubeConfig: CubeConfig;
+  serviceConfig: ServiceConfig;
   query: string;
 }): Promise<Record<string, unknown>[]> {
   console.log(`duckdb: ${query}`);
-  const db = await loadDuckDB(cubeConfig);
+  const db = await loadDuckDB(serviceConfig);
   if (!db) return Promise.reject(new Error("duckdb instance is not loaded."));
 
   const conn = await db.connect();
@@ -90,24 +100,24 @@ async function executeQueryInner({
 }
 
 export async function executeQuery(
-  cubeConfig: CubeConfig,
+  serviceConfig: ServiceConfig,
   query: string
 ): Promise<Record<string, unknown>[]> {
-  return queryCache.get({ cubeConfig, query }, executeQueryInner);
+  return queryCache.get({ serviceConfig, query }, executeQueryInner);
 }
 export async function fetchParquetSchema(
-  cubeConfig: CubeConfig,
+  serviceConfig: ServiceConfig,
   path: string
 ): Promise<Record<string, unknown>[]> {
   const query = `
 SELECT * FROM parquet_schema('${path}');
   `;
 
-  return executeQuery(cubeConfig, query);
+  return executeQuery(serviceConfig, query);
 }
 
 export async function fetchValues(
-  cubeConfig: CubeConfig,
+  serviceConfig: ServiceConfig,
   sql: string,
   fieldName: string,
   value?: string
@@ -117,20 +127,20 @@ export async function fetchValues(
 SELECT distinct ${fieldName} FROM (${sql}) ${where};
   `;
 
-  const rows = await executeQuery(cubeConfig, query);
+  const rows = await executeQuery(serviceConfig, query);
   return rows.map((row) => {
     return row[`${fieldName}`];
   });
 }
 
 export async function countPopulation({
-  cubeConfig,
+  serviceConfig,
   sql,
   where,
   idFieldName,
   distinct,
 }: {
-  cubeConfig: CubeConfig;
+  serviceConfig: ServiceConfig;
   sql: string;
   where?: string;
   idFieldName?: string;
@@ -144,6 +154,6 @@ export async function countPopulation({
 SELECT ${selectClause} FROM (${sql}) ${whereClause};
   `;
 
-  const rows = await executeQuery(cubeConfig, query);
+  const rows = await executeQuery(serviceConfig, query);
   return String(rows[0]?.popoulation);
 }

@@ -1,3 +1,4 @@
+import { BuilderComponent } from "@builder.io/react";
 import {
   materialCells,
   materialRenderers,
@@ -8,7 +9,12 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Service } from "@prisma/client";
+import type {
+  ContentType,
+  ContentTypeInfo,
+  Service,
+  ServiceConfig,
+} from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -19,7 +25,13 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type ContentTypeForm from "../../../components/form/contentTypeForm";
 import ContentTypeModal from "../../../components/form/contentTypeModal";
 import { api } from "../../../utils/api";
+import {
+  extractCode,
+  extractDefaultValues,
+  extractSchema,
+} from "../../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../../utils/json";
+import { extractBuilderPublicKey } from "../../../utils/serviceConfig";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypesTree } from "../../../utils/tree";
 
@@ -28,7 +40,7 @@ function ContentTypeTable({
   serviceTree,
   setServiceTree,
 }: {
-  service: Service;
+  service: Service & { serviceConfig?: ServiceConfig | null };
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -52,6 +64,21 @@ function ContentTypeTable({
         setModalOpen(false);
       },
     });
+
+  const renderBuilderPreview = (
+    service: Service & { serviceConfig?: ServiceConfig | null },
+    contentType: ContentType & { contentTypeInfo?: ContentTypeInfo | null }
+  ) => {
+    if (contentType.source !== "builder.io") return <></>;
+    const publicKey = extractBuilderPublicKey(service.serviceConfig);
+    return (
+      <BuilderComponent
+        key={contentType.id}
+        model={contentType.name}
+        apiKey={publicKey}
+      />
+    );
+  };
 
   const rows = serviceTree?.contentTypes
     ? Object.values(serviceTree.contentTypes).map((contentType) => {
@@ -80,15 +107,25 @@ function ContentTypeTable({
       flex: 1,
     },
     {
+      field: "source",
+      headerName: "Source",
+      flex: 1,
+    },
+
+    {
       field: "schema",
       headerName: "Schema",
       flex: 1,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        return (
+        return params.row.source === "builder.io" ? null : (
           <JsonForms
-            schema={jsonParseWithFallback(params.row.schema)}
+            schema={jsonParseWithFallback(
+              extractSchema(params.row.contentTypeInfo)
+            )}
             //uischema={uiSchema}
-            data={jsonParseWithFallback(params.row?.defaultValues)}
+            data={jsonParseWithFallback(
+              extractDefaultValues(params.row.contentTypeInfo)
+            )}
             renderers={materialRenderers}
             cells={materialCells}
           />
@@ -100,16 +137,22 @@ function ContentTypeTable({
       headerName: "Preview",
       flex: 4,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        return (
+        return params.row.source === "local" ? (
           <LiveProvider
             code={replacePropsInFunction({
-              code: params.row?.uiSchema,
-              contents: [jsonParseWithFallback(params.row?.defaultValues)],
+              code: extractCode(params.row.contentTypeInfo),
+              contents: [
+                jsonParseWithFallback(
+                  extractDefaultValues(params.row.contentTypeInfo)
+                ),
+              ],
             })}
             noInline={true}
           >
             <LivePreview />
           </LiveProvider>
+        ) : (
+          <>{renderBuilderPreview(service, params.row)}</>
         );
       },
     },
@@ -140,7 +183,7 @@ function ContentTypeTable({
                 if (confirm("Are you sure?")) {
                   deleteContentType({
                     serviceId: service.id,
-                    name: params.row.name,
+                    id: params.row.id,
                   });
                 }
               }}
@@ -170,39 +213,41 @@ function ContentTypeTable({
   });
 
   return (
-    <div style={{ display: "flex", height: "100%" }}>
-      <div style={{ flexGrow: 1 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          autoHeight
-          getRowHeight={() => "auto"}
-          pageSize={10}
-          rowsPerPageOptions={[10, 20, 30, 40, 50]}
-          checkboxSelection
-          disableSelectionOnClick
-          experimentalFeatures={{ newEditingApi: true }}
-          selectionModel={(contentTypeIds || []) as string[]}
-          onSelectionModelChange={(ids) => {
-            if (ids && Array.isArray(ids)) {
-              router.query.contentTypeIds = ids.map((id) => String(id));
-              router.push(router);
-            }
-          }}
-          components={{
-            Toolbar: toolbar,
-          }}
+    <>
+      <div style={{ display: "flex", height: "100%" }}>
+        <div style={{ flexGrow: 1 }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            autoHeight
+            getRowHeight={() => "auto"}
+            pageSize={10}
+            rowsPerPageOptions={[10, 20, 30, 40, 50]}
+            checkboxSelection
+            disableSelectionOnClick
+            experimentalFeatures={{ newEditingApi: true }}
+            selectionModel={(contentTypeIds || []) as string[]}
+            onSelectionModelChange={(ids) => {
+              if (ids && Array.isArray(ids)) {
+                router.query.contentTypeIds = ids.map((id) => String(id));
+                router.push(router);
+              }
+            }}
+            components={{
+              Toolbar: toolbar,
+            }}
+          />
+        </div>
+        <ContentTypeModal
+          key="contentTypeModal"
+          service={service}
+          initialData={contentType}
+          modalOpen={modalOpen}
+          setModalOpen={setModalOpen}
+          setServiceTree={setServiceTree}
         />
       </div>
-      <ContentTypeModal
-        key="contentTypeModal"
-        services={[service]}
-        initialData={contentType}
-        modalOpen={modalOpen}
-        setModalOpen={setModalOpen}
-        setServiceTree={setServiceTree}
-      />
-    </div>
+    </>
   );
 }
 

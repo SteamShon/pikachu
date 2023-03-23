@@ -8,8 +8,8 @@ import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
-import { LivePreview, LiveProvider } from "react-live";
-import { replacePropsInFunction } from "../../../components/common/CodeTemplate";
+import ContentPreview from "../../../components/builder/contentPreview";
+import ContentSync from "../../../components/builder/contentSync";
 
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type ContentForm from "../../../components/form/contentForm";
@@ -19,9 +19,11 @@ import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypeTree } from "../../../utils/tree";
 function ContentTable({
+  service,
   serviceTree,
   setServiceTree,
 }: {
+  service: Parameters<typeof ContentForm>[0]["service"];
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -103,21 +105,32 @@ function ContentTable({
     {
       field: "status",
       headerName: "Status",
-      flex: 1,
+      flex: 0.1,
+    },
+    {
+      field: "update",
+      headerName: "Update",
+      flex: 0.1,
+      renderCell: (params: GridRenderCellParams<Date>) => {
+        return (
+          <ContentSync
+            serviceConfig={service?.serviceConfig || undefined}
+            contentType={params.row?.contentType}
+            contents={[jsonParseWithFallback(params.row.values)]}
+          />
+        );
+      },
     },
     {
       field: "preview",
       headerName: "Preview",
       flex: 4,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        const code = replacePropsInFunction({
-          code: params.row?.contentType?.uiSchema,
-          contents: [jsonParseWithFallback(params.row.values)],
-        });
         return (
-          <LiveProvider code={code} noInline={true}>
-            <LivePreview />
-          </LiveProvider>
+          <ContentPreview
+            contentType={params.row?.contentType}
+            contents={[jsonParseWithFallback(params.row.values)]}
+          />
         );
       },
     },
@@ -148,7 +161,7 @@ function ContentTable({
                 if (confirm("Are you sure?")) {
                   deleteContent({
                     contentTypeId: params.row.contentTypeId,
-                    name: params.row.name,
+                    id: params.row.id,
                   });
                 }
               }}
@@ -203,6 +216,7 @@ function ContentTable({
       </div>
       <ContentModal
         key="contentModal"
+        service={service}
         contentTypes={contentTypes}
         initialData={content}
         modalOpen={modalOpen}

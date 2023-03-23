@@ -29,8 +29,7 @@ function CampaignModal({
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
       if (!prev) return prev;
-      const placements =
-        prev.placementGroups[created?.placementGroup?.id || ""]?.placements;
+      const placements = prev?.placements;
       if (!placements) return prev;
       placements[created.id] = buildPlacementTree(created);
 

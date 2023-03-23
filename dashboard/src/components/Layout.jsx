@@ -6,11 +6,11 @@ import Navbar from "./Navbar";
 export default function Layout({ Component, pageProps: { ...pageProps } }) {
   const { data: session } = useSession();
 
-  if (!session) return <Login />;
+  // if (!session) return <Login />;
   return (
     <>
       <SnackbarProvider>
-        <Navbar />
+        {/* <Navbar /> */}
         <Component {...pageProps} />
       </SnackbarProvider>
     </>

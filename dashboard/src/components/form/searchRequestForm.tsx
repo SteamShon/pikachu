@@ -9,7 +9,7 @@ import {
   debounce,
   TextField,
 } from "@mui/material";
-import type { Cube, CubeConfig, PlacementGroup } from "@prisma/client";
+import type { Cube, Placement, Service, ServiceConfig } from "@prisma/client";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect } from "react";
 import { useMemo, useState } from "react";
@@ -25,27 +25,19 @@ import type { SearchRequestSchemaType } from "../schema/searchRequest";
 import { searchRequestSchema } from "../schema/searchRequest";
 
 function SearchRequestForm({
-  placementGroups,
+  placements,
   setMatchedAds,
   onSubmit,
 }: {
-  placementGroups?: (PlacementGroup & {
-    cube:
-      | (Cube & {
-          cubeConfig: CubeConfig;
-        })
-      | null;
+  placements?: (Placement & {
+    cube: (Cube & { serviceConfig?: ServiceConfig | null }) | null;
   })[];
   setMatchedAds: Dispatch<SetStateAction<SearchResult[]>>;
   onSubmit: (input: SearchRequestSchemaType) => void;
 }) {
-  const [placementGroup, setPlacementGroup] = useState<
-    | (PlacementGroup & {
-        cube:
-          | (Cube & {
-              cubeConfig: CubeConfig;
-            })
-          | null;
+  const [placement, setPlacement] = useState<
+    | (Placement & {
+        cube: (Cube & { serviceConfig?: ServiceConfig | null }) | null;
       })
     | undefined
   >(undefined);
@@ -67,38 +59,41 @@ function SearchRequestForm({
   });
 
   useEffect(() => {
-    if (placementGroup?.cube && placementGroup?.cube?.cubeConfig) {
+    if (placement?.cube && placement?.cube?.serviceConfig) {
+      const serviceConfig = placement?.cube?.serviceConfig;
       const load = async () => {
-        const cube = placementGroup?.cube;
+        const cube = placement?.cube;
         if (!cube) return;
 
         const sql = `DESCRIBE ${cube.sql}`;
-        const rows = await executeQuery(cube.cubeConfig, sql);
+        const rows = await executeQuery(serviceConfig, sql);
         setMetadata(rows);
       };
       load();
     }
-  }, [placementGroup]);
+  }, [placement]);
 
   const fetchRemoteValues = useMemo(
     () =>
       debounce((index: number, field: string, prefix?: string) => {
         (async () => {
-          if (!placementGroup) return;
-          const { cube } = placementGroup;
+          if (!placement) return;
+          const { cube } = placement;
           if (!cube || !cube?.sql || index !== selectedIndex) return;
+          const serviceConfig = cube?.serviceConfig;
+          if (!serviceConfig) return;
 
           setMatchedAds([]);
 
           const values = (
-            await fetchValues(cube.cubeConfig, cube.sql, field, prefix)
+            await fetchValues(serviceConfig, cube.sql, field, prefix)
           ).map((value) => String(value));
 
           setOptions(values);
         })();
       }, 1000),
 
-    [placementGroup, selectedIndex, setMatchedAds]
+    [placement, selectedIndex, setMatchedAds]
   );
   return (
     <FormProvider {...methods}>
@@ -118,28 +113,23 @@ function SearchRequestForm({
           <div className="border-t border-gray-200">
             <dl>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">
-                  PlacementGroup
-                </dt>
+                <dt className="text-sm font-medium text-gray-500">Placement</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                    {...register("placementGroupId")}
+                    {...register("placementId")}
                     onChange={(e) => {
-                      const newPlacementGroup = placementGroups?.find(
-                        (placementGroup) => placementGroup.id === e.target.value
+                      const newPlacement = (placements || [])?.find(
+                        (p) => p.id === e.target.value
                       );
-                      setPlacementGroup(newPlacementGroup);
+                      setPlacement(newPlacement);
                     }}
                   >
                     <option value="">Please select</option>
-                    {(placementGroups || []).map((placementGroup) => {
+                    {(placements || []).map((p) => {
                       return (
-                        <option
-                          key={placementGroup.id}
-                          value={placementGroup.id}
-                        >
-                          {placementGroup.name}
+                        <option key={p.id} value={p.id}>
+                          {p.name}
                         </option>
                       );
                     })}

@@ -19,7 +19,7 @@ import {
   TextareaAutosize,
   ThemeProvider,
 } from "@mui/material";
-import type { Cube, CubeConfig } from "@prisma/client";
+import type { Cube, ServiceConfig } from "@prisma/client";
 import { QueryBuilderMaterial } from "@react-querybuilder/material";
 import { useSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
@@ -55,7 +55,7 @@ function SegmentQueryBuilder({
   onQueryChange,
   onPopulationChange,
 }: {
-  cube: Cube & { cubeConfig: CubeConfig };
+  cube: Cube & { serviceConfig: ServiceConfig };
   initialQuery?: RuleGroupType;
   population?: string;
   onQueryChange: (newQuery: RuleGroupType) => void;
@@ -73,24 +73,25 @@ function SegmentQueryBuilder({
         enqueueSnackbar("cube sql is empty.", { variant: "error" });
         return;
       }
+
       const sql = `DESCRIBE ${inputSql}`;
-      const rows = await executeQuery(cube.cubeConfig, sql);
+      const rows = await executeQuery(cube.serviceConfig, sql);
       enqueueSnackbar("finished loading metadata", { variant: "success" });
       setMetadata(rows);
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cube.cubeConfig]
+    [cube.serviceConfig]
   );
 
   const fetchPopulation = useMemo(
     () =>
       debounce((q?: RuleGroupType) => {
         (async () => {
-          if (!q) return;
+          if (!q || !cube?.serviceConfig) return;
           const sql = formatQuery(q, "sql");
           const count = await countPopulation({
-            cubeConfig: cube.cubeConfig,
+            serviceConfig: cube.serviceConfig,
             sql: cube.sql || "",
             where: sql,
           });
@@ -114,7 +115,7 @@ function SegmentQueryBuilder({
       loadMetadata(cube.sql);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cube.cubeConfig, cube.sql]);
+  }, [cube.serviceConfig, cube.sql]);
 
   const fields = (metadata || []).map((row) => {
     const name = row.column_name as string;

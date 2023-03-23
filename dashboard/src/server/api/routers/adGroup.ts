@@ -44,11 +44,7 @@ export const adGroupRouter = createTRPCRouter({
               placement: {
                 include: {
                   contentType: true,
-                  placementGroup: {
-                    include: {
-                      service: true,
-                    },
-                  },
+                  service: true,
                 },
               },
             },
@@ -99,11 +95,7 @@ export const adGroupRouter = createTRPCRouter({
               placement: {
                 include: {
                   contentType: true,
-                  placementGroup: {
-                    include: {
-                      service: true,
-                    },
-                  },
+                  service: true,
                 },
               },
             },
@@ -142,11 +134,7 @@ export const adGroupRouter = createTRPCRouter({
               placement: {
                 include: {
                   contentType: true,
-                  placementGroup: {
-                    include: {
-                      service: true,
-                    },
-                  },
+                  service: true,
                 },
               },
             },

@@ -68,29 +68,16 @@ CREATE TABLE "UsersOnServices" (
 );
 
 -- CreateTable
-CREATE TABLE "PlacementGroup" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "serviceId" TEXT,
-    "cubeId" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'CREATED',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "PlacementGroup_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Placement" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
-    "placementGroupId" TEXT,
-    "contentTypeId" TEXT NOT NULL,
+    "serviceId" TEXT,
+    "contentTypeId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "cubeId" TEXT,
 
     CONSTRAINT "Placement_pkey" PRIMARY KEY ("id")
 );
@@ -100,15 +87,24 @@ CREATE TABLE "ContentType" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
+    "source" TEXT NOT NULL DEFAULT 'local',
     "serviceId" TEXT,
-    "schema" TEXT,
-    "uiSchema" TEXT,
-    "defaultValues" TEXT,
     "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "ContentType_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ContentTypeInfo" (
+    "id" TEXT NOT NULL,
+    "contentTypeId" TEXT NOT NULL,
+    "details" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ContentTypeInfo_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -207,20 +203,15 @@ CREATE TABLE "CustomsetInfo" (
 );
 
 -- CreateTable
-CREATE TABLE "CubeConfig" (
+CREATE TABLE "ServiceConfig" (
     "id" TEXT NOT NULL,
     "serviceId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "s3Region" TEXT NOT NULL,
-    "s3AccessKeyId" TEXT NOT NULL,
-    "s3SecretAccessKey" TEXT NOT NULL,
-    "buckets" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'CREATED',
+    "s3Config" JSONB NOT NULL DEFAULT '{}',
+    "builderConfig" JSONB NOT NULL DEFAULT '{}',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "CubeConfig_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ServiceConfig_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -228,7 +219,7 @@ CREATE TABLE "Cube" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
-    "cubeConfigId" TEXT NOT NULL,
+    "serviceConfigId" TEXT NOT NULL,
     "sql" TEXT,
     "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -274,22 +265,22 @@ CREATE INDEX "Service_updatedAt_idx" ON "Service"("updatedAt");
 CREATE UNIQUE INDEX "Service_name_key" ON "Service"("name");
 
 -- CreateIndex
-CREATE INDEX "PlacementGroup_updatedAt_idx" ON "PlacementGroup"("updatedAt");
-
--- CreateIndex
-CREATE UNIQUE INDEX "PlacementGroup_serviceId_name_key" ON "PlacementGroup"("serviceId", "name");
-
--- CreateIndex
 CREATE INDEX "Placement_updatedAt_idx" ON "Placement"("updatedAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Placement_placementGroupId_name_key" ON "Placement"("placementGroupId", "name");
+CREATE UNIQUE INDEX "Placement_serviceId_name_key" ON "Placement"("serviceId", "name");
 
 -- CreateIndex
 CREATE INDEX "ContentType_updatedAt_idx" ON "ContentType"("updatedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ContentType_serviceId_name_key" ON "ContentType"("serviceId", "name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ContentTypeInfo_contentTypeId_key" ON "ContentTypeInfo"("contentTypeId");
+
+-- CreateIndex
+CREATE INDEX "ContentTypeInfo_updatedAt_idx" ON "ContentTypeInfo"("updatedAt");
 
 -- CreateIndex
 CREATE INDEX "Campaign_updatedAt_idx" ON "Campaign"("updatedAt");
@@ -322,10 +313,10 @@ CREATE UNIQUE INDEX "Customset_customsetInfoId_key" ON "Customset"("customsetInf
 CREATE UNIQUE INDEX "Customset_serviceId_name_key" ON "Customset"("serviceId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CubeConfig_serviceId_name_key" ON "CubeConfig"("serviceId", "name");
+CREATE UNIQUE INDEX "ServiceConfig_serviceId_key" ON "ServiceConfig"("serviceId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Cube_cubeConfigId_name_key" ON "Cube"("cubeConfigId", "name");
+CREATE UNIQUE INDEX "Cube_serviceConfigId_name_key" ON "Cube"("serviceConfigId", "name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Segment_cubeId_name_key" ON "Segment"("cubeId", "name");
@@ -343,19 +334,19 @@ ALTER TABLE "UsersOnServices" ADD CONSTRAINT "UsersOnServices_serviceId_fkey" FO
 ALTER TABLE "UsersOnServices" ADD CONSTRAINT "UsersOnServices_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PlacementGroup" ADD CONSTRAINT "PlacementGroup_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Placement" ADD CONSTRAINT "Placement_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PlacementGroup" ADD CONSTRAINT "PlacementGroup_cubeId_fkey" FOREIGN KEY ("cubeId") REFERENCES "Cube"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Placement" ADD CONSTRAINT "Placement_contentTypeId_fkey" FOREIGN KEY ("contentTypeId") REFERENCES "ContentType"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Placement" ADD CONSTRAINT "Placement_placementGroupId_fkey" FOREIGN KEY ("placementGroupId") REFERENCES "PlacementGroup"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Placement" ADD CONSTRAINT "Placement_contentTypeId_fkey" FOREIGN KEY ("contentTypeId") REFERENCES "ContentType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Placement" ADD CONSTRAINT "Placement_cubeId_fkey" FOREIGN KEY ("cubeId") REFERENCES "Cube"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ContentType" ADD CONSTRAINT "ContentType_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ContentTypeInfo" ADD CONSTRAINT "ContentTypeInfo_contentTypeId_fkey" FOREIGN KEY ("contentTypeId") REFERENCES "ContentType"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AdvertisersOnPlacements" ADD CONSTRAINT "AdvertisersOnPlacements_advertiserId_fkey" FOREIGN KEY ("advertiserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -376,7 +367,7 @@ ALTER TABLE "Creative" ADD CONSTRAINT "Creative_adGroupId_fkey" FOREIGN KEY ("ad
 ALTER TABLE "Creative" ADD CONSTRAINT "Creative_contentId_fkey" FOREIGN KEY ("contentId") REFERENCES "Content"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Content" ADD CONSTRAINT "Content_contentTypeId_fkey" FOREIGN KEY ("contentTypeId") REFERENCES "ContentType"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Content" ADD CONSTRAINT "Content_contentTypeId_fkey" FOREIGN KEY ("contentTypeId") REFERENCES "ContentType"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Content" ADD CONSTRAINT "Content_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -391,10 +382,10 @@ ALTER TABLE "Customset" ADD CONSTRAINT "Customset_creatorId_fkey" FOREIGN KEY ("
 ALTER TABLE "Customset" ADD CONSTRAINT "Customset_customsetInfoId_fkey" FOREIGN KEY ("customsetInfoId") REFERENCES "CustomsetInfo"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CubeConfig" ADD CONSTRAINT "CubeConfig_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ServiceConfig" ADD CONSTRAINT "ServiceConfig_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Cube" ADD CONSTRAINT "Cube_cubeConfigId_fkey" FOREIGN KEY ("cubeConfigId") REFERENCES "CubeConfig"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Cube" ADD CONSTRAINT "Cube_serviceConfigId_fkey" FOREIGN KEY ("serviceConfigId") REFERENCES "ServiceConfig"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Segment" ADD CONSTRAINT "Segment_cubeId_fkey" FOREIGN KEY ("cubeId") REFERENCES "Cube"("id") ON DELETE CASCADE ON UPDATE CASCADE;

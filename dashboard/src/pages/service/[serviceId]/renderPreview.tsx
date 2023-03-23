@@ -40,7 +40,12 @@ function RenderPreview({ serviceId }: { serviceId: string }) {
       .catch((e) => console.error(e));
   };
   const buildCurlCommand = () => {
-    const data = payload ? buildUserInfo(payload) : {};
+    const userInfo = payload ? buildUserInfo(payload) : {};
+    const data = {
+      service_id: serviceId,
+      placement_id: payload?.placementId,
+      user_info: userInfo,
+    };
     const request = JSON.stringify(data, null, 2);
     return `
     CURL -X POST -H 'content-type:application/json' ${payload?.apiServerHost}/search -d '${request}'

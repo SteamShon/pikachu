@@ -2,6 +2,7 @@ import { LiveEditor, LivePreview, LiveProvider } from "react-live";
 import { extractCode } from "../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../utils/json";
 import type { SearchResult } from "../../utils/search";
+import ContentPreview from "../builder/contentPreview";
 import { replacePropsInFunction } from "../common/CodeTemplate";
 
 function PlacementData({ placement }: { placement: SearchResult }) {
@@ -14,6 +15,7 @@ function PlacementData({ placement }: { placement: SearchResult }) {
       });
     });
   });
+
   return (
     <>
       <div className="overflow-hidden bg-white shadow sm:rounded-lg">
@@ -23,32 +25,11 @@ function PlacementData({ placement }: { placement: SearchResult }) {
           </h3>
         </div>
         <div className="border-t border-gray-200">
-          <dl>
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Code</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                Preview
-              </dd>
-            </div>
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <LiveProvider
-                code={replacePropsInFunction({
-                  code: extractCode(contentType?.contentTypeInfo),
-                  contents: contents.map((content) => {
-                    return jsonParseWithFallback(content.values);
-                  }),
-                })}
-                noInline={true}
-              >
-                <dt className="text-sm font-medium text-gray-500">
-                  <LiveEditor disabled />
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <LivePreview />
-                </dd>
-              </LiveProvider>
-            </div>
-          </dl>
+          <ContentPreview
+            contentType={contentType}
+            contents={contents.map((c) => jsonParseWithFallback(c.values))}
+            showEditor={false}
+          />
         </div>
       </div>
     </>

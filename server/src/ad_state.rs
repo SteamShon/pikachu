@@ -2,7 +2,8 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::db::{
-    ad_group, campaign, content, creative, placement, service, service_config, PrismaClient,
+    ad_group, campaign, content, content_type, creative, placement, service, service_config,
+    PrismaClient,
 };
 use filter::filter::{TargetFilter, UserInfo};
 use filter::filterable::Filterable;
@@ -121,7 +122,7 @@ impl AdState {
             .placement()
             .find_many(vec![placement::updated_at::gt(last_updated_at)])
             .order_by(placement::updated_at::order(Direction::Desc))
-            .with(placement::content_type::fetch())
+            .with(placement::content_type::fetch().with(content_type::content_type_info::fetch()))
             .exec()
             .await
             .unwrap()
@@ -344,6 +345,7 @@ impl AdState {
         self.fetch_and_update_ad_groups(client.clone(), None).await;
         self.fetch_and_update_creatives(client.clone(), None).await;
         self.fetch_and_update_contents(client.clone(), None).await;
+        println!("{:?}", self.filter_index);
     }
     fn parse_user_info(value: &serde_json::Value) -> Option<UserInfo> {
         let mut user_info = HashMap::new();
@@ -385,7 +387,6 @@ impl AdState {
             Some(index) => index.search(&user_info),
             None => HashSet::new(),
         };
-        println!("{:?}", self.filter_index.get(service_id));
         println!("[ids]: {:?}", matched_ids);
 
         let matched_ads = self.transform_ids_to_ads_grouped(placement_id, matched_ids.iter());

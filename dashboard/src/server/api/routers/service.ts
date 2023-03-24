@@ -119,6 +119,15 @@ export const serviceRouter = createTRPCRouter({
 
     return services;
   }),
+  getOnlyService: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .query(({ input }) => {
+      return prisma.service.findUnique({ where: { id: input.id } });
+    }),
   get: protectedProcedure
     .input(
       z.object({

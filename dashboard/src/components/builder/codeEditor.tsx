@@ -1,4 +1,9 @@
-import { LiveEditor, LivePreview, LiveProvider } from "react-live";
+import {
+  CodeEditor as LiveCodeEditor,
+  LiveError,
+  LivePreview,
+  LiveProvider,
+} from "react-live-runner";
 import { replacePropsInFunction } from "../common/CodeTemplate";
 
 function CodeEditor({
@@ -18,16 +23,20 @@ function CodeEditor({
   });
 
   return (
-    <LiveProvider code={newCode} noInline={true}>
+    <LiveProvider code={newCode}>
       {options.editor ? (
-        <LiveEditor
-          disabled={options.editor.disable}
-          onChange={(newCode) => {
-            if (options.editor?.onChange) {
-              options.editor.onChange(newCode);
-            }
-          }}
-        />
+        <>
+          <LiveCodeEditor
+            value={newCode}
+            disabled={options.editor.disable}
+            onChange={(newCode) => {
+              if (options.editor?.onChange) {
+                options.editor.onChange(newCode);
+              }
+            }}
+          />
+          <LiveError />
+        </>
       ) : null}
       <LivePreview />
     </LiveProvider>

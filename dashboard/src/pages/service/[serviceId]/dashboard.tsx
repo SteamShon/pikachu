@@ -1,7 +1,10 @@
-import { Grid } from "@mui/material";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import Breadcrumb from "../../../components/Breadcrumb";
 import Loading from "../../../components/common/Loading";
+import ServiceMenu from "../../../components/ServiceMenu";
+import SideMenu from "../../../components/SideMenu";
 import { api } from "../../../utils/api";
 import { buildServiceTree } from "../../../utils/tree";
 import AdGroupTable from "./adGroupTable";
@@ -14,8 +17,6 @@ import CustomsetTable from "./customsetTable";
 
 import PlacementTable from "./placementTable";
 import RenderPreview from "./renderPreview";
-
-import SideMenu from "./sideMenu";
 
 function Dashboard() {
   const router = useRouter();
@@ -40,6 +41,20 @@ function Dashboard() {
     {
       label: "Placements",
       description: `placements`,
+      paths: [
+        <>Home</>,
+        <>
+          <ServiceMenu />
+        </>,
+        <>
+          <Link
+            href={`/service/${serviceId}/dashboard?step=Placements`}
+            className="p-1"
+          >
+            Placements
+          </Link>
+        </>,
+      ],
       table: () =>
         service ? (
           <PlacementTable
@@ -139,37 +154,46 @@ function Dashboard() {
   if (isLoading) return <Loading />;
 
   return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="flex-start"
-      alignItems="stretch"
-    >
-      <Grid item xs={2} sx={{ height: "100%" }}>
-        <SideMenu />
-      </Grid>
-      {/* <Grid item xs={10} />
-      <Grid item xs={2}>
-        <Stepper nonLinear activeStep={activeStep} orientation="vertical">
-          {steps.map((step, index) => (
-            <Step key={step.label}>
-              <StepButton
-                onClick={() => {
-                  router.query.step = step.label;
-                  router.push(router);
-                }}
-              >
-                {step.label}
-              </StepButton>
-            </Step>
-          ))}
-        </Stepper>
-      </Grid> */}
-      <Grid item xs={10} sx={{ height: "100%" }}>
-        <div></div>
-        <div>{steps[activeStep]?.table()}</div>
-      </Grid>
-    </Grid>
+    // <Grid
+    //   container
+    //   direction="row"
+    //   justifyContent="flex-start"
+    //   alignItems="stretch"
+    // >
+    //   <Grid item xs={2} sx={{ height: "100%" }}>
+    //     <SideMenu />
+    //   </Grid>
+    //   {/* <Grid item xs={10} />
+    //   <Grid item xs={2}>
+    //     <Stepper nonLinear activeStep={activeStep} orientation="vertical">
+    //       {steps.map((step, index) => (
+    //         <Step key={step.label}>
+    //           <StepButton
+    //             onClick={() => {
+    //               router.query.step = step.label;
+    //               router.push(router);
+    //             }}
+    //           >
+    //             {step.label}
+    //           </StepButton>
+    //         </Step>
+    //       ))}
+    //     </Stepper>
+    //   </Grid> */}
+    //   <Grid item xs={10} sx={{ height: "100%" }}>
+    //     <div></div>
+    //     <div>{steps[activeStep]?.table()}</div>
+    //   </Grid>
+    // </Grid>
+    <div className="flex">
+      <SideMenu />
+      <div className="w-full p-4">
+        <div className="mt-2">
+          <Breadcrumb paths={steps[activeStep]?.paths || []} />
+        </div>
+        <div className="mt-5">{steps[activeStep]?.table()}</div>
+      </div>
+    </div>
   );
 }
 

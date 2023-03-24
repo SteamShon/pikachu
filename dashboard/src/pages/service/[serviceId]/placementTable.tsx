@@ -13,6 +13,7 @@ import type PlacementForm from "../../../components/form/placementForm";
 import PlacementModal from "../../../components/form/placementModal";
 import { api } from "../../../utils/api";
 import { buildServiceTree } from "../../../utils/tree";
+import RenderPreview from "./renderPreview";
 
 function PlacementTable({
   service,
@@ -145,41 +146,46 @@ function PlacementTable({
     },
   });
   return (
-    <div style={{ display: "flex", height: "100%" }}>
-      <div style={{ flexGrow: 1 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          autoHeight
-          getRowHeight={() => "auto"}
-          pageSize={10}
-          rowsPerPageOptions={[10, 20, 30, 40, 50]}
-          checkboxSelection
-          disableSelectionOnClick
-          experimentalFeatures={{ newEditingApi: true }}
-          selectionModel={(placementIds || []) as string[]}
-          onSelectionModelChange={(ids) => {
-            if (ids && Array.isArray(ids)) {
-              router.query.placementIds = ids.map((id) => String(id));
-              router.push(router);
-            }
-          }}
-          components={{
-            Toolbar: toolbar,
-          }}
+    <>
+      <div style={{ display: "flex", height: "100%" }}>
+        <div style={{ flexGrow: 1 }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            autoHeight
+            getRowHeight={() => "auto"}
+            pageSize={10}
+            rowsPerPageOptions={[10, 20, 30, 40, 50]}
+            checkboxSelection
+            disableSelectionOnClick
+            experimentalFeatures={{ newEditingApi: true }}
+            selectionModel={(placementIds || []) as string[]}
+            onSelectionModelChange={(ids) => {
+              if (ids && Array.isArray(ids)) {
+                router.query.placementIds = ids.map((id) => String(id));
+                router.push(router);
+              }
+            }}
+            components={{
+              Toolbar: toolbar,
+            }}
+          />
+        </div>
+        <PlacementModal
+          key="placementModal"
+          modalOpen={modalOpen}
+          setModalOpen={setModalOpen}
+          service={service}
+          contentTypes={contentTypes}
+          cubes={cubes}
+          initialData={placement}
+          setServiceTree={setServiceTree}
         />
       </div>
-      <PlacementModal
-        key="placementModal"
-        modalOpen={modalOpen}
-        setModalOpen={setModalOpen}
-        service={service}
-        contentTypes={contentTypes}
-        cubes={cubes}
-        initialData={placement}
-        setServiceTree={setServiceTree}
-      />
-    </div>
+      <div className="mt-4 items-center p-10">
+        {service ? <RenderPreview serviceId={service.id} /> : null}
+      </div>
+    </>
   );
 }
 

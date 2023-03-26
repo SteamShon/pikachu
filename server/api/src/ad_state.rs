@@ -12,13 +12,17 @@ use prisma_client_rust::chrono::{DateTime, FixedOffset};
 use prisma_client_rust::Direction;
 use serde::Serialize;
 
-impl Filterable for ad_group::Data {
+pub struct AdGroup {
+    data: ad_group::Data,
+}
+
+impl Filterable for AdGroup {
     fn id(&self) -> String {
-        String::from(&self.id)
+        String::from(&self.data.id)
     }
 
     fn filter(&self) -> Option<TargetFilter> {
-        match &self.filter {
+        match &self.data.filter {
             None => None,
             Some(s) => {
                 let value: serde_json::Value = serde_json::from_str(&s).ok()?;
@@ -241,9 +245,13 @@ impl AdState {
 
             for ad_group in ad_groups {
                 if Self::is_active_ad_group(ad_group) {
-                    ad_groups_to_insert.push(ad_group.clone());
+                    ad_groups_to_insert.push(AdGroup {
+                        data: ad_group.clone(),
+                    });
                 } else {
-                    ad_groups_to_delete.push(ad_group.clone());
+                    ad_groups_to_delete.push(AdGroup {
+                        data: ad_group.clone(),
+                    });
                 }
             }
 

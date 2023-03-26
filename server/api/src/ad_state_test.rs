@@ -8,7 +8,8 @@ use std::collections::HashSet;
 
 lazy_static! {
     pub static ref NOW: prisma_client_rust::chrono::DateTime<FixedOffset> =
-        prisma_client_rust::chrono::offset::Utc::now().with_timezone(&FixedOffset::east(0));
+        prisma_client_rust::chrono::offset::Utc::now()
+            .with_timezone(&FixedOffset::east_opt(0).unwrap());
     pub static ref SERVICE: service::Data = service::Data {
         id: String::from("service_1"),
         name: String::from("s1"),

@@ -1,21 +1,20 @@
 pub mod ad_state;
-pub mod db;
+use crate::ad_state::AdState;
 use actix_cors::Cors;
 use actix_web::{
+    get,
     middleware::Logger,
     post,
     web::{self},
     App, HttpResponse, HttpServer, Responder,
 };
 use arc_swap::ArcSwap;
-use db::PrismaClient;
+use common::db::{self, PrismaClient};
 use dotenv::dotenv;
 use serde::Deserialize;
 use serde_json::Value;
-use std::{env, sync::Arc, time::Duration};
+use std::{collections::HashSet, env, sync::Arc, time::Duration};
 use tokio::{runtime::Builder, time};
-
-use crate::ad_state::AdState;
 
 #[derive(Deserialize)]
 struct Request {
@@ -51,6 +50,7 @@ pub async fn load_ad_meta_periodic(
         load_ad_meta(data.clone(), client.clone()).await;
     }
 }
+
 #[post("/update_ad_meta")]
 async fn update_ad_meta(
     data: web::Data<ArcSwap<Arc<AdState>>>,
@@ -72,6 +72,23 @@ async fn search(
     );
 
     HttpResponse::Ok().json(matched_ad_groups)
+}
+
+#[get("/all_dimensions/{service_id}")]
+async fn all_dimensions(
+    data: web::Data<ArcSwap<Arc<AdState>>>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let service_id = path.into_inner();
+
+    match data.load().filter_index.get(&service_id) {
+        None => HttpResponse::NotFound().json(false),
+        Some(filter_index) => {
+            let dimensions: HashSet<String> = filter_index.all_dimensions.keys().cloned().collect();
+
+            HttpResponse::Ok().json(dimensions)
+        }
+    }
 }
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -109,6 +126,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(client.clone())
             .service(search)
             .service(update_ad_meta)
+            .service(all_dimensions)
             .wrap(cors)
             .wrap(logger)
     })

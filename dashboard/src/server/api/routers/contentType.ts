@@ -4,6 +4,18 @@ import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const contentTypeRouter = createTRPCRouter({
+  list: protectedProcedure
+    .input(z.object({ serviceId: z.string().min(1) }))
+    .query(({ input }) => {
+      const { serviceId } = input;
+      const contentTypes = prisma.contentType.findMany({
+        where: {
+          serviceId,
+        },
+      });
+
+      return contentTypes;
+    }),
   addContent: protectedProcedure
     .input(contentWithContentTypeSchema)
     .mutation(async ({ input, ctx }) => {

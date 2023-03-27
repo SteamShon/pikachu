@@ -3,7 +3,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Creative } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -32,12 +31,10 @@ function ContentTable({
   const router = useRouter();
 
   const [modalOpen, setModalOpen] = useState(false);
-  const { contentTypeIds, contentIds } = router.query;
+  const { contentTypeId } = router.query;
   const [content, setContent] = useState<
     Parameters<typeof ContentForm>[0]["initialData"] | undefined
   >(undefined);
-
-  const selectedIds = (contentTypeIds || []) as string[];
 
   const { mutate: deleteContent } = api.contentType.removeContent.useMutation({
     onSuccess(deleted) {
@@ -55,12 +52,9 @@ function ContentTable({
     ? Object.values(serviceTree.contentTypes)
     : [];
 
-  const contentTypes =
-    selectedIds.length === 0
-      ? allContentTypes
-      : allContentTypes.filter((contentType) => {
-          return selectedIds.includes(contentType.id);
-        });
+  const contentTypes = contentTypeId
+    ? allContentTypes.filter((contentType) => contentType.id === contentTypeId)
+    : allContentTypes;
 
   const rows = contentTypes.flatMap((contentType) => {
     return Object.values(contentType.contents).map((content) => {
@@ -69,29 +63,6 @@ function ContentTable({
   });
 
   const columns: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
-    {
-      field: "contentType.name",
-      headerName: "ContentType",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.contentType.name;
-      },
-    },
-    {
-      field: "creatives.count",
-      headerName: "Creatives",
-      flex: 1,
-      renderCell: (params: GridRenderCellParams<Date>) => {
-        return (
-          <ol>
-            {params.row.creatives.map((creative: Creative) => {
-              return <li key={creative.id}>{creative.name}</li>;
-            })}
-          </ol>
-        );
-      },
-    },
     {
       field: "name",
       headerName: "Name",
@@ -105,12 +76,12 @@ function ContentTable({
     {
       field: "status",
       headerName: "Status",
-      flex: 0.1,
+      flex: 1,
     },
     {
       field: "update",
       headerName: "Update",
-      flex: 0.1,
+      flex: 1,
       renderCell: (params: GridRenderCellParams<Date>) => {
         return (
           <ContentSync
@@ -132,6 +103,14 @@ function ContentTable({
             contents={[jsonParseWithFallback(params.row.values)]}
           />
         );
+      },
+    },
+    {
+      field: "creatives.count",
+      headerName: "# of Creatives",
+      flex: 0.1,
+      renderCell: (params: GridRenderCellParams<Date>) => {
+        return <>{params.row.creatives.length}</>;
       },
     },
     {
@@ -202,13 +181,6 @@ function ContentTable({
           checkboxSelection
           disableSelectionOnClick
           experimentalFeatures={{ newEditingApi: true }}
-          selectionModel={(contentIds || []) as string[]}
-          onSelectionModelChange={(ids) => {
-            if (ids && Array.isArray(ids)) {
-              router.query.contentIds = ids.map((id) => String(id));
-              router.push(router);
-            }
-          }}
           components={{
             Toolbar: toolbar,
           }}

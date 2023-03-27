@@ -5,6 +5,26 @@ import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const adGroupRouter = createTRPCRouter({
+  list: protectedProcedure
+    .input(
+      z.object({
+        serviceId: z.string().min(1),
+        placementId: z.string().optional(),
+        campaignId: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { serviceId, placementId, campaignId } = input;
+      return await prisma.adGroup.findMany({
+        where: {
+          OR: [
+            { campaignId },
+            { campaign: { placementId } },
+            { campaign: { placement: { serviceId } } },
+          ],
+        },
+      });
+    }),
   addCreative: protectedProcedure
     .input(
       creativeSchema.extend({

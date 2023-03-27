@@ -1,20 +1,18 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import { AiFillEnvironment } from "react-icons/ai";
+import { AiFillEnvironment, AiOutlinePicture } from "react-icons/ai";
+import { BiSitemap } from "react-icons/bi";
 import {
   BsArrowLeftShort,
   BsChevronDown,
   BsDatabase,
   BsTable,
 } from "react-icons/bs";
-import { FcAdvertising, FcTemplate, FcDatabase } from "react-icons/fc";
-import { GiBullseye } from "react-icons/gi";
-import { HiTemplate } from "react-icons/hi";
 import { CiBullhorn } from "react-icons/ci";
-import { BiSitemap } from "react-icons/bi";
-import { GrResources, GrGroup } from "react-icons/gr";
-import { AiOutlinePicture } from "react-icons/ai";
+import { GiBullseye } from "react-icons/gi";
+import { GrGroup, GrResources } from "react-icons/gr";
+import { HiTemplate } from "react-icons/hi";
 function SideMenu() {
   const router = useRouter();
   const { serviceId } = router.query;
@@ -83,7 +81,7 @@ function SideMenu() {
       } bg-slate-200 p-1 pt-8 duration-300`}
     >
       <BsArrowLeftShort
-        className={`text-purple absolute -right-3 top-9 rounded-full border border-purple-400 bg-white text-3xl  ${
+        className={`text-purple absolute -right-3 top-9 rounded-full border border-slate-400 bg-white text-3xl  ${
           !open && "rotate-180"
         }`}
         onClick={() => setOpen(!open)}

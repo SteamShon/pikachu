@@ -6,6 +6,28 @@ import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const campaignRouter = createTRPCRouter({
+  list: protectedProcedure
+    .input(
+      z.object({
+        serviceId: z.string().min(1),
+        placementId: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { serviceId, placementId } = input;
+      return await prisma.campaign.findMany({
+        where: {
+          OR: [
+            { placementId },
+            {
+              placement: {
+                serviceId,
+              },
+            },
+          ],
+        },
+      });
+    }),
   //deprecated
   update: protectedProcedure
     .input(campaignSchema)

@@ -17,8 +17,15 @@ import CustomsetTable from "./customsetTable";
 
 import PlacementTable from "./placementTable";
 import RenderPreview from "./renderPreview";
-
+import { usePostHog } from "posthog-js/react";
+import { useSession } from "next-auth/react";
+import PlacementMenu from "../../../components/PlacementMenu";
+import CampaignMenu from "../../../components/CampaignMenu";
+import ContentTypeMenu from "../../../components/ContentTypeMenu";
+import AdGroupMenu from "../../../components/AdGroupMenu";
 function Dashboard() {
+  const { data: session } = useSession();
+  const posthog = usePostHog();
   const router = useRouter();
 
   const { serviceId, step } = router.query;
@@ -35,6 +42,14 @@ function Dashboard() {
     if (service) {
       setTree(buildServiceTree(service));
     }
+    posthog?.identify(session?.user?.id);
+    const eventName = activeStep
+      ? steps[activeStep]?.label.toLocaleLowerCase()
+      : "";
+    posthog?.capture(`dashboard_${eventName}_visited`, {
+      service: service?.name,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service]);
 
   const steps = [
@@ -43,15 +58,25 @@ function Dashboard() {
       description: `placements`,
       paths: [
         <>Home</>,
+        <ServiceMenu key="serviceMenu" />,
         <>
-          <ServiceMenu />
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Placements" },
+            }}
+          >
+            <span className="font-bold">Placement</span>
+          </Link>
         </>,
         <>
           <Link
-            href={`/service/${serviceId}/dashboard?step=Placements`}
-            className="p-1"
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Campaigns" },
+            }}
           >
-            Placements
+            Campaign
           </Link>
         </>,
       ],
@@ -67,6 +92,41 @@ function Dashboard() {
     {
       label: "Campaigns",
       description: `campaigns`,
+      paths: [
+        <>Home</>,
+        <ServiceMenu key="serviceMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Placements" },
+            }}
+          >
+            Placement
+          </Link>
+        </>,
+        <PlacementMenu key="placementMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Campaigns" },
+            }}
+          >
+            <span className="font-bold">Campaign</span>
+          </Link>
+        </>,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "AdGroups" },
+            }}
+          >
+            AdGroup
+          </Link>
+        </>,
+      ],
       table: () =>
         service ? (
           <CampaignTable setServiceTree={setTree} serviceTree={tree} />
@@ -75,6 +135,52 @@ function Dashboard() {
     {
       label: "AdGroups",
       description: `adGroups`,
+      paths: [
+        <>Home</>,
+        <ServiceMenu key="serviceMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Placements" },
+            }}
+          >
+            Placement
+          </Link>
+        </>,
+        <PlacementMenu key="placementMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Campaigns" },
+            }}
+          >
+            Campaign
+          </Link>
+        </>,
+        <CampaignMenu key="campaignMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "AdGroups" },
+            }}
+          >
+            <span className="font-bold">AdGroup</span>
+          </Link>
+        </>,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Creatives" },
+            }}
+          >
+            Creative
+          </Link>
+        </>,
+      ],
       table: () =>
         service && tree ? (
           <AdGroupTable setServiceTree={setTree} serviceTree={tree} />
@@ -83,6 +189,63 @@ function Dashboard() {
     {
       label: "Creatives",
       description: `creatives`,
+      paths: [
+        <>Home</>,
+        <ServiceMenu key="serviceMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Placements" },
+            }}
+          >
+            Placement
+          </Link>
+        </>,
+        <PlacementMenu key="placementMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Campaigns" },
+            }}
+          >
+            Campaign
+          </Link>
+        </>,
+        <CampaignMenu key="campaignMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "AdGroups" },
+            }}
+          >
+            AdGroup
+          </Link>
+        </>,
+        <AdGroupMenu key="adGroupMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Creatives" },
+            }}
+          >
+            <span className="font-bold">Creative</span>
+          </Link>
+        </>,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Contents" },
+            }}
+          >
+            Content
+          </Link>
+        </>,
+      ],
       table: () =>
         service ? (
           <CreativeTable
@@ -95,6 +258,30 @@ function Dashboard() {
     {
       label: "ContentTypes",
       description: `contentTypes`,
+      paths: [
+        <>Home</>,
+        <ServiceMenu key="serviceMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "ContentTypes" },
+            }}
+          >
+            <span className="font-bold">ContentType</span>
+          </Link>
+        </>,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Contents" },
+            }}
+          >
+            Content
+          </Link>
+        </>,
+      ],
       table: () =>
         service ? (
           <ContentTypeTable
@@ -107,6 +294,41 @@ function Dashboard() {
     {
       label: "Contents",
       description: `contents`,
+      paths: [
+        <>Home</>,
+        <ServiceMenu key="serviceMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "ContentTypes" },
+            }}
+          >
+            ContentType
+          </Link>
+        </>,
+        <ContentTypeMenu key="contentTypeMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Contents" },
+            }}
+          >
+            <span className="font-bold">Content</span>
+          </Link>
+        </>,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Creatives" },
+            }}
+          >
+            Creative
+          </Link>
+        </>,
+      ],
       table: () =>
         service ? (
           <ContentTable
@@ -154,37 +376,6 @@ function Dashboard() {
   if (isLoading) return <Loading />;
 
   return (
-    // <Grid
-    //   container
-    //   direction="row"
-    //   justifyContent="flex-start"
-    //   alignItems="stretch"
-    // >
-    //   <Grid item xs={2} sx={{ height: "100%" }}>
-    //     <SideMenu />
-    //   </Grid>
-    //   {/* <Grid item xs={10} />
-    //   <Grid item xs={2}>
-    //     <Stepper nonLinear activeStep={activeStep} orientation="vertical">
-    //       {steps.map((step, index) => (
-    //         <Step key={step.label}>
-    //           <StepButton
-    //             onClick={() => {
-    //               router.query.step = step.label;
-    //               router.push(router);
-    //             }}
-    //           >
-    //             {step.label}
-    //           </StepButton>
-    //         </Step>
-    //       ))}
-    //     </Stepper>
-    //   </Grid> */}
-    //   <Grid item xs={10} sx={{ height: "100%" }}>
-    //     <div></div>
-    //     <div>{steps[activeStep]?.table()}</div>
-    //   </Grid>
-    // </Grid>
     <div className="flex">
       <SideMenu />
       <div className="w-full p-4">

@@ -90,7 +90,6 @@ function ContentTypeTable({
     : [];
 
   const columns: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
     {
       field: "name",
       headerName: "Name",

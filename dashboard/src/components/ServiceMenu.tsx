@@ -14,7 +14,9 @@ function ServiceMenu() {
       <select
         className="p-1"
         value={service?.id}
-        onChange={(e) => router.push(`/service/${e.target.value}/dashboard`)}
+        onChange={(e) => {
+          router.query.serviceId = e.target.value;
+        }}
       >
         {(services || []).map(({ service }) => (
           <option key={service.name} value={service.id}>

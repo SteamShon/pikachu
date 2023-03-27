@@ -8,13 +8,11 @@ import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
-import { LivePreview, LiveProvider } from "react-live";
-import { replacePropsInFunction } from "../../../components/common/CodeTemplate";
+import ContentPreview from "../../../components/builder/contentPreview";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type CreativeForm from "../../../components/form/creativeForm";
 import CreativeModal from "../../../components/form/creativeModal";
 import { api } from "../../../utils/api";
-import { extractCode } from "../../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildAdGroupTree } from "../../../utils/tree";
@@ -31,11 +29,10 @@ function CreativeTable({
 }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const { adGroupIds, creativeIds } = router.query;
+  const { adGroupId } = router.query;
   const [creative, setCreative] = useState<
     Parameters<typeof CreativeForm>[0]["initialData"] | undefined
   >(undefined);
-  const selectedIds = (adGroupIds || []) as string[];
 
   const { mutate: deleteCreative } = api.adGroup.removeCreative.useMutation({
     onSuccess(created) {
@@ -71,12 +68,9 @@ function CreativeTable({
     }
   );
 
-  const adGroups =
-    selectedIds.length === 0
-      ? allAdGroups
-      : allAdGroups.filter((adGroup) => {
-          return selectedIds.includes(adGroup.id);
-        });
+  const adGroups = adGroupId
+    ? allAdGroups.filter((adGroup) => adGroup.id === adGroupId)
+    : allAdGroups;
 
   const rows = adGroups.flatMap((adGroup) => {
     const { creatives, ...adGroupData } = adGroup;
@@ -94,31 +88,6 @@ function CreativeTable({
     : [];
 
   const columns: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
-    {
-      field: "placement.name",
-      headerName: "Placement",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.adGroup.campaign.placement.name;
-      },
-    },
-    {
-      field: "campaign.name",
-      headerName: "Campaign",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.adGroup.campaign.name;
-      },
-    },
-    {
-      field: "adGroup.name",
-      headerName: "AdGroup",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.adGroup.name;
-      },
-    },
     {
       field: "name",
       headerName: "Name",
@@ -143,15 +112,11 @@ function CreativeTable({
           (content) => content.id === params.row.contentId
         );
         return (
-          <LiveProvider
-            code={replacePropsInFunction({
-              code: extractCode(content?.contentType?.contentTypeInfo),
-              contents: [jsonParseWithFallback(content?.values)],
-            })}
-            noInline={true}
-          >
-            <LivePreview />
-          </LiveProvider>
+          <ContentPreview
+            contentType={content?.contentType}
+            contents={[jsonParseWithFallback(content?.values)]}
+            showEditor={false}
+          />
         );
       },
     },
@@ -224,13 +189,6 @@ function CreativeTable({
           checkboxSelection
           disableSelectionOnClick
           experimentalFeatures={{ newEditingApi: true }}
-          selectionModel={(creativeIds || []) as string[]}
-          onSelectionModelChange={(ids) => {
-            if (ids && Array.isArray(ids)) {
-              router.query.creativeIds = ids.map((id) => String(id));
-              router.push(router);
-            }
-          }}
           components={{
             Toolbar: toolbar,
           }}

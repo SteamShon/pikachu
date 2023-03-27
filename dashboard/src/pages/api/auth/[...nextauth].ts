@@ -5,6 +5,11 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 
 import { env } from "../../../env/server.mjs";
 import { prisma } from "../../../server/db";
+import { PostHog } from "posthog-node";
+
+const posthog = env.POSTHOG_KEY
+  ? new PostHog(env.POSTHOG_KEY, { host: env.POSTHOG_HOST })
+  : undefined;
 
 export const authOptions: NextAuthOptions = {
   // Include user.id on session
@@ -12,6 +17,13 @@ export const authOptions: NextAuthOptions = {
     session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
+
+        posthog?.identify({
+          distinctId: user.id,
+          properties: {
+            email: user.email,
+          },
+        });
       }
       return session;
     },

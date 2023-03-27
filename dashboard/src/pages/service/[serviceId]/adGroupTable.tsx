@@ -26,11 +26,10 @@ function AdGroupTable({
 }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const { campaignIds, adGroupIds } = router.query;
+  const { placementId, campaignId } = router.query;
   const [adGroup, setAdGroup] = useState<
     Parameters<typeof AdGroupForm>[0]["initialData"] | undefined
   >(undefined);
-  const selectedIds = (campaignIds || []) as string[];
 
   const { mutate: deleteAdGroup } = api.campaign.removeAdGroup.useMutation({
     onSuccess(created) {
@@ -81,11 +80,12 @@ function AdGroupTable({
   );
 
   const campaigns =
-    selectedIds.length === 0
-      ? allCampaigns
-      : allCampaigns.filter((campaign) => {
-          return selectedIds.includes(campaign.id);
-        });
+    campaignId || placementId
+      ? allCampaigns.filter(
+          (campaign) =>
+            campaign.id === campaignId || campaign.placementId === placementId
+        )
+      : allCampaigns;
 
   const rows = campaigns.flatMap(({ adGroups, placement, ...campaign }) => {
     return Object.values(adGroups).map((adGroup) => {
@@ -94,23 +94,6 @@ function AdGroupTable({
   });
 
   const columns: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
-    {
-      field: "placement.name",
-      headerName: "Placement",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.campaign.placement.name;
-      },
-    },
-    {
-      field: "campaign.name",
-      headerName: "Campaign",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.campaign.name;
-      },
-    },
     {
       field: "name",
       headerName: "Name",
@@ -129,7 +112,7 @@ function AdGroupTable({
     {
       field: "filter",
       headerName: "Filter",
-      flex: 1,
+      flex: 4,
     },
     {
       field: "createdAt",
@@ -199,13 +182,6 @@ function AdGroupTable({
           checkboxSelection
           disableSelectionOnClick
           experimentalFeatures={{ newEditingApi: true }}
-          selectionModel={(adGroupIds || []) as string[]}
-          onSelectionModelChange={(ids) => {
-            if (ids && Array.isArray(ids)) {
-              router.query.adGroupIds = ids.map((id) => String(id));
-              router.push(router);
-            }
-          }}
           components={{
             Toolbar: toolbar,
           }}

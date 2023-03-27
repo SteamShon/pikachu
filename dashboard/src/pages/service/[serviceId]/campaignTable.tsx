@@ -25,11 +25,10 @@ function CampaignTable({
 }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const { placementIds, campaignIds } = router.query;
+  const { placementId } = router.query;
   const [campaign, setCampaign] = useState<
     Parameters<typeof CampaignForm>[0]["initialData"] | undefined
   >(undefined);
-  const selectedIds = (placementIds || []) as string[];
 
   const { mutate: deleteCampaign } = api.placement.removeCampaign.useMutation({
     onSuccess(created) {
@@ -57,12 +56,9 @@ function CampaignTable({
       )
     : [];
 
-  const placements =
-    selectedIds.length === 0
-      ? allPlacements
-      : allPlacements.filter((placement) => {
-          return selectedIds.includes(placement.id);
-        });
+  const placements = placementId
+    ? allPlacements.filter((placement) => placement.id === placementId)
+    : allPlacements;
 
   const rows = placements.flatMap((placement) => {
     const { campaigns, ...placementData } = placement;
@@ -182,13 +178,6 @@ function CampaignTable({
           checkboxSelection
           disableSelectionOnClick
           experimentalFeatures={{ newEditingApi: true }}
-          selectionModel={(campaignIds || []) as string[]}
-          onSelectionModelChange={(ids) => {
-            if (ids && Array.isArray(ids)) {
-              router.query.campaignIds = ids.map((id) => String(id));
-              router.push(router);
-            }
-          }}
           components={{
             Toolbar: toolbar,
           }}

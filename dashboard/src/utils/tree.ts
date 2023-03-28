@@ -9,7 +9,6 @@ import type {
   Customset,
   CustomsetInfo,
   Placement,
-  Segment,
   Service,
   ServiceConfig,
 } from "@prisma/client";
@@ -45,7 +44,7 @@ export function buildServiceTree(
     customsets: (Customset & { customsetInfo: CustomsetInfo })[];
     serviceConfig:
       | (ServiceConfig & {
-          cubes: (Cube & { segments: Segment[] })[];
+          cubes: Cube[];
         })
       | null;
   }
@@ -178,21 +177,14 @@ export function buildCustomsetsTree(
   >;
 }
 
-export function buildCubeTree(
-  cube: Cube & { segments: Segment[] }
-): Cube & { segments: Record<string, Segment> } {
-  const segments = arrayToRecord(cube.segments) as Record<
-    string,
-    typeof cube.segments[0]
-  >;
-
-  return { ...cube, segments };
+export function buildCubeTree(cube: Cube): Cube {
+  return { ...cube };
 }
 
 export function buildServiceConfigTree(
   serviceConfig:
     | (ServiceConfig & {
-        cubes: (Cube & { segments: Segment[] })[];
+        cubes: Cube[];
       })
     | null
 ):

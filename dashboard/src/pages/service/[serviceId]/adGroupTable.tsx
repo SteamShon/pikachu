@@ -1,8 +1,7 @@
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import SouthIcon from "@mui/icons-material/South";
 import NorthIcon from "@mui/icons-material/North";
-import { Button } from "@mui/material";
+import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import type { Prisma } from "@prisma/client";
@@ -49,7 +48,7 @@ function AdGroupTable({
   });
 
   const allCubes = Object.values(serviceTree?.serviceConfig?.cubes || {}).map(
-    ({ segments, ...cube }) => {
+    (cube) => {
       return {
         ...cube,
         serviceConfig: {
@@ -60,7 +59,6 @@ function AdGroupTable({
           createdAt: serviceTree?.serviceConfig?.createdAt as Date,
           updatedAt: serviceTree?.serviceConfig?.updatedAt as Date,
         },
-        segments,
       };
     }
   );
@@ -166,7 +164,7 @@ function AdGroupTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {
@@ -182,7 +180,7 @@ function AdGroupTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {

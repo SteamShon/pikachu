@@ -34,11 +34,7 @@ export const serviceConfigRouter = createTRPCRouter({
         include: {
           serviceConfig: {
             include: {
-              cubes: {
-                include: {
-                  segments: true,
-                },
-              },
+              cubes: true,
             },
           },
         },
@@ -69,11 +65,7 @@ export const serviceConfigRouter = createTRPCRouter({
         include: {
           serviceConfig: {
             include: {
-              cubes: {
-                include: {
-                  segments: true,
-                },
-              },
+              cubes: true,
             },
           },
         },
@@ -101,11 +93,7 @@ export const serviceConfigRouter = createTRPCRouter({
         include: {
           serviceConfig: {
             include: {
-              cubes: {
-                include: {
-                  segments: true,
-                },
-              },
+              cubes: true,
             },
           },
         },

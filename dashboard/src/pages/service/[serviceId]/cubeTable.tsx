@@ -41,11 +41,10 @@ function CubeTable({
     },
   });
   const cubes = Object.values(serviceTree?.serviceConfig?.cubes || {}).map(
-    ({ segments, ...cube }) => {
+    (cube) => {
       return {
         ...cube,
         serviceConfig: { ...(serviceTree?.serviceConfig || {}) },
-        segments: Object.values(segments),
       };
     }
   );

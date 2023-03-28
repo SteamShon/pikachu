@@ -138,9 +138,9 @@ function SideMenu() {
                 {menu.subMenus.map((subMenu, index) => (
                   <li
                     key={index}
-                    className={`ml-4 mt-2 flex cursor-pointer items-center gap-x-4 rounded-md p-2 text-sm text-gray-700 hover:bg-slate-50 ${
+                    className={`mt-2 flex cursor-pointer items-center gap-x-4 rounded-md p-2 text-sm text-gray-700 hover:bg-slate-50 ${
                       menu.spacing ? "mt-2" : "mt-2"
-                    } px-4`}
+                    } ${open && "ml-4"}`}
                   >
                     <Link href={subMenu.link}>
                       <span className={`float-left block text-2xl`}>

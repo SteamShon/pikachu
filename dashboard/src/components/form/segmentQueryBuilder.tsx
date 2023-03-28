@@ -1,26 +1,7 @@
-import DragIndicator from "@mui/icons-material/DragIndicator";
 import SendIcon from "@mui/icons-material/Send";
 import LoadingButton from "@mui/lab/LoadingButton";
-import {
-  Button,
-  Checkbox,
-  createTheme,
-  debounce,
-  FormControl,
-  FormControlLabel,
-  Grid,
-  Input,
-  ListSubheader,
-  MenuItem,
-  Radio,
-  RadioGroup,
-  Select,
-  Switch,
-  TextareaAutosize,
-  ThemeProvider,
-} from "@mui/material";
+import { debounce, Grid } from "@mui/material";
 import type { Cube, ServiceConfig } from "@prisma/client";
-import { QueryBuilderMaterial } from "@react-querybuilder/material";
 import { useSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
 import type { RuleGroupType } from "react-querybuilder";
@@ -28,24 +9,9 @@ import QueryBuilder, { formatQuery } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
 import { countPopulation, executeQuery } from "../../utils/duckdb";
 import AsyncValueEditor from "../common/AsyncValueEditor";
-
-const muiTheme = createTheme();
-
-const muiComponents = {
-  Button,
-  Checkbox,
-  DragIndicator,
-  FormControl,
-  FormControlLabel,
-  Input,
-  ListSubheader,
-  MenuItem,
-  Radio,
-  RadioGroup,
-  Select,
-  Switch,
-  TextareaAutosize,
-};
+import { QueryBuilderDnD } from "@react-querybuilder/dnd";
+import * as ReactDnD from "react-dnd";
+import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
 
 const emptyQuery: RuleGroupType = { combinator: "and", rules: [] };
 
@@ -159,25 +125,23 @@ function SegmentQueryBuilder({
         </Card>
       </Grid> */}
           <Grid item xs={12}>
-            <ThemeProvider theme={muiTheme}>
-              <QueryBuilderMaterial muiComponents={muiComponents}>
-                <QueryBuilder
-                  key={cube.id}
-                  fields={fields}
-                  query={query}
-                  onQueryChange={(newQuery) => {
-                    setQuery(newQuery);
-                    onQueryChange(newQuery);
-                  }}
-                  controlElements={{
-                    valueEditor: AsyncValueEditor,
-                  }}
-                  context={{ fields, cube }}
-                  controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
-                  operators={operators}
-                />
-              </QueryBuilderMaterial>
-            </ThemeProvider>
+            <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
+              <QueryBuilder
+                key={cube.id}
+                fields={fields}
+                query={query}
+                onQueryChange={(newQuery) => {
+                  setQuery(newQuery);
+                  onQueryChange(newQuery);
+                }}
+                controlElements={{
+                  valueEditor: AsyncValueEditor,
+                }}
+                context={{ fields, cube }}
+                controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
+                operators={operators}
+              />
+            </QueryBuilderDnD>
           </Grid>
           <Grid item xs={8}></Grid>
           <Grid item xs={3}>

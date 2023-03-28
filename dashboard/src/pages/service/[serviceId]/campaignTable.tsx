@@ -1,6 +1,7 @@
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import { Button } from "@mui/material";
+import SouthIcon from "@mui/icons-material/South";
+import NorthIcon from "@mui/icons-material/North";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import moment from "moment";
@@ -127,11 +128,13 @@ function CampaignTable({
     {
       field: "actions",
       headerName: "Actions",
-      flex: 1,
+      flex: 1.5,
       renderCell: (params) => {
         return (
-          <div>
-            <Button
+          <div className="flex">
+            <button
+              className="p-1 text-red-400"
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 if (confirm("Are you sure?")) {
@@ -141,16 +144,51 @@ function CampaignTable({
                   });
                 }
               }}
-              startIcon={<DeleteIcon />}
-            ></Button>
-            <Button
+            >
+              <DeleteIcon />
+            </button>
+            <button
+              className="p-1 text-blue-400"
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setCampaign(params.row);
                 setModalOpen(true);
               }}
-              startIcon={<EditIcon />}
-            ></Button>
+            >
+              <EditIcon />
+            </button>
+            <button
+              type="button"
+              className="p-1 text-blue-400"
+              onClick={(e) => {
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...router.query,
+                    step: "AdGroups",
+                    campaignId: params.row.id,
+                  },
+                });
+              }}
+            >
+              <SouthIcon />
+            </button>
+            <button
+              type="button"
+              className="p-1 text-blue-400"
+              onClick={(e) => {
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...router.query,
+                    step: "Placements",
+                  },
+                });
+              }}
+            >
+              <NorthIcon />
+            </button>
           </div>
         );
       },

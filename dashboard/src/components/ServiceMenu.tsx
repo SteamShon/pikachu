@@ -12,7 +12,7 @@ function ServiceMenu() {
   return (
     <>
       <select
-        className="p-1"
+        className="flex max-w-[6rem] overflow-auto p-1"
         value={service?.id}
         onChange={(e) => {
           router.query.serviceId = e.target.value;

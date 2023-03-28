@@ -1,5 +1,7 @@
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import NorthIcon from "@mui/icons-material/North";
+import SouthIcon from "@mui/icons-material/South";
 import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
@@ -130,11 +132,13 @@ function ContentTable({
     {
       field: "actions",
       headerName: "Actions",
-      flex: 1,
+      flex: 1.5,
       renderCell: (params) => {
         return (
-          <div className="inline-block">
-            <Button
+          <div className="flex">
+            <button
+              className="p-1 text-red-400"
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 if (confirm("Are you sure?")) {
@@ -144,16 +148,50 @@ function ContentTable({
                   });
                 }
               }}
-              startIcon={<DeleteIcon />}
-            ></Button>
-            <Button
+            >
+              <DeleteIcon />
+            </button>
+            <button
+              className="p-1 text-blue-400"
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setContent(params.row);
                 setModalOpen(true);
               }}
-              startIcon={<EditIcon />}
-            ></Button>
+            >
+              <EditIcon />
+            </button>
+            <button
+              type="button"
+              className="p-1 text-blue-400"
+              onClick={(e) => {
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...router.query,
+                    step: "Creatives",
+                  },
+                });
+              }}
+            >
+              <SouthIcon />
+            </button>
+            <button
+              type="button"
+              className="p-1 text-blue-400"
+              onClick={(e) => {
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...router.query,
+                    step: "ContentTypes",
+                  },
+                });
+              }}
+            >
+              <NorthIcon />
+            </button>
           </div>
         );
       },

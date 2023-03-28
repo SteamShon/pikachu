@@ -6,7 +6,7 @@ import {
 import { JsonForms } from "@jsonforms/react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import { Button } from "@mui/material";
+import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import type {
@@ -169,14 +169,17 @@ function ContentTypeTable({
       valueFormatter: (params) =>
         moment(params?.value).format("YYYY/MM/DD hh:mm A"),
     },
+
     {
       field: "actions",
       headerName: "Actions",
-      flex: 1,
+      flex: 1.5,
       renderCell: (params) => {
         return (
-          <div className="inline-block">
-            <Button
+          <div className="flex">
+            <button
+              className="p-1 text-red-400"
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 if (confirm("Are you sure?")) {
@@ -186,17 +189,36 @@ function ContentTypeTable({
                   });
                 }
               }}
-              startIcon={<DeleteIcon />}
-            ></Button>
-            <br />
-            <Button
+            >
+              <DeleteIcon />
+            </button>
+            <button
+              className="p-1 text-blue-400"
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setContentType(params.row);
                 setModalOpen(true);
               }}
-              startIcon={<EditIcon />}
-            ></Button>
+            >
+              <EditIcon />
+            </button>
+            <button
+              type="button"
+              className="p-1 text-blue-400"
+              onClick={(e) => {
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...router.query,
+                    step: "Contents",
+                    contentTypeId: params.row.id,
+                  },
+                });
+              }}
+            >
+              <SouthIcon />
+            </button>
           </div>
         );
       },

@@ -12,7 +12,7 @@ function ContentTypeMenu() {
   return (
     <>
       <select
-        className="p-1"
+        className="flex max-w-[6rem] overflow-auto p-1"
         value={contentTypeId}
         onChange={(e) => {
           let query = {};

@@ -14,7 +14,7 @@ function AdGroupMenu() {
   return (
     <>
       <select
-        className="p-1"
+        className="flex max-w-[10rem] overflow-auto p-1"
         value={adGroupId}
         onChange={(e) => {
           let query = {};

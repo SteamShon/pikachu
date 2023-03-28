@@ -1,6 +1,6 @@
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import { Button } from "@mui/material";
+import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import type { Service } from "@prisma/client";
@@ -107,8 +107,10 @@ function PlacementTable({
       flex: 1,
       renderCell: (params) => {
         return (
-          <div className="inline-block">
-            <Button
+          <div className="flex">
+            <button
+              className="p-1 text-red-400"
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 if (confirm("Are you sure?")) {
@@ -118,16 +120,36 @@ function PlacementTable({
                   });
                 }
               }}
-              startIcon={<DeleteIcon />}
-            ></Button>
-            <Button
+            >
+              <DeleteIcon />
+            </button>
+            <button
+              className="p-1 text-blue-400"
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setPlacement(params.row);
                 setModalOpen(true);
               }}
-              startIcon={<EditIcon />}
-            ></Button>
+            >
+              <EditIcon />
+            </button>
+            <button
+              type="button"
+              className="p-1 text-blue-400"
+              onClick={(e) => {
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...router.query,
+                    step: "Campaigns",
+                    placementId: params.row.id,
+                  },
+                });
+              }}
+            >
+              <SouthIcon />
+            </button>
           </div>
         );
       },

@@ -52,6 +52,26 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service]);
 
+  const PlacementContentTypeMenu = () => {
+    const value = ["ContentTypes", "Contents"].find((c) => c === step)
+      ? "ContentTypes"
+      : "Placements";
+    return (
+      <select
+        onChange={(e) => {
+          router.push({
+            pathname: router.pathname,
+            query: { ...router.query, step: e.target.value },
+          });
+        }}
+        value={value}
+      >
+        <option value="Placements">Placement</option>
+        <option value="ContentTypes">ContentType</option>
+      </select>
+    );
+  };
+
   const steps = [
     {
       label: "Placements",
@@ -59,16 +79,7 @@ function Dashboard() {
       paths: [
         <>Home</>,
         <ServiceMenu key="serviceMenu" />,
-        <>
-          <Link
-            href={{
-              pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Placements" },
-            }}
-          >
-            <span className="font-bold">Placement</span>
-          </Link>
-        </>,
+        <>{PlacementContentTypeMenu()}</>,
         <>
           <Link
             href={{
@@ -95,16 +106,7 @@ function Dashboard() {
       paths: [
         <>Home</>,
         <ServiceMenu key="serviceMenu" />,
-        <>
-          <Link
-            href={{
-              pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Placements" },
-            }}
-          >
-            Placement
-          </Link>
-        </>,
+        <>{PlacementContentTypeMenu()}</>,
         <PlacementMenu key="placementMenu" />,
         <>
           <Link
@@ -138,16 +140,7 @@ function Dashboard() {
       paths: [
         <>Home</>,
         <ServiceMenu key="serviceMenu" />,
-        <>
-          <Link
-            href={{
-              pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Placements" },
-            }}
-          >
-            Placement
-          </Link>
-        </>,
+        <>{PlacementContentTypeMenu()}</>,
         <PlacementMenu key="placementMenu" />,
         <>
           <Link
@@ -192,16 +185,7 @@ function Dashboard() {
       paths: [
         <>Home</>,
         <ServiceMenu key="serviceMenu" />,
-        <>
-          <Link
-            href={{
-              pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Placements" },
-            }}
-          >
-            Placement
-          </Link>
-        </>,
+        <>{PlacementContentTypeMenu()}</>,
         <PlacementMenu key="placementMenu" />,
         <>
           <Link
@@ -261,16 +245,7 @@ function Dashboard() {
       paths: [
         <>Home</>,
         <ServiceMenu key="serviceMenu" />,
-        <>
-          <Link
-            href={{
-              pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "ContentTypes" },
-            }}
-          >
-            <span className="font-bold">ContentType</span>
-          </Link>
-        </>,
+        <>{PlacementContentTypeMenu()}</>,
         <>
           <Link
             href={{
@@ -297,16 +272,7 @@ function Dashboard() {
       paths: [
         <>Home</>,
         <ServiceMenu key="serviceMenu" />,
-        <>
-          <Link
-            href={{
-              pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "ContentTypes" },
-            }}
-          >
-            ContentType
-          </Link>
-        </>,
+        <>{PlacementContentTypeMenu()}</>,
         <ContentTypeMenu key="contentTypeMenu" />,
         <>
           <Link
@@ -376,7 +342,7 @@ function Dashboard() {
   if (isLoading) return <Loading />;
 
   return (
-    <div className="flex">
+    <div className="flex overflow-auto">
       <SideMenu />
       <div className="w-full p-4">
         <div className="mt-2">

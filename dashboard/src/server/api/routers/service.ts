@@ -176,11 +176,7 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: {
-                include: {
-                  segments: true,
-                },
-              },
+              cubes: true,
             },
           },
         },
@@ -245,11 +241,7 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: {
-                include: {
-                  segments: true,
-                },
-              },
+              cubes: true,
             },
           },
         },
@@ -312,11 +304,7 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: {
-                include: {
-                  segments: true,
-                },
-              },
+              cubes: true,
             },
           },
         },
@@ -381,11 +369,7 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: {
-                include: {
-                  segments: true,
-                },
-              },
+              cubes: true,
             },
           },
         },
@@ -465,11 +449,7 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: {
-                include: {
-                  segments: true,
-                },
-              },
+              cubes: true,
             },
           },
         },
@@ -546,11 +526,7 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: {
-                include: {
-                  segments: true,
-                },
-              },
+              cubes: true,
             },
           },
         },
@@ -615,11 +591,7 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: {
-                include: {
-                  segments: true,
-                },
-              },
+              cubes: true,
             },
           },
         },

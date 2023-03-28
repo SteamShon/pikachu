@@ -336,7 +336,6 @@ model Cube {
     serviceConfigId String
     // s3Path       String?
     sql             String?
-    segments        Segment[]
     placements      Placement[]
     // placementGroups PlacementGroup[]
     status          String        @default("CREATED")
@@ -344,19 +343,4 @@ model Cube {
     updatedAt       DateTime      @updatedAt
 
     @@unique([serviceConfigId, name])
-}
-
-model Segment {
-    id          String   @id @default(cuid())
-    cube        Cube     @relation(fields: [cubeId], references: [id], onDelete: Cascade)
-    cubeId      String
-    name        String
-    description String?
-    where       String?
-    population  String?
-    status      String   @default("CREATED")
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-
-    @@unique([cubeId, name])
 }

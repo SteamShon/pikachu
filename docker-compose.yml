@@ -38,10 +38,10 @@ services:
       - 3000:3000
     depends_on:
       - prisma-migrate
-  server:
+  api:
     build:
       context: server
-      dockerfile: Dockerfile
+      dockerfile: api/Dockerfile
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - AD_META_SYNC_PERIOD_MILLIS=${AD_META_SYNC_PERIOD_MILLIS}

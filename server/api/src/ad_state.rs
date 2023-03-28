@@ -47,6 +47,7 @@ pub struct UpdateInfo {
     pub ad_groups: DateTime<FixedOffset>,
     pub creatives: DateTime<FixedOffset>,
     pub contents: DateTime<FixedOffset>,
+    pub content_types: DateTime<FixedOffset>,
 }
 impl Default for UpdateInfo {
     fn default() -> Self {
@@ -57,6 +58,7 @@ impl Default for UpdateInfo {
             ad_groups: Default::default(),
             creatives: Default::default(),
             contents: Default::default(),
+            content_types: Default::default(),
         }
     }
 }
@@ -69,6 +71,7 @@ pub struct AdState {
     pub ad_groups: HashMap<String, ad_group::Data>,
     pub creatives: HashMap<String, HashMap<String, creative::Data>>,
     pub contents: HashMap<String, content::Data>,
+    pub content_types: HashMap<String, content_type::Data>,
     pub update_info: UpdateInfo,
     pub filter_index: HashMap<String, FilterIndex>,
 }
@@ -81,6 +84,7 @@ impl Default for AdState {
             ad_groups: Default::default(),
             creatives: Default::default(),
             contents: Default::default(),
+            content_types: Default::default(),
             update_info: Default::default(),
             filter_index: Default::default(),
         }
@@ -126,7 +130,6 @@ impl AdState {
             .placement()
             .find_many(vec![placement::updated_at::gt(last_updated_at)])
             .order_by(placement::updated_at::order(Direction::Desc))
-            .with(placement::content_type::fetch().with(content_type::content_type_info::fetch()))
             .exec()
             .await
             .unwrap()
@@ -175,6 +178,19 @@ impl AdState {
             .content()
             .find_many(vec![content::updated_at::gt(last_updated_at)])
             .order_by(content::updated_at::order(Direction::Desc))
+            .exec()
+            .await
+            .unwrap()
+    }
+    pub async fn fetch_content_types(
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> Vec<content_type::Data> {
+        client
+            .content_type()
+            .find_many(vec![content_type::updated_at::gt(last_updated_at)])
+            .order_by(content_type::updated_at::order(Direction::Desc))
+            .with(content_type::content_type_info::fetch())
             .exec()
             .await
             .unwrap()
@@ -281,6 +297,16 @@ impl AdState {
             contents.insert(content.id.clone(), content.clone());
         }
     }
+    pub fn update_content_types(&mut self, new_content_types: &Vec<content_type::Data>) -> () {
+        let content_types = &mut self.content_types;
+        if let Some(latest_updated_content) = new_content_types.first() {
+            let update_info = &mut self.update_info;
+            update_info.content_types = latest_updated_content.updated_at;
+        }
+        for content_type in new_content_types {
+            content_types.insert(content_type.id.clone(), content_type.clone());
+        }
+    }
 
     pub async fn fetch_and_update_services(
         &mut self,
@@ -343,6 +369,16 @@ impl AdState {
         println!("[new_contents]: {:?}", new_contents.len());
         self.update_contents(new_contents);
     }
+    pub async fn fetch_and_update_content_types(
+        &mut self,
+        client: Arc<PrismaClient>,
+        last_updated_at: Option<DateTime<FixedOffset>>,
+    ) -> () {
+        let last_updated_at_value = last_updated_at.unwrap_or(self.update_info.content_types);
+        let new_content_types = &Self::fetch_content_types(client, last_updated_at_value).await;
+        println!("[new_content_typess]: {:?}", new_content_types.len());
+        self.update_content_types(new_content_types);
+    }
     pub fn init() -> AdState {
         AdState::default()
     }
@@ -353,6 +389,8 @@ impl AdState {
         self.fetch_and_update_ad_groups(client.clone(), None).await;
         self.fetch_and_update_creatives(client.clone(), None).await;
         self.fetch_and_update_contents(client.clone(), None).await;
+        self.fetch_and_update_content_types(client.clone(), None)
+            .await;
         println!("{:?}", self.filter_index);
     }
     fn parse_user_info(value: &serde_json::Value) -> Option<UserInfo> {
@@ -383,6 +421,9 @@ impl AdState {
     }
     fn is_active_content(content: &content::Data) -> bool {
         content.status.to_lowercase() == "published"
+    }
+    fn is_active_content_type(content_type: &content_type::Data) -> bool {
+        content_type.status.to_lowercase() == "published"
     }
     pub fn search(
         &self,
@@ -417,23 +458,31 @@ impl AdState {
         let mut ads = Vec::<placement::Data>::new();
         let placements = &self.placements;
         let campaigns = &self.campaigns;
+        let content_types = &self.content_types;
 
         for (placement_id, campaign_tree) in meta_tree {
             if let Some(placement) = placements.get(placement_id) {
-                let mut new_campaigns = Vec::new();
-                for (campaign_id, ad_groups) in campaign_tree.iter() {
-                    new_campaigns.push(campaign::Data {
-                        ad_groups: Some(ad_groups.clone()),
-                        placement: None,
-                        ..campaigns.get(campaign_id).unwrap().clone()
-                    });
-                }
+                if let Some(content_type_id) = &placement.content_type_id {
+                    if let Some(content_type) = content_types.get(content_type_id) {
+                        if Self::is_active_content_type(&content_type) {
+                            let mut new_campaigns = Vec::new();
+                            for (campaign_id, ad_groups) in campaign_tree.iter() {
+                                new_campaigns.push(campaign::Data {
+                                    ad_groups: Some(ad_groups.clone()),
+                                    placement: None,
+                                    ..campaigns.get(campaign_id).unwrap().clone()
+                                });
+                            }
 
-                ads.push(placement::Data {
-                    advertisers_on_placements: None,
-                    campaigns: Some(new_campaigns),
-                    ..placement.clone()
-                });
+                            ads.push(placement::Data {
+                                advertisers_on_placements: None,
+                                campaigns: Some(new_campaigns),
+                                content_type: Some(Some(Box::new(content_type.clone()))),
+                                ..placement.clone()
+                            });
+                        }
+                    }
+                }
             }
         }
         ads
@@ -484,6 +533,7 @@ impl AdState {
                     if placement.id == placement_id
                         && Self::is_active_campaign(campaign)
                         && Self::is_active_placement(placement)
+                        && placement.content_type_id.is_some()
                     {
                         tree.entry(placement.id.clone())
                             .or_insert_with(|| HashMap::new())

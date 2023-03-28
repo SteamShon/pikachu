@@ -39,7 +39,7 @@ COPY --from=cacher /app/target target
 COPY --from=cacher /usr/local/cargo /usr/local/cargo
 
 # build the app 
-RUN cargo prisma generate && cargo build --release 
+RUN cargo prisma generate && cargo build --release --bin api
 
 # use google distroless as runtime image
 FROM gcr.io/distroless/cc-debian11
@@ -49,10 +49,10 @@ COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 
 # copy app from builder 
-COPY --from=builder /app/target/release/server /app/server
+COPY --from=builder /app/target/release/api /app/api
 WORKDIR /app 
 
 USER api:api
 
 # start the application 
-CMD ["./server"]
+CMD ["./api"]

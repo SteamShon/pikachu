@@ -32,6 +32,7 @@ async fn load_ad_meta(data: web::Data<ArcSwap<Arc<AdState>>>, client: web::Data<
         ad_groups: prev.ad_groups.clone(),
         creatives: prev.creatives.clone(),
         contents: prev.contents.clone(),
+        content_types: prev.content_types.clone(),
         update_info: prev.update_info.clone(),
         filter_index: prev.filter_index.clone(),
     };

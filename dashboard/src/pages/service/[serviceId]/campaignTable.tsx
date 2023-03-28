@@ -68,7 +68,6 @@ function CampaignTable({
   });
 
   const columns: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
     {
       field: "placement.name",
       headerName: "Placement",
@@ -175,7 +174,6 @@ function CampaignTable({
           getRowHeight={() => "auto"}
           pageSize={10}
           rowsPerPageOptions={[10, 20, 30, 40, 50]}
-          checkboxSelection
           disableSelectionOnClick
           experimentalFeatures={{ newEditingApi: true }}
           components={{

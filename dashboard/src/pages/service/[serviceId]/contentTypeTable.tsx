@@ -222,7 +222,6 @@ function ContentTypeTable({
             getRowHeight={() => "auto"}
             pageSize={10}
             rowsPerPageOptions={[10, 20, 30, 40, 50]}
-            checkboxSelection
             disableSelectionOnClick
             experimentalFeatures={{ newEditingApi: true }}
             selectionModel={(contentTypeIds || []) as string[]}

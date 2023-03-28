@@ -52,7 +52,6 @@ function CubeTable({
   const rows = cubes;
 
   const columns: GridColDef[] = [
-    { field: "id", headerName: "ID", width: 90 },
     {
       field: "name",
       headerName: "Name",
@@ -135,7 +134,6 @@ function CubeTable({
           getRowHeight={() => "auto"}
           pageSize={10}
           rowsPerPageOptions={[10, 20, 30, 40, 50]}
-          checkboxSelection
           disableSelectionOnClick
           experimentalFeatures={{ newEditingApi: true }}
           // selectionModel={(cubeConfigIds || []) as string[]}

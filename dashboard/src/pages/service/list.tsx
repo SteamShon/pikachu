@@ -47,7 +47,6 @@ function ServiceList() {
 
   const rows = services || [];
   const columns: GridColDef[] = [
-    { field: "id", headerName: "ID" },
     {
       field: "name",
       headerName: "Name",

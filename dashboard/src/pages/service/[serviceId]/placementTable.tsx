@@ -65,11 +65,6 @@ function PlacementTable({
 
   const columns: GridColDef[] = [
     {
-      field: "id",
-      headerName: "ID",
-      flex: 1,
-    },
-    {
       field: "name",
       headerName: "Name",
       flex: 1,
@@ -156,7 +151,6 @@ function PlacementTable({
             getRowHeight={() => "auto"}
             pageSize={10}
             rowsPerPageOptions={[10, 20, 30, 40, 50]}
-            checkboxSelection
             disableSelectionOnClick
             experimentalFeatures={{ newEditingApi: true }}
             selectionModel={(placementIds || []) as string[]}

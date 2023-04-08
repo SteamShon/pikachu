@@ -146,7 +146,7 @@ model Placement {
     updatedAt               DateTime                  @updatedAt
     cube                    Cube?                     @relation(fields: [cubeId], references: [id])
     cubeId                  String?
-    featureFetchers         FeatureFetcher[]
+    integrations            Integration[]
 
     @@unique([serviceId, name])
     @@index(fields: [updatedAt])
@@ -363,30 +363,34 @@ model UserFeature {
     @@id([cubeHistoryId, userId])
 }
 
-model FeatureFetcher {
-    id          String    @id @default(cuid())
-    name        String
-    description String?
-    method      String
-    status      String    @default("CREATED")
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
-    placement   Placement @relation(fields: [placementId], references: [id])
-    placementId String
-
-    featureFetcherInfo FeatureFetcherInfo?
+// store how to get user features by integrating database.
+// type == DB then API server will lookup cubeHistory+UserFeature table.
+// DB type require connection string.
+// type == HTTP then API server will call http API to get user feature.
+// HTTP type require METHOD, URL endpoint
+model Integration {
+    id              String           @id @default(cuid())
+    name            String
+    description     String?
+    type            String // DB/HTTP
+    status          String           @default("CREATED")
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+    placement       Placement        @relation(fields: [placementId], references: [id])
+    placementId     String
+    integrationInfo IntegrationInfo?
 
     @@unique([placementId, name])
     @@index(fields: [updatedAt])
 }
 
-model FeatureFetcherInfo {
-    id               String         @id @default(cuid())
-    featureFetcher   FeatureFetcher @relation(fields: [featureFetcherId], references: [id])
-    featureFetcherId String         @unique
-    details          Json           @default("{}")
-    createdAt        DateTime       @default(now())
-    updatedAt        DateTime       @updatedAt
+model IntegrationInfo {
+    id            String      @id @default(cuid())
+    details       Json        @default("{}")
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+    integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+    integrationId String      @unique
 
     @@index(fields: [updatedAt])
 }

@@ -23,6 +23,7 @@ import PlacementMenu from "../../../components/PlacementMenu";
 import CampaignMenu from "../../../components/CampaignMenu";
 import ContentTypeMenu from "../../../components/ContentTypeMenu";
 import AdGroupMenu from "../../../components/AdGroupMenu";
+import IntegrationTable from "./integrationTable";
 function Dashboard() {
   const { data: session } = useSession();
   const posthog = usePostHog();
@@ -37,6 +38,10 @@ function Dashboard() {
   const { data: service, isLoading } = api.service.get.useQuery({
     id: serviceId as string,
   });
+
+  const x = service?.placements[0]?.integrations;
+
+  console.log(service);
 
   useEffect(() => {
     if (service) {
@@ -328,11 +333,38 @@ function Dashboard() {
           />
         ) : null,
     },
-
     {
       label: "RenderPreview",
       description: `renderPreview`,
       table: () => (service ? <RenderPreview serviceId={service.id} /> : null),
+    },
+    {
+      label: "Integrations",
+      description: `integrations`,
+      paths: [
+        <>Home</>,
+        <ServiceMenu key="serviceMenu" />,
+        <>{PlacementContentTypeMenu()}</>,
+        <PlacementMenu key="placementMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Integrations" },
+            }}
+          >
+            <span className="font-bold">Integration</span>
+          </Link>
+        </>,
+      ],
+      table: () =>
+        service ? (
+          <IntegrationTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
+        ) : null,
     },
   ];
   const activeStep = step

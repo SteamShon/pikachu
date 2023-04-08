@@ -8,6 +8,56 @@ import { serviceSchema } from "../../../components/schema/service";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
+export const getIncludes = {
+  placements: {
+    include: {
+      contentType: true,
+      campaigns: {
+        include: {
+          adGroups: {
+            include: {
+              creatives: {
+                include: {
+                  content: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      integrations: {
+        include: {
+          integrationInfo: true,
+        },
+      },
+    },
+  },
+  contentTypes: {
+    include: {
+      contentTypeInfo: true,
+      contents: {
+        include: {
+          creatives: true,
+        },
+      },
+    },
+  },
+  customsets: {
+    include: {
+      customsetInfo: true,
+      createdBy: true,
+    },
+  },
+  serviceConfig: {
+    include: {
+      cubes: {
+        include: {
+          cubeHistories: true,
+        },
+      },
+    },
+  },
+};
 export const serviceRouter = createTRPCRouter({
   create: protectedProcedure
     .input(serviceSchema)
@@ -139,51 +189,7 @@ export const serviceRouter = createTRPCRouter({
         where: {
           id: input.id,
         },
-        include: {
-          placements: {
-            include: {
-              contentType: true,
-              campaigns: {
-                include: {
-                  adGroups: {
-                    include: {
-                      creatives: {
-                        include: {
-                          content: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          contentTypes: {
-            include: {
-              contentTypeInfo: true,
-              contents: {
-                include: {
-                  creatives: true,
-                },
-              },
-            },
-          },
-          customsets: {
-            include: {
-              customsetInfo: true,
-              createdBy: true,
-            },
-          },
-          serviceConfig: {
-            include: {
-              cubes: {
-                include: {
-                  cubeHistories: true,
-                },
-              },
-            },
-          },
-        },
+        include: getIncludes,
       });
     }),
 
@@ -208,51 +214,7 @@ export const serviceRouter = createTRPCRouter({
             },
           },
         },
-        include: {
-          placements: {
-            include: {
-              contentType: true,
-              campaigns: {
-                include: {
-                  adGroups: {
-                    include: {
-                      creatives: {
-                        include: {
-                          content: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          contentTypes: {
-            include: {
-              contentTypeInfo: true,
-              contents: {
-                include: {
-                  creatives: true,
-                },
-              },
-            },
-          },
-          customsets: {
-            include: {
-              customsetInfo: true,
-              createdBy: true,
-            },
-          },
-          serviceConfig: {
-            include: {
-              cubes: {
-                include: {
-                  cubeHistories: true,
-                },
-              },
-            },
-          },
-        },
+        include: getIncludes,
       });
 
       return service;
@@ -275,51 +237,7 @@ export const serviceRouter = createTRPCRouter({
             },
           },
         },
-        include: {
-          placements: {
-            include: {
-              contentType: true,
-              campaigns: {
-                include: {
-                  adGroups: {
-                    include: {
-                      creatives: {
-                        include: {
-                          content: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          contentTypes: {
-            include: {
-              contentTypeInfo: true,
-              contents: {
-                include: {
-                  creatives: true,
-                },
-              },
-            },
-          },
-          customsets: {
-            include: {
-              customsetInfo: true,
-              createdBy: true,
-            },
-          },
-          serviceConfig: {
-            include: {
-              cubes: {
-                include: {
-                  cubeHistories: true,
-                },
-              },
-            },
-          },
-        },
+        include: getIncludes,
       });
 
       return service;
@@ -344,51 +262,7 @@ export const serviceRouter = createTRPCRouter({
             },
           },
         },
-        include: {
-          placements: {
-            include: {
-              contentType: true,
-              campaigns: {
-                include: {
-                  adGroups: {
-                    include: {
-                      creatives: {
-                        include: {
-                          content: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          contentTypes: {
-            include: {
-              contentTypeInfo: true,
-              contents: {
-                include: {
-                  creatives: true,
-                },
-              },
-            },
-          },
-          customsets: {
-            include: {
-              customsetInfo: true,
-              createdBy: true,
-            },
-          },
-          serviceConfig: {
-            include: {
-              cubes: {
-                include: {
-                  cubeHistories: true,
-                },
-              },
-            },
-          },
-        },
+        include: getIncludes,
       });
 
       return service;
@@ -428,51 +302,7 @@ export const serviceRouter = createTRPCRouter({
             },
           },
         },
-        include: {
-          placements: {
-            include: {
-              contentType: true,
-              campaigns: {
-                include: {
-                  adGroups: {
-                    include: {
-                      creatives: {
-                        include: {
-                          content: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          contentTypes: {
-            include: {
-              contentTypeInfo: true,
-              contents: {
-                include: {
-                  creatives: true,
-                },
-              },
-            },
-          },
-          customsets: {
-            include: {
-              customsetInfo: true,
-              createdBy: true,
-            },
-          },
-          serviceConfig: {
-            include: {
-              cubes: {
-                include: {
-                  cubeHistories: true,
-                },
-              },
-            },
-          },
-        },
+        include: getIncludes,
       });
 
       return service;
@@ -509,51 +339,7 @@ export const serviceRouter = createTRPCRouter({
             },
           },
         },
-        include: {
-          placements: {
-            include: {
-              contentType: true,
-              campaigns: {
-                include: {
-                  adGroups: {
-                    include: {
-                      creatives: {
-                        include: {
-                          content: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          contentTypes: {
-            include: {
-              contentTypeInfo: true,
-              contents: {
-                include: {
-                  creatives: true,
-                },
-              },
-            },
-          },
-          customsets: {
-            include: {
-              customsetInfo: true,
-              createdBy: true,
-            },
-          },
-          serviceConfig: {
-            include: {
-              cubes: {
-                include: {
-                  cubeHistories: true,
-                },
-              },
-            },
-          },
-        },
+        include: getIncludes,
       });
 
       return service;
@@ -578,56 +364,7 @@ export const serviceRouter = createTRPCRouter({
             },
           },
         },
-        include: {
-          placements: {
-            include: {
-              contentType: true,
-              campaigns: {
-                include: {
-                  adGroups: {
-                    include: {
-                      creatives: {
-                        include: {
-                          content: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-              featureFetchers: {
-                include: {
-                  featureFetcherInfo: true,
-                },
-              },
-            },
-          },
-          contentTypes: {
-            include: {
-              contentTypeInfo: true,
-              contents: {
-                include: {
-                  creatives: true,
-                },
-              },
-            },
-          },
-          customsets: {
-            include: {
-              customsetInfo: true,
-              createdBy: true,
-            },
-          },
-          serviceConfig: {
-            include: {
-              cubes: {
-                include: {
-                  cubeHistories: true,
-                },
-              },
-            },
-          },
-        },
+        include: getIncludes,
       });
 
       return service;

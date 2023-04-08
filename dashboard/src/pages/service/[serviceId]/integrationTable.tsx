@@ -12,10 +12,12 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type PlacementForm from "../../../components/form/placementForm";
 import PlacementModal from "../../../components/form/placementModal";
 import { api } from "../../../utils/api";
-import { buildServiceTree } from "../../../utils/tree";
+import type { buildServiceTree } from "../../../utils/tree";
 import RenderPreview from "./renderPreview";
+import IntegrationModal from "../../../components/form/integrationModal";
+import type IntegrationForm from "../../../components/form/integrationForm";
 
-function PlacementTable({
+function IntegrationTable({
   service,
   serviceTree,
   setServiceTree,
@@ -28,40 +30,28 @@ function PlacementTable({
 }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const { placementIds } = router.query;
-  const [placement, setPlacement] = useState<
-    Parameters<typeof PlacementForm>[0]["initialData"] | undefined
+  const { integrationIds } = router.query;
+  const [integration, setIntegration] = useState<
+    Parameters<typeof IntegrationForm>[0]["initialData"] | undefined
   >(undefined);
-  const selectedIds = (placementIds || []) as string[];
+  const selectedIds = (integrationIds || []) as string[];
 
-  const { mutate: deletePlacement } = api.service.removePlacement.useMutation({
-    onSuccess(deleted) {
-      setServiceTree((prev) => {
-        if (!prev) return undefined;
-        return buildServiceTree(deleted);
-      });
-      setModalOpen(false);
-    },
-  });
-
-  const allPlacements = serviceTree
-    ? Object.values(serviceTree?.placements)
+  const allIntegrations = serviceTree
+    ? Object.values(serviceTree?.placements).flatMap((placement) => {
+        return Object.values(placement.integrations).map((integration) => {
+          return { ...integration, placement: { ...placement } };
+        });
+      })
     : [];
 
-  const placements =
+  const integrations =
     selectedIds.length === 0
-      ? allPlacements
-      : allPlacements.filter((placement) => {
-          return selectedIds.includes(placement.id);
+      ? allIntegrations
+      : allIntegrations.filter((integration) => {
+          return selectedIds.includes(integration.id);
         });
 
-  const contentTypes = serviceTree
-    ? Object.values(serviceTree?.contentTypes)
-    : [];
-
-  const cubes = Object.values(serviceTree?.serviceConfig?.cubes || {});
-
-  const rows = placements;
+  const rows = integrations;
 
   const columns: GridColDef[] = [
     {
@@ -79,14 +69,7 @@ function PlacementTable({
       headerName: "Status",
       flex: 1,
     },
-    {
-      field: "contentType.name",
-      headerName: "ContentType",
-      flex: 1,
-      valueGetter: (params) => {
-        return params.row.contentType?.name;
-      },
-    },
+
     {
       field: "createdAt",
       headerName: "CreatedAt",
@@ -112,13 +95,7 @@ function PlacementTable({
               className="p-1 text-red-400"
               type="button"
               onClick={(e) => {
-                e.stopPropagation();
-                if (confirm("Are you sure?")) {
-                  deletePlacement({
-                    id: params.row.id,
-                    serviceId: params.row.serviceId,
-                  });
-                }
+                console.log(e);
               }}
             >
               <DeleteIcon />
@@ -128,7 +105,7 @@ function PlacementTable({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setPlacement(params.row);
+                setIntegration(params.row);
                 setModalOpen(true);
               }}
             >
@@ -137,7 +114,7 @@ function PlacementTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={() => {
+              onClick={(e) => {
                 router.push({
                   pathname: router.pathname,
                   query: {
@@ -158,7 +135,7 @@ function PlacementTable({
   const toolbar = GridCustomToolbar({
     label: "Create",
     onClick: () => {
-      setPlacement(undefined);
+      setIntegration(undefined);
       setModalOpen(true);
     },
   });
@@ -175,34 +152,21 @@ function PlacementTable({
             rowsPerPageOptions={[10, 20, 30, 40, 50]}
             disableSelectionOnClick
             experimentalFeatures={{ newEditingApi: true }}
-            selectionModel={(placementIds || []) as string[]}
-            onSelectionModelChange={(ids) => {
-              if (ids && Array.isArray(ids)) {
-                router.query.placementIds = ids.map((id) => String(id));
-                router.push(router);
-              }
-            }}
             components={{
               Toolbar: toolbar,
             }}
           />
         </div>
-        <PlacementModal
-          key="placementModal"
+        <IntegrationModal
+          key="integrationModal"
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
           service={service}
-          contentTypes={contentTypes}
-          cubes={cubes}
-          initialData={placement}
           setServiceTree={setServiceTree}
         />
-      </div>
-      <div className="mt-4 items-center p-10">
-        {service ? <RenderPreview serviceId={service.id} /> : null}
       </div>
     </>
   );
 }
 
-export default PlacementTable;
+export default IntegrationTable;

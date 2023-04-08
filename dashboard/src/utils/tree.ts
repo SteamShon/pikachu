@@ -9,6 +9,8 @@ import type {
   CubeHistory,
   Customset,
   CustomsetInfo,
+  Integration,
+  IntegrationInfo,
   Placement,
   Service,
   ServiceConfig,
@@ -37,6 +39,9 @@ export function buildServiceTree(
         })[];
       })[];
       contentType: ContentType | null;
+      integrations: (Integration & {
+        integrationInfo: IntegrationInfo | null;
+      })[];
     })[];
     contentTypes: (ContentType & {
       contentTypeInfo: ContentTypeInfo | null;
@@ -84,10 +89,15 @@ export function buildPlacementTree(
       })[];
     })[];
     contentType: ContentType | null;
+    integrations: (Integration & { integrationInfo: IntegrationInfo | null })[];
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
   contentType: ContentType | null;
+  integrations: Record<
+    string,
+    Integration & { integrationInfo: IntegrationInfo | null }
+  >;
 } {
   const campaigns = arrayToRecord(
     placement.campaigns.map((campaign) => {
@@ -95,7 +105,12 @@ export function buildPlacementTree(
     })
   ) as Record<string, ReturnType<typeof buildCampaignTree>>;
 
-  return { ...placement, campaigns };
+  const integrations = arrayToRecord(placement.integrations) as Record<
+    string,
+    Integration & { integrationInfo: IntegrationInfo | null }
+  >;
+
+  return { ...placement, campaigns, integrations };
 }
 
 export function buildCampaignTree(

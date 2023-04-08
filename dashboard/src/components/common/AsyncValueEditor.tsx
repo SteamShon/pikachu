@@ -69,7 +69,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
         setOpen(false);
       }}
       isOptionEqualToValue={(option, value) => option === value}
-      getOptionLabel={(option) => option}
+      getOptionLabel={(option) => option as string}
       options={options || []}
       loading={loading}
       multiple
@@ -83,7 +83,8 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
       onInputChange={(_event, newInputValue) => {
         setInputValue(newInputValue);
       }}
-      onChange={(_e, vs: string[], reason) => {
+      onChange={(_e, _vs: unknown[], reason) => {
+        const vs = _vs.map((v) => v as string);
         const prevValues = (props.value as string)
           .split(",")
           .filter((v) => v.length > 0);

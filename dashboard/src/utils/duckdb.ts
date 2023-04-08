@@ -7,6 +7,8 @@ import {
   extractS3Region,
   extractS3SecretAccessKey,
 } from "./serviceConfig";
+import type { RuleGroupType } from "react-querybuilder";
+import { RuleGroup, formatQuery } from "react-querybuilder";
 
 const pool = new MyCache<ServiceConfig, AsyncDuckDB | undefined>({
   max: 3, // # of items
@@ -70,12 +72,16 @@ async function executeQueryInner({
   serviceConfig: ServiceConfig;
   query: string;
 }): Promise<Record<string, unknown>[]> {
-  console.log(`duckdb: ${query}`);
+  const startedAt = new Date().getTime();
   const db = await loadDuckDB(serviceConfig);
   if (!db) return Promise.reject(new Error("duckdb instance is not loaded."));
 
   const conn = await db.connect();
   const result = await conn.query(query);
+  const duration = new Date().getTime() - startedAt;
+
+  console.log(`duckdb[${duration}]: ${query}`);
+
   const buffer: Record<string, unknown>[] = [];
   (result?.batches || []).forEach((rows) => {
     for (let r = 0; r < rows.numRows; r++) {
@@ -120,11 +126,15 @@ export async function fetchValues(
   serviceConfig: ServiceConfig,
   sql: string,
   fieldName: string,
+  columnType?: string,
   value?: string
 ): Promise<unknown[]> {
+  const column = columnType?.endsWith("[]")
+    ? `unnest(${fieldName}) AS ${fieldName}`
+    : `${fieldName}`;
   const where = value ? ` WHERE ${fieldName} like '%${value}%'` : ``;
   const query = `
-SELECT distinct ${fieldName} FROM (${sql}) ${where};
+SELECT distinct ${column} FROM (${sql}) ${where};
   `;
 
   const rows = await executeQuery(serviceConfig, query);
@@ -156,4 +166,42 @@ SELECT ${selectClause} FROM (${sql}) ${whereClause};
 
   const rows = await executeQuery(serviceConfig, query);
   return String(rows[0]?.popoulation);
+}
+
+export function formatQueryCustom(query: RuleGroupType) {
+  const jsonLogicToSql = (
+    node: Record<string, unknown>
+  ): string | undefined => {
+    if (node.or) {
+      const childrens = node.or as Record<string, unknown>[];
+      return childrens
+        .map((child) => {
+          return `(${jsonLogicToSql(child)})`;
+        })
+        .join(" OR ");
+    }
+    if (node.and) {
+      const childrens = node.and as Record<string, unknown>[];
+      return childrens
+        .map((child) => {
+          return `(${jsonLogicToSql(child)})`;
+        })
+        .join(" AND ");
+    }
+    if (node.in) {
+      const kvs = node.in as unknown[];
+      const key = (kvs[0] as { var: string }).var;
+      const values = kvs[1] as string[];
+      // check if key is list type.
+      const ls = values.map((value) => {
+        return `array_contains(${key}, '${value}')`;
+      });
+      return ls.join(" OR ");
+    }
+
+    return undefined;
+  };
+
+  const jsonLogic = formatQuery(query, "jsonlogic");
+  return jsonLogicToSql(jsonLogic as Record<string, unknown>);
 }

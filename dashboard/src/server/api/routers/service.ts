@@ -176,7 +176,11 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: true,
+              cubes: {
+                include: {
+                  cubeHistories: true,
+                },
+              },
             },
           },
         },
@@ -241,7 +245,11 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: true,
+              cubes: {
+                include: {
+                  cubeHistories: true,
+                },
+              },
             },
           },
         },
@@ -304,7 +312,11 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: true,
+              cubes: {
+                include: {
+                  cubeHistories: true,
+                },
+              },
             },
           },
         },
@@ -369,7 +381,11 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: true,
+              cubes: {
+                include: {
+                  cubeHistories: true,
+                },
+              },
             },
           },
         },
@@ -449,7 +465,11 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: true,
+              cubes: {
+                include: {
+                  cubeHistories: true,
+                },
+              },
             },
           },
         },
@@ -526,7 +546,11 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: true,
+              cubes: {
+                include: {
+                  cubeHistories: true,
+                },
+              },
             },
           },
         },
@@ -571,6 +595,11 @@ export const serviceRouter = createTRPCRouter({
                   },
                 },
               },
+              featureFetchers: {
+                include: {
+                  featureFetcherInfo: true,
+                },
+              },
             },
           },
           contentTypes: {
@@ -591,7 +620,11 @@ export const serviceRouter = createTRPCRouter({
           },
           serviceConfig: {
             include: {
-              cubes: true,
+              cubes: {
+                include: {
+                  cubeHistories: true,
+                },
+              },
             },
           },
         },

@@ -11,6 +11,7 @@ import type CubeForm from "../../../components/form/cubeForm";
 import CubeModal from "../../../components/form/cubeModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
+import type { CubeHistory } from "@prisma/client";
 
 function CubeTable({
   service,
@@ -44,6 +45,7 @@ function CubeTable({
     (cube) => {
       return {
         ...cube,
+        cubeHistories: Object.values(cube.cubeHistories),
         serviceConfig: { ...(serviceTree?.serviceConfig || {}) },
       };
     }
@@ -67,9 +69,25 @@ function CubeTable({
       flex: 1,
     },
     {
-      field: "s3Path",
-      headerName: "s3Path",
+      field: "sql",
+      headerName: "sql",
+      flex: 4,
+    },
+    {
+      field: "cubeHistories",
+      headerName: "histories",
       flex: 1,
+      renderCell: (params) => {
+        return (
+          <>
+            <div className="flex flex-wrap">
+              {params.row.cubeHistories.map((cubeHistory: CubeHistory) => (
+                <div key={cubeHistory.id}>{cubeHistory.version}</div>
+              ))}
+            </div>
+          </>
+        );
+      },
     },
     {
       field: "createdAt",

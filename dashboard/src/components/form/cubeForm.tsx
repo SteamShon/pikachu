@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Grid, Step, StepButton, Stepper } from "@mui/material";
-import type { Cube, Service, ServiceConfig } from "@prisma/client";
+import type { Cube, CubeHistory, Service, ServiceConfig } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { buildJoinSql, fromSql } from "../../utils/dataset";
@@ -17,7 +17,10 @@ function CubeForm({
   onSubmit,
 }: {
   service: Service & { serviceConfig?: ServiceConfig | null };
-  initialData?: Cube & { serviceConfig?: ServiceConfig };
+  initialData?: Cube & {
+    serviceConfig?: ServiceConfig;
+    cubeHistories: CubeHistory[];
+  };
   onSubmit: (input: CubeSchemaType) => void;
 }) {
   const [activeStep, setActiveStep] = useState(0);
@@ -152,6 +155,18 @@ function CubeForm({
                     defaultValue={initialData?.sql || undefined}
                     {...register("sql")}
                   />
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">
+                  Storage Upload Histories
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  {(initialData?.cubeHistories || []).map((cubeHistory) => (
+                    <>
+                      <div key={cubeHistory.id}>{cubeHistory.version}</div>
+                    </>
+                  ))}
                 </dd>
               </div>
             </dl>

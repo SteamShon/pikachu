@@ -9,6 +9,7 @@ export const cubeRouter = createTRPCRouter({
       data: input,
       include: {
         serviceConfig: true,
+        cubeHistories: true,
       },
     });
 
@@ -22,6 +23,7 @@ export const cubeRouter = createTRPCRouter({
       data: input,
       include: {
         serviceConfig: true,
+        cubeHistories: true,
       },
     });
 
@@ -61,6 +63,7 @@ export const cubeRouter = createTRPCRouter({
               service: true,
             },
           },
+          cubeHistories: true,
         },
       });
 

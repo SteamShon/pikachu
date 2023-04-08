@@ -6,6 +6,7 @@ import type {
   ContentTypeInfo,
   Creative,
   Cube,
+  CubeHistory,
   Customset,
   CustomsetInfo,
   Placement,
@@ -44,7 +45,7 @@ export function buildServiceTree(
     customsets: (Customset & { customsetInfo: CustomsetInfo })[];
     serviceConfig:
       | (ServiceConfig & {
-          cubes: Cube[];
+          cubes: (Cube & { cubeHistories: CubeHistory[] })[];
         })
       | null;
   }
@@ -177,14 +178,20 @@ export function buildCustomsetsTree(
   >;
 }
 
-export function buildCubeTree(cube: Cube): Cube {
-  return { ...cube };
+export function buildCubeTree(
+  cube: Cube & { cubeHistories: CubeHistory[] }
+): Cube & { cubeHistories: Record<string, CubeHistory> } {
+  const cubeHistories = arrayToRecord(cube.cubeHistories) as Record<
+    string,
+    CubeHistory
+  >;
+  return { ...cube, cubeHistories };
 }
 
 export function buildServiceConfigTree(
   serviceConfig:
     | (ServiceConfig & {
-        cubes: Cube[];
+        cubes: (Cube & { cubeHistories: CubeHistory[] })[];
       })
     | null
 ):

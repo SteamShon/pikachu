@@ -343,11 +343,11 @@ model Cube {
 }
 
 model CubeHistory {
-    id      String @id @default(cuid())
-    cube    Cube   @relation(fields: [cubeId], references: [id], onDelete: Cascade)
-    cubeId  String
-    version String
-
+    id        String   @id @default(cuid())
+    cube      Cube     @relation(fields: [cubeId], references: [id], onDelete: Cascade)
+    cubeId    String
+    version   String
+    status    String   @default("CREATED")
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 

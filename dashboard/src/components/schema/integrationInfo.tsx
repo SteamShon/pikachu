@@ -3,7 +3,7 @@ import { z } from "zod";
 export const integrationInfoSchema = z
   .object({
     id: z.string().optional(),
-    integrationId: z.string().min(1),
+    integrationId: z.string().min(1).optional(),
     details: z.optional(z.record(z.unknown())),
   })
   .transform((o) => {

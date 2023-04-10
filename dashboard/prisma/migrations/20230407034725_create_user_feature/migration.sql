@@ -3,6 +3,7 @@ CREATE TABLE "CubeHistory" (
     "id" TEXT NOT NULL,
     "cubeId" TEXT NOT NULL,
     "version" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

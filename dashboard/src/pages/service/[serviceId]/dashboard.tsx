@@ -39,21 +39,19 @@ function Dashboard() {
     id: serviceId as string,
   });
 
-  const x = service?.placements[0]?.integrations;
-
   console.log(service);
 
   useEffect(() => {
     if (service) {
       setTree(buildServiceTree(service));
     }
-    posthog?.identify(session?.user?.id);
-    const eventName = activeStep
-      ? steps[activeStep]?.label.toLocaleLowerCase()
-      : "";
-    posthog?.capture(`dashboard_${eventName}_visited`, {
-      service: service?.name,
-    });
+    // posthog?.identify(session?.user?.id);
+    // const eventName = activeStep
+    //   ? steps[activeStep]?.label.toLocaleLowerCase()
+    //   : "";
+    // posthog?.capture(`dashboard_${eventName}_visited`, {
+    //   service: service?.name,
+    // });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service]);
 

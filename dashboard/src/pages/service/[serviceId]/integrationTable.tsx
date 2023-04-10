@@ -3,26 +3,24 @@ import EditIcon from "@mui/icons-material/Edit";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Service } from "@prisma/client";
+import type { Placement, Service } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type PlacementForm from "../../../components/form/placementForm";
-import PlacementModal from "../../../components/form/placementModal";
+import type IntegrationForm from "../../../components/form/integrationForm";
+import IntegrationModal from "../../../components/form/integrationModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
-import RenderPreview from "./renderPreview";
-import IntegrationModal from "../../../components/form/integrationModal";
-import type IntegrationForm from "../../../components/form/integrationForm";
+import { buildIntegraionTree } from "../../../utils/tree";
 
 function IntegrationTable({
   service,
   serviceTree,
   setServiceTree,
 }: {
-  service: Service;
+  service: Service & { placements: Placement[] };
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -35,6 +33,23 @@ function IntegrationTable({
     Parameters<typeof IntegrationForm>[0]["initialData"] | undefined
   >(undefined);
   const selectedIds = (integrationIds || []) as string[];
+
+  const { mutate: deleteIntegration } =
+    api.placement.removeIntegration.useMutation({
+      onSuccess(deleted) {
+        setServiceTree((prev) => {
+          if (!prev) return undefined;
+          console.log("1", prev?.placements[deleted.id]?.integrations);
+          const placement = prev.placements[deleted.id];
+          if (!placement) return prev;
+
+          placement.integrations = buildIntegraionTree(deleted.integrations);
+          console.log("2", prev?.placements[deleted.id]?.integrations);
+          return prev;
+        });
+        setModalOpen(false);
+      },
+    });
 
   const allIntegrations = serviceTree
     ? Object.values(serviceTree?.placements).flatMap((placement) => {
@@ -95,7 +110,13 @@ function IntegrationTable({
               className="p-1 text-red-400"
               type="button"
               onClick={(e) => {
-                console.log(e);
+                e.stopPropagation();
+                if (confirm("Are you sure?")) {
+                  deleteIntegration({
+                    placementId: params.row.placement.id,
+                    id: params.row.id,
+                  });
+                }
               }}
             >
               <DeleteIcon />
@@ -114,7 +135,7 @@ function IntegrationTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {
@@ -162,6 +183,7 @@ function IntegrationTable({
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
           service={service}
+          initialData={integration}
           setServiceTree={setServiceTree}
         />
       </div>

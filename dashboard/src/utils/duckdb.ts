@@ -1,14 +1,14 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import * as duckdb from "@duckdb/duckdb-wasm";
 import type { ServiceConfig } from "@prisma/client";
+import type { RuleGroupType } from "react-querybuilder";
+import { formatQuery } from "react-querybuilder";
 import { MyCache } from "./cache";
 import {
   extractS3AccessKeyId,
   extractS3Region,
   extractS3SecretAccessKey,
 } from "./serviceConfig";
-import type { RuleGroupType } from "react-querybuilder";
-import { RuleGroup, formatQuery } from "react-querybuilder";
 
 const pool = new MyCache<ServiceConfig, AsyncDuckDB | undefined>({
   max: 3, // # of items

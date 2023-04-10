@@ -94,10 +94,7 @@ export function buildPlacementTree(
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
   contentType: ContentType | null;
-  integrations: Record<
-    string,
-    Integration & { integrationInfo: IntegrationInfo | null }
-  >;
+  integrations: ReturnType<typeof buildIntegraionTree>;
 } {
   const campaigns = arrayToRecord(
     placement.campaigns.map((campaign) => {
@@ -105,10 +102,7 @@ export function buildPlacementTree(
     })
   ) as Record<string, ReturnType<typeof buildCampaignTree>>;
 
-  const integrations = arrayToRecord(placement.integrations) as Record<
-    string,
-    Integration & { integrationInfo: IntegrationInfo | null }
-  >;
+  const integrations = buildIntegraionTree(placement.integrations);
 
   return { ...placement, campaigns, integrations };
 }
@@ -221,4 +215,13 @@ export function buildServiceConfigTree(
   ) as Record<string, ReturnType<typeof buildCubeTree>>;
 
   return serviceConfig ? { ...serviceConfig, cubes } : null;
+}
+
+export function buildIntegraionTree(
+  integrations: (Integration & { integrationInfo: IntegrationInfo | null })[]
+): Record<string, Integration & { integrationInfo: IntegrationInfo | null }> {
+  return arrayToRecord(integrations) as Record<
+    string,
+    Integration & { integrationInfo: IntegrationInfo | null }
+  >;
 }

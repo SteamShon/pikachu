@@ -1,13 +1,13 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { ContentType, Service } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import type { serviceRouter } from "../../server/api/routers/service";
+import type { placementRouter } from "../../server/api/routers/placement";
 import { api } from "../../utils/api";
-import { buildServiceTree } from "../../utils/tree";
-import type { PlacementSchemaType } from "../schema/placement";
-import type PlacementForm from "./placementForm";
+import type { buildServiceTree } from "../../utils/tree";
+import { buildIntegraionTree } from "../../utils/tree";
+import type { IntegrationSchemaType } from "../schema/integration";
 import IntegrationForm from "./integrationForm";
+import axios from "axios";
 
 function IntegrationModal({
   service,
@@ -24,30 +24,36 @@ function IntegrationModal({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  type RouterOutput = inferRouterOutputs<typeof serviceRouter>;
-  type OutputType = RouterOutput["addPlacement"];
+  type RouterOutput = inferRouterOutputs<typeof placementRouter>;
+  type OutputType = RouterOutput["addIntegration"];
 
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
       if (!prev) return prev;
-      return buildServiceTree(created);
+      const placement = prev.placements[created.id];
+      if (!placement) return prev;
+
+      placement.integrations = buildIntegraionTree(created.integrations);
+
+      return prev;
     });
     setModalOpen(false);
   };
 
-  const { mutate: create } = api.service.addPlacement.useMutation({
+  const { mutate: create } = api.placement.addIntegration.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
-  const { mutate: update } = api.service.updatePlacement.useMutation({
+  const { mutate: update } = api.placement.updateIntegration.useMutation({
     onSuccess(updated) {
       handleSuccess(updated);
     },
   });
 
-  const onSubmit = (input: PlacementSchemaType) => {
-    console.log(input);
+  const onSubmit = (input: IntegrationSchemaType) => {
+    if (initialData) update(input);
+    else create(input);
   };
 
   return (

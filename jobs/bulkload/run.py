@@ -6,7 +6,7 @@ from string import Template
 import duckdb
 import time
 
-cube_name="test"
+cube_name="cube"
 
 conn = psycopg2.connect(user="postgres", password="postgres", host="localhost", port="5432", database="postgres")
 cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -46,7 +46,7 @@ cube_id = result['id']
 # 4. create cube_history
 print("4. CREATE new version on CubeHistory")
 cube_history_id = CUID().generate()
-query = f'insert into "CubeHistory"("id", "cubeId", "version", "createdAt", "updatedAt") VALUES (\'{cube_history_id}\', \'{cube_id}\', \'{version}\', now(), now()) '
+query = f'insert into "CubeHistory"("id", "cubeId", "version", "status", "createdAt", "updatedAt") VALUES (\'{cube_history_id}\', \'{cube_id}\', \'{version}\', \'CREATED\',now(), now()) '
 cursor.execute(query)
 conn.commit()
 
@@ -87,18 +87,35 @@ query = """SELECT * FROM "CubeHistory" where "cubeId" = '%s' ORDER BY version DE
 cursor.execute(query)
 results = cursor.fetchall()
 num_versions = 3
-n = len(results) - num_versions
-versions_to_delete = results[-n:]
+if len(results) <= num_versions: 
+    versions_to_delete = []
+else:
+    n = len(results) - num_versions
+    versions_to_delete = results[-n:]
+
+print("8. cleanup")
 
 for cube_history in versions_to_delete:
-    print("Cleanup partition ")
-    cube_history_id = cube_history['id']
-    partition = """UserFeature_%s""" % cube_history_id
+    current_cube_history_id = cube_history['id']
+    partition = """UserFeature_%s""" % current_cube_history_id
+    print("8. Cleanup Partition %s" % partition)
     query = """DROP TABLE "%s" """ % partition
     cursor.execute(query) 
-    query = """DELETE FROM "CubeHistory" WHERE id = '%s'""" % cube_history_id
+    conn.commit()
+    
+    query = """DELETE FROM "CubeHistory" WHERE id = '%s'""" % current_cube_history_id
+    print(query)
     cursor.execute(query)
     conn.commit()
+
+# 9. update status on "CubeHistory" so client can acknowledged.
+print("9. update new created cube history as ready")
+query = f'update "CubeHistory" SET "status" = \'READY\' WHERE "id" = \'{cube_history_id}\''
+print(query)
+cursor.execute(query)
+conn.commit()
+
+
 conn.close()
 
 '''explain 

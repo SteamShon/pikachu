@@ -7,7 +7,6 @@ import type { buildServiceTree } from "../../utils/tree";
 import { buildIntegraionTree } from "../../utils/tree";
 import type { IntegrationSchemaType } from "../schema/integration";
 import IntegrationForm from "./integrationForm";
-import axios from "axios";
 
 function IntegrationModal({
   service,

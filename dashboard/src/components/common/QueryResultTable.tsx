@@ -5,7 +5,16 @@ import { DataGrid } from "@mui/x-data-grid";
 function QueryResultTable({ rows }: { rows: { [x: string]: unknown }[] }) {
   const keys = rows[0] ? Object.keys(rows[0]) : [];
   const columns: GridColDef[] = keys.map((key) => {
-    return { field: key, headerName: key, flex: 1 };
+    return {
+      field: key,
+      headerName: key,
+      flex: 1,
+      valueFormatter: (params) => {
+        return typeof params.value === "object"
+          ? JSON.stringify(params.value, null, 2)
+          : params.value;
+      },
+    };
   });
   const innerRows = rows.map((row, index) => {
     return { ...row, id: String(index) };

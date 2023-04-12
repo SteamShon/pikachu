@@ -3,6 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
+import type { CubeHistory } from "@prisma/client";
 import moment from "moment";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
@@ -11,7 +12,6 @@ import type CubeForm from "../../../components/form/cubeForm";
 import CubeModal from "../../../components/form/cubeModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
-import type { CubeHistory } from "@prisma/client";
 
 function CubeTable({
   service,
@@ -76,13 +76,15 @@ function CubeTable({
     {
       field: "cubeHistories",
       headerName: "histories",
-      flex: 1,
+      flex: 2,
       renderCell: (params) => {
         return (
           <>
             <div className="flex flex-wrap">
               {params.row.cubeHistories.map((cubeHistory: CubeHistory) => (
-                <div key={cubeHistory.id}>{cubeHistory.version}</div>
+                <div key={cubeHistory.id}>
+                  <span>{cubeHistory.version}</span>
+                </div>
               ))}
             </div>
           </>

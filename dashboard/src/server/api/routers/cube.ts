@@ -2,6 +2,9 @@ import { z } from "zod";
 import { cubeSchema } from "../../../components/schema/cube";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import moment from "moment";
+import type { CubeHistory } from "@prisma/client";
+import { cubeHistorySchema } from "../../../components/schema/cubeHistory";
 
 export const cubeRouter = createTRPCRouter({
   create: protectedProcedure.input(cubeSchema).mutation(async ({ input }) => {
@@ -63,6 +66,59 @@ export const cubeRouter = createTRPCRouter({
               service: true,
             },
           },
+          cubeHistories: true,
+        },
+      });
+
+      return cube;
+    }),
+  addNewVersion: protectedProcedure
+    .input(z.object({ cubeId: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const { cubeId } = input;
+      const version = moment().format("YYYYMMDDHHmmss");
+
+      const cube = await prisma.cube.update({
+        where: {
+          id: cubeId,
+        },
+        data: {
+          cubeHistories: {
+            create: {
+              version,
+              status: "CREATED",
+            },
+          },
+        },
+        include: {
+          serviceConfig: true,
+          cubeHistories: true,
+        },
+      });
+
+      return cube;
+    }),
+  updateCubeHistory: protectedProcedure
+    .input(cubeHistorySchema)
+    .mutation(async ({ input }) => {
+      const { cubeId, ...cubeHistory } = input;
+
+      const cube = await prisma.cube.update({
+        where: {
+          id: cubeId,
+        },
+        data: {
+          cubeHistories: {
+            update: {
+              where: {
+                id: cubeHistory.id,
+              },
+              data: cubeHistory,
+            },
+          },
+        },
+        include: {
+          serviceConfig: true,
           cubeHistories: true,
         },
       });

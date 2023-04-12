@@ -1,6 +1,6 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import * as duckdb from "@duckdb/duckdb-wasm";
-import type { ServiceConfig } from "@prisma/client";
+import type { Cube, ServiceConfig } from "@prisma/client";
 import type { RuleGroupType } from "react-querybuilder";
 import { formatQuery } from "react-querybuilder";
 import { MyCache } from "./cache";
@@ -47,7 +47,7 @@ async function loadDuckDBInner(
   const s3SecretAccessKey = extractS3SecretAccessKey(serviceConfig);
   // set s3 config.
   const setQuery = `
-SET home_directory='/tmp/';
+SET home_directory='~/';
 SET s3_region='${s3Region}';
 SET s3_access_key_id='${s3AccessKeyId}';
 SET s3_secret_access_key='${s3SecretAccessKey}';
@@ -110,6 +110,14 @@ export async function executeQuery(
   query: string
 ): Promise<Record<string, unknown>[]> {
   return queryCache.get({ serviceConfig, query }, executeQueryInner);
+}
+export async function describe(
+  serviceConfig: ServiceConfig,
+  cube: Cube
+): Promise<Record<string, unknown>[]> {
+  const query = `DESCRIBE ${cube.sql}`;
+
+  return executeQuery(serviceConfig, query);
 }
 export async function fetchParquetSchema(
   serviceConfig: ServiceConfig,
@@ -204,4 +212,11 @@ export function formatQueryCustom(query: RuleGroupType) {
 
   const jsonLogic = formatQuery(query, "jsonlogic");
   return jsonLogicToSql(jsonLogic as Record<string, unknown>);
+}
+
+export async function files(serviceConfig: ServiceConfig) {
+  const sql = `
+  .files;
+  `;
+  return await executeQuery(serviceConfig, sql);
 }

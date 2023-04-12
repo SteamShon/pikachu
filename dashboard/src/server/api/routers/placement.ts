@@ -73,6 +73,11 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
+          integrations: {
+            include: {
+              integrationInfo: true,
+            },
+          },
         },
       });
 
@@ -114,6 +119,11 @@ export const placementRouter = createTRPCRouter({
                   },
                 },
               },
+            },
+          },
+          integrations: {
+            include: {
+              integrationInfo: true,
             },
           },
         },
@@ -162,6 +172,11 @@ export const placementRouter = createTRPCRouter({
                   },
                 },
               },
+            },
+          },
+          integrations: {
+            include: {
+              integrationInfo: true,
             },
           },
         },

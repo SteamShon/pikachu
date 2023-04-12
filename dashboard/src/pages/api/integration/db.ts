@@ -64,7 +64,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const RAW_SQL = config["SQL"] as string | undefined;
 
   if (!DATABASE_URL || !RAW_SQL) {
-    res.status(404);
+    res.status(404).end();
   } else {
     const client = getClient(DATABASE_URL);
     if (!client) {

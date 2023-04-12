@@ -18,7 +18,6 @@ use tokio::{runtime::Builder, time};
 
 #[derive(Deserialize)]
 struct UserFeatureRequest {
-    service_id: String,
     placement_id: String,
     user_id: String,
 }
@@ -90,12 +89,7 @@ async fn user_info(
 ) -> impl Responder {
     let user_info = data
         .load()
-        .fetch_user_info(
-            client.into_inner(),
-            &request.service_id,
-            &request.placement_id,
-            &request.user_id,
-        )
+        .fetch_user_info(client.into_inner(), &request.placement_id, &request.user_id)
         .await;
 
     HttpResponse::Ok().json(user_info)

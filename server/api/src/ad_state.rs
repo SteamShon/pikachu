@@ -7,9 +7,8 @@ use filter::filter::{TargetFilter, UserInfo};
 use filter::filterable::Filterable;
 use filter::index::FilterIndex;
 use futures::future::join_all;
-use futures::{stream, StreamExt};
 use prisma_client_rust::chrono::{DateTime, FixedOffset};
-use prisma_client_rust::{raw, Direction, PrismaValue, QueryError};
+use prisma_client_rust::{raw, Direction, QueryError};
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -439,13 +438,33 @@ impl AdState {
 
         println!("{:?}", self.filter_index);
     }
+    fn json_value_to_string(value: &serde_json::Value) -> Option<String> {
+        match value {
+            serde_json::Value::Object(_) => None,
+            serde_json::Value::Array(_) => None,
+            serde_json::Value::Null => Some(value.to_string()),
+            serde_json::Value::Bool(_) => Some(value.to_string()),
+            serde_json::Value::Number(_) => Some(value.to_string()),
+            serde_json::Value::String(v) => Some(v.clone()),
+        }
+    }
     fn parse_user_info(value: &serde_json::Value) -> Option<UserInfo> {
         let mut user_info = HashMap::new();
         for (k, v) in value.as_object()?.iter() {
             let mut items = HashSet::new();
-            for item in v.as_array()? {
-                if let Some(str) = item.as_str() {
-                    items.insert(String::from(str));
+
+            match v.as_array() {
+                Some(values) => {
+                    for item in values {
+                        if let Some(s) = Self::json_value_to_string(item) {
+                            items.insert(s);
+                        }
+                    }
+                }
+                None => {
+                    if let Some(s) = Self::json_value_to_string(v) {
+                        items.insert(s);
+                    }
                 }
             }
             user_info.insert(k.clone(), items);
@@ -472,18 +491,50 @@ impl AdState {
         content_type.status.to_lowercase() == "published"
     }
     fn is_active_integration(integration: &integration::Data) -> bool {
-        //integration.status.to_lowercase() == "published"
-        true
+        integration.status.to_lowercase() == "published"
     }
     pub async fn fetch_user_info(
         &self,
         client: Arc<PrismaClient>,
-        service_id: &str,
         placement_id: &str,
         user_id: &str,
-    ) -> Option<serde_json::Value> {
-        let mut queries = Vec::new();
+    ) -> Option<UserInfo> {
+        let queries = self.generate_user_feature_sqls(placement_id, user_id)?;
+        let futures = join_all(queries.into_iter().map(|query| {
+            let client = &client;
+            async move {
+                let user_features: Result<Vec<user_feature::Data>, QueryError> =
+                    client._query_raw(query).exec().await;
 
+                user_features
+            }
+        }))
+        .await;
+
+        let mut user_info = UserInfo::new();
+        for future in futures {
+            match future {
+                Ok(user_features) => {
+                    for user_feature in user_features {
+                        if let Some(kvs) = Self::parse_user_info(&user_feature.feature) {
+                            for (k, v) in kvs {
+                                user_info.insert(k, v);
+                            }
+                        }
+                    }
+                }
+                Err(e) => println!("Got an error: {}", e),
+            }
+        }
+        Some(user_info)
+    }
+
+    pub fn generate_user_feature_sqls(
+        &self,
+        placement_id: &str,
+        user_id: &str,
+    ) -> Option<Vec<prisma_client_rust::Raw>> {
+        let mut queries = Vec::new();
         let integrations = self.integrations.get(placement_id)?;
         for (_integration_id, integration) in integrations {
             if Self::is_active_integration(integration) && integration.r#type == "DB" {
@@ -494,47 +545,13 @@ impl AdState {
                                 let sql_with_param = sql.replace("{userId}", user_id);
                                 let query = raw!(&sql_with_param);
                                 queries.push(query);
-                                //let query = raw!(sql, PrismaValue::String(user_id.to_string()));
-                                //let data: Option<Vec<user_feature::Data>> =
-                                //    client._query_raw(query).exec().await.ok();
-
-                                //if let Some(features) = data {
-                                //    return Some(json!(features));
-                                //}
                             }
                         }
                     }
                 }
             }
         }
-
-        let concurrent_requests = 2;
-        let futures = stream::iter(queries)
-            .map(|query| {
-                let client = &client;
-                async move {
-                    let features: Result<Vec<user_feature::Data>, QueryError> =
-                        client._query_raw(query).exec().await;
-
-                    features
-                }
-            })
-            .buffer_unordered(concurrent_requests);
-
-        futures
-            .for_each(|future| async {
-                match future {
-                    Ok(user_features) => {
-                        for user_feature in user_features {
-                            println!("[Feature]: {:?}", user_feature);
-                        }
-                    }
-                    Err(e) => eprintln!("Got an error: {}", e),
-                }
-            })
-            .await;
-
-        None
+        Some(queries)
     }
     pub fn search(
         &self,

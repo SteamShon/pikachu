@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import LRU from "lru-cache";
 
 const pool = new LRU<string, PrismaClient>({
-  max: 10, // # of items
+  max: 1, // # of items
   ttl: 10 * 60 * 1000, // expiration in ms (10 min)
   disposeAfter: (value) => {
     console.log("eviction: ", value);
@@ -73,10 +73,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       try {
         const SQL = escapeTabNewlineSpace(RAW_SQL, config);
 
-        const x = Prisma.sql([`${SQL}`]);
-
-        //console.log(x);
-        const result = await client.$queryRaw(x);
+        const result = await client.$queryRaw(Prisma.sql([`${SQL}`]));
         res.json(result);
         res.status(200).end();
       } catch (error) {

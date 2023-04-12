@@ -14,7 +14,7 @@ CREATE TABLE "CubeHistory" (
 CREATE TABLE "UserFeature" (
     "cubeHistoryId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "feature" JSONB,
+    "feature" JSONB NOT NULL DEFAULT '{}',
 
     CONSTRAINT "UserFeature_pkey" PRIMARY KEY ("cubeHistoryId","userId")
 ) PARTITION BY LIST ("cubeHistoryId");

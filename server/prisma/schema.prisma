@@ -362,7 +362,7 @@ model CubeHistory {
 model UserFeature {
     cubeHistoryId String
     userId        String
-    feature       Json?
+    feature       Json   @default("{}")
 
     @@id([cubeHistoryId, userId])
 }

@@ -214,7 +214,7 @@ export function formatQueryCustom(query: RuleGroupType) {
   return jsonLogicToSql(jsonLogic as Record<string, unknown>);
 }
 
-export async function files(serviceConfig: ServiceConfig) {
+export async function listFiles(serviceConfig: ServiceConfig) {
   const sql = `
   .files;
   `;

@@ -17,6 +17,12 @@ use std::{collections::HashSet, env, sync::Arc, time::Duration};
 use tokio::{runtime::Builder, time};
 
 #[derive(Deserialize)]
+struct UserFeatureRequest {
+    service_id: String,
+    placement_id: String,
+    user_id: String,
+}
+#[derive(Deserialize)]
 struct Request {
     service_id: String,
     placement_id: String,
@@ -33,6 +39,7 @@ async fn load_ad_meta(data: web::Data<ArcSwap<Arc<AdState>>>, client: web::Data<
         creatives: prev.creatives.clone(),
         contents: prev.contents.clone(),
         content_types: prev.content_types.clone(),
+        integrations: prev.integrations.clone(),
         update_info: prev.update_info.clone(),
         filter_index: prev.filter_index.clone(),
     };
@@ -73,6 +80,25 @@ async fn search(
     );
 
     HttpResponse::Ok().json(matched_ad_groups)
+}
+
+#[post("/user_info")]
+async fn user_info(
+    data: web::Data<ArcSwap<Arc<AdState>>>,
+    client: web::Data<PrismaClient>,
+    request: web::Json<UserFeatureRequest>,
+) -> impl Responder {
+    let user_info = data
+        .load()
+        .fetch_user_info(
+            client.into_inner(),
+            &request.service_id,
+            &request.placement_id,
+            &request.user_id,
+        )
+        .await;
+
+    HttpResponse::Ok().json(user_info)
 }
 
 #[get("/all_dimensions/{service_id}")]
@@ -126,6 +152,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(ad_state.clone())
             .app_data(client.clone())
             .service(search)
+            .service(user_info)
             .service(update_ad_meta)
             .service(all_dimensions)
             .wrap(cors)

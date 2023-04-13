@@ -13,15 +13,20 @@ export const serviceConfigSchema = z
       s3Buckets: z.string().min(1),
     }),
     builderConfig: z.object({
-      publicKey: z.string().min(1),
-      privateKey: z.string().min(1),
+      publicKey: z.string().optional(),
+      privateKey: z.string().optional(),
     }),
     // status: z.string().min(1),
   })
   .transform((o) => {
+    const builderConfig = Object.fromEntries(
+      Object.entries(o.builderConfig).filter(([, v]) => v !== "")
+    );
+
     return {
       ...o,
       serviceId: o.serviceId === "" ? null : o.serviceId,
+      builderConfig,
     };
   });
 

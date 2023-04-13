@@ -29,3 +29,18 @@ export function extractValue({
     } else return undefined;
   }, object);
 }
+
+export function extractKeys(
+  object: Record<string, unknown>,
+  paths: string[]
+): string[][] {
+  return Object.entries(object).flatMap(([k, v]) => {
+    const newPaths = [...paths, k];
+
+    if (typeof v === "object") {
+      return extractKeys(v as Record<string, unknown>, newPaths);
+    } else {
+      return [newPaths];
+    }
+  });
+}

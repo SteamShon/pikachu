@@ -150,6 +150,7 @@ model Placement {
     updatedAt               DateTime                  @updatedAt
     cube                    Cube?                     @relation(fields: [cubeId], references: [id])
     cubeId                  String?
+    integrations            Integration[]
 
     @@unique([serviceId, name])
     @@index(fields: [updatedAt])
@@ -337,10 +338,63 @@ model Cube {
     // s3Path       String?
     sql             String?
     placements      Placement[]
-    // placementGroups PlacementGroup[]
+    cubeHistories   CubeHistory[]
     status          String        @default("CREATED")
     createdAt       DateTime      @default(now())
     updatedAt       DateTime      @updatedAt
 
     @@unique([serviceConfigId, name])
+}
+
+model CubeHistory {
+    id        String   @id @default(cuid())
+    cube      Cube     @relation(fields: [cubeId], references: [id], onDelete: Cascade)
+    cubeId    String
+    version   String
+    status    String   @default("CREATED")
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([cubeId, version(sort: Desc)])
+    @@index(fields: [updatedAt])
+}
+
+model UserFeature {
+    cubeHistoryId String
+    userId        String
+    feature       Json   @default("{}")
+
+    @@id([cubeHistoryId, userId])
+}
+
+// store how to get user features by integrating database.
+// type == DB then API server will lookup cubeHistory+UserFeature table.
+// DB type require connection string.
+// type == HTTP then API server will call http API to get user feature.
+// HTTP type require METHOD, URL endpoint
+model Integration {
+    id              String           @id @default(cuid())
+    name            String
+    description     String?
+    type            String // DB/HTTP
+    status          String           @default("CREATED")
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+    placement       Placement        @relation(fields: [placementId], references: [id])
+    placementId     String
+    integrationInfo IntegrationInfo?
+
+    @@unique([placementId, name])
+    @@index(fields: [updatedAt])
+}
+
+model IntegrationInfo {
+    id            String      @id @default(cuid())
+    details       Json        @default("{}")
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+    integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+    integrationId String      @unique
+
+    @@index(fields: [updatedAt])
 }

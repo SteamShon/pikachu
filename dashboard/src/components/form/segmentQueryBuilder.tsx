@@ -7,7 +7,11 @@ import { useEffect, useMemo, useState } from "react";
 import type { RuleGroupType } from "react-querybuilder";
 import QueryBuilder, { formatQuery } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
-import { countPopulation, executeQuery } from "../../utils/duckdb";
+import {
+  countPopulation,
+  executeQuery,
+  formatQueryCustom,
+} from "../../utils/duckdb";
 import AsyncValueEditor from "../common/AsyncValueEditor";
 import { QueryBuilderDnD } from "@react-querybuilder/dnd";
 import * as ReactDnD from "react-dnd";
@@ -54,21 +58,26 @@ function SegmentQueryBuilder({
     () =>
       debounce((q?: RuleGroupType) => {
         (async () => {
-          if (!q || !cube?.serviceConfig) return;
-          const sql = formatQuery(q, "sql");
-          const count = await countPopulation({
-            serviceConfig: cube.serviceConfig,
-            sql: cube.sql || "",
-            where: sql,
-          });
+          try {
+            if (!q || !cube?.serviceConfig) return;
+            const sql = formatQueryCustom(q);
+            if (!sql) return;
 
-          enqueueSnackbar("finished fetch population.", {
-            variant: "success",
-          });
+            const count = await countPopulation({
+              serviceConfig: cube.serviceConfig,
+              sql: cube.sql || "",
+              where: sql,
+            });
 
-          setPopulationLoading(false);
-          setPopulation(count);
-          onPopulationChange(count);
+            enqueueSnackbar("finished fetch population.", {
+              variant: "success",
+            });
+
+            setPopulation(count);
+            onPopulationChange(count);
+          } finally {
+            setPopulationLoading(false);
+          }
         })();
       }, 1000),
 
@@ -87,6 +96,7 @@ function SegmentQueryBuilder({
     const name = row.column_name as string;
     const type = row.column_type as string;
     const useSearch = true;
+
     // switch (type) {
     //   case "VARCHAR":
     //     useSearch = true;
@@ -162,7 +172,11 @@ function SegmentQueryBuilder({
           </Grid>
           <Grid item xs={1}></Grid>
           <Grid item xs={12}>
-            {query ? <pre>SQL: {formatQuery(query, "sql")}</pre> : null}
+            {query ? (
+              <span className="flex-wrap font-medium">
+                {formatQuery(query, "sql")}
+              </span>
+            ) : null}
           </Grid>
         </Grid>
       ) : null}

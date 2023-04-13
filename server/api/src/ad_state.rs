@@ -1,16 +1,17 @@
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
-
 use crate::db::{
-    ad_group, campaign, content, content_type, creative, placement, service, service_config,
-    PrismaClient,
+    ad_group, campaign, content, content_type, creative, integration, placement, service,
+    service_config, PrismaClient,
 };
+use common::db::user_feature;
 use filter::filter::{TargetFilter, UserInfo};
 use filter::filterable::Filterable;
 use filter::index::FilterIndex;
+use futures::future::join_all;
 use prisma_client_rust::chrono::{DateTime, FixedOffset};
-use prisma_client_rust::Direction;
+use prisma_client_rust::{raw, Direction, QueryError};
 use serde::Serialize;
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 pub struct AdGroup {
     data: ad_group::Data,
@@ -48,6 +49,7 @@ pub struct UpdateInfo {
     pub creatives: DateTime<FixedOffset>,
     pub contents: DateTime<FixedOffset>,
     pub content_types: DateTime<FixedOffset>,
+    pub integrations: DateTime<FixedOffset>,
 }
 impl Default for UpdateInfo {
     fn default() -> Self {
@@ -59,6 +61,7 @@ impl Default for UpdateInfo {
             creatives: Default::default(),
             contents: Default::default(),
             content_types: Default::default(),
+            integrations: Default::default(),
         }
     }
 }
@@ -72,6 +75,7 @@ pub struct AdState {
     pub creatives: HashMap<String, HashMap<String, creative::Data>>,
     pub contents: HashMap<String, content::Data>,
     pub content_types: HashMap<String, content_type::Data>,
+    pub integrations: HashMap<String, HashMap<String, integration::Data>>,
     pub update_info: UpdateInfo,
     pub filter_index: HashMap<String, FilterIndex>,
 }
@@ -85,6 +89,7 @@ impl Default for AdState {
             creatives: Default::default(),
             contents: Default::default(),
             content_types: Default::default(),
+            integrations: Default::default(),
             update_info: Default::default(),
             filter_index: Default::default(),
         }
@@ -109,6 +114,7 @@ impl AdState {
             Some(id) => self.services.get(id),
         }
     }
+
     pub async fn fetch_services(
         client: Arc<PrismaClient>,
         last_updated_at: DateTime<FixedOffset>,
@@ -191,6 +197,19 @@ impl AdState {
             .find_many(vec![content_type::updated_at::gt(last_updated_at)])
             .order_by(content_type::updated_at::order(Direction::Desc))
             .with(content_type::content_type_info::fetch())
+            .exec()
+            .await
+            .unwrap()
+    }
+    pub async fn fetch_integrations(
+        client: Arc<PrismaClient>,
+        last_updated_at: DateTime<FixedOffset>,
+    ) -> Vec<integration::Data> {
+        client
+            .integration()
+            .find_many(vec![integration::updated_at::gt(last_updated_at)])
+            .order_by(integration::updated_at::order(Direction::Desc))
+            .with(integration::integration_info::fetch())
             .exec()
             .await
             .unwrap()
@@ -299,12 +318,25 @@ impl AdState {
     }
     pub fn update_content_types(&mut self, new_content_types: &Vec<content_type::Data>) -> () {
         let content_types = &mut self.content_types;
-        if let Some(latest_updated_content) = new_content_types.first() {
+        if let Some(latest_updated_content_type) = new_content_types.first() {
             let update_info = &mut self.update_info;
-            update_info.content_types = latest_updated_content.updated_at;
+            update_info.content_types = latest_updated_content_type.updated_at;
         }
         for content_type in new_content_types {
             content_types.insert(content_type.id.clone(), content_type.clone());
+        }
+    }
+    pub fn update_integrations(&mut self, new_integrations: &Vec<integration::Data>) -> () {
+        let integrations = &mut self.integrations;
+        if let Some(latest_updated_integration) = new_integrations.first() {
+            let update_info = &mut self.update_info;
+            update_info.integrations = latest_updated_integration.updated_at;
+        }
+        for integration in new_integrations {
+            integrations
+                .entry(integration.placement_id.clone())
+                .or_insert_with(|| HashMap::new())
+                .insert(integration.id.clone(), integration.clone());
         }
     }
 
@@ -379,6 +411,16 @@ impl AdState {
         println!("[new_content_typess]: {:?}", new_content_types.len());
         self.update_content_types(new_content_types);
     }
+    pub async fn fetch_and_update_integrations(
+        &mut self,
+        client: Arc<PrismaClient>,
+        last_updated_at: Option<DateTime<FixedOffset>>,
+    ) -> () {
+        let last_updated_at_value = last_updated_at.unwrap_or(self.update_info.integrations);
+        let new_integrations = &Self::fetch_integrations(client, last_updated_at_value).await;
+        println!("[new_integrations]: {:?}", new_integrations.len());
+        self.update_integrations(new_integrations);
+    }
     pub fn init() -> AdState {
         AdState::default()
     }
@@ -391,15 +433,38 @@ impl AdState {
         self.fetch_and_update_contents(client.clone(), None).await;
         self.fetch_and_update_content_types(client.clone(), None)
             .await;
+        self.fetch_and_update_integrations(client.clone(), None)
+            .await;
+
         println!("{:?}", self.filter_index);
+    }
+    fn json_value_to_string(value: &serde_json::Value) -> Option<String> {
+        match value {
+            serde_json::Value::Object(_) => None,
+            serde_json::Value::Array(_) => None,
+            serde_json::Value::Null => Some(value.to_string()),
+            serde_json::Value::Bool(_) => Some(value.to_string()),
+            serde_json::Value::Number(_) => Some(value.to_string()),
+            serde_json::Value::String(v) => Some(v.clone()),
+        }
     }
     fn parse_user_info(value: &serde_json::Value) -> Option<UserInfo> {
         let mut user_info = HashMap::new();
         for (k, v) in value.as_object()?.iter() {
             let mut items = HashSet::new();
-            for item in v.as_array()? {
-                if let Some(str) = item.as_str() {
-                    items.insert(String::from(str));
+
+            match v.as_array() {
+                Some(values) => {
+                    for item in values {
+                        if let Some(s) = Self::json_value_to_string(item) {
+                            items.insert(s);
+                        }
+                    }
+                }
+                None => {
+                    if let Some(s) = Self::json_value_to_string(v) {
+                        items.insert(s);
+                    }
                 }
             }
             user_info.insert(k.clone(), items);
@@ -424,6 +489,69 @@ impl AdState {
     }
     fn is_active_content_type(content_type: &content_type::Data) -> bool {
         content_type.status.to_lowercase() == "published"
+    }
+    fn is_active_integration(integration: &integration::Data) -> bool {
+        integration.status.to_lowercase() == "published"
+    }
+    pub async fn fetch_user_info(
+        &self,
+        client: Arc<PrismaClient>,
+        placement_id: &str,
+        user_id: &str,
+    ) -> Option<UserInfo> {
+        let queries = self.generate_user_feature_sqls(placement_id, user_id)?;
+        let futures = join_all(queries.into_iter().map(|query| {
+            let client = &client;
+            async move {
+                let user_features: Result<Vec<user_feature::Data>, QueryError> =
+                    client._query_raw(query).exec().await;
+
+                user_features
+            }
+        }))
+        .await;
+
+        let mut user_info = UserInfo::new();
+        for future in futures {
+            match future {
+                Ok(user_features) => {
+                    for user_feature in user_features {
+                        if let Some(kvs) = Self::parse_user_info(&user_feature.feature) {
+                            for (k, v) in kvs {
+                                user_info.insert(k, v);
+                            }
+                        }
+                    }
+                }
+                Err(e) => println!("Got an error: {}", e),
+            }
+        }
+        Some(user_info)
+    }
+
+    pub fn generate_user_feature_sqls(
+        &self,
+        placement_id: &str,
+        user_id: &str,
+    ) -> Option<Vec<prisma_client_rust::Raw>> {
+        let mut queries = Vec::new();
+        let integrations = self.integrations.get(placement_id)?;
+        for (_integration_id, integration) in integrations {
+            if Self::is_active_integration(integration) && integration.r#type == "DB" {
+                if let Some(integration_info) = &integration.integration_info {
+                    if let Some(info) = integration_info {
+                        if let Some(stored_sql) = info.details.get("SQL") {
+                            if let Some(sql) = stored_sql.as_str() {
+                                let sql_with_param = sql.replace("{userId}", user_id);
+                                let query = raw!(&sql_with_param);
+                                queries.push(query);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Some(queries)
     }
     pub fn search(
         &self,

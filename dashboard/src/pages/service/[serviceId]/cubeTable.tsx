@@ -3,6 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
+import type { CubeHistory } from "@prisma/client";
 import moment from "moment";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
@@ -44,6 +45,7 @@ function CubeTable({
     (cube) => {
       return {
         ...cube,
+        cubeHistories: Object.values(cube.cubeHistories),
         serviceConfig: { ...(serviceTree?.serviceConfig || {}) },
       };
     }
@@ -67,9 +69,27 @@ function CubeTable({
       flex: 1,
     },
     {
-      field: "s3Path",
-      headerName: "s3Path",
-      flex: 1,
+      field: "sql",
+      headerName: "sql",
+      flex: 4,
+    },
+    {
+      field: "cubeHistories",
+      headerName: "histories",
+      flex: 2,
+      renderCell: (params) => {
+        return (
+          <>
+            <div className="flex flex-wrap">
+              {params.row.cubeHistories.map((cubeHistory: CubeHistory) => (
+                <div key={cubeHistory.id}>
+                  <span>{cubeHistory.version}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      },
     },
     {
       field: "createdAt",

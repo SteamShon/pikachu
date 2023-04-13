@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Grid, Step, StepButton, Stepper } from "@mui/material";
-import type { Cube, Service, ServiceConfig } from "@prisma/client";
+import type { Cube, CubeHistory, Service, ServiceConfig } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { buildJoinSql, fromSql } from "../../utils/dataset";
@@ -10,6 +10,7 @@ import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { CubeSchemaType } from "../schema/cube";
 import { cubeSchema } from "../schema/cube";
 import type { DatasetSchemaType } from "../schema/dataset";
+import CubeHistoryForm from "./cubeHistoryForm";
 
 function CubeForm({
   service,
@@ -17,10 +18,14 @@ function CubeForm({
   onSubmit,
 }: {
   service: Service & { serviceConfig?: ServiceConfig | null };
-  initialData?: Cube & { serviceConfig?: ServiceConfig };
+  initialData?: Cube & {
+    serviceConfig?: ServiceConfig;
+    cubeHistories: CubeHistory[];
+  };
   onSubmit: (input: CubeSchemaType) => void;
 }) {
   const [activeStep, setActiveStep] = useState(0);
+
   const methods = useForm<CubeSchemaType>({
     resolver: zodResolver(cubeSchema),
   });
@@ -45,7 +50,7 @@ function CubeForm({
     {
       label: "QueryBuilder",
       description: `QueryBuilder`,
-      component: service.serviceConfig ? (
+      component: service?.serviceConfig ? (
         <SqlBuilder
           serviceConfig={service.serviceConfig}
           initialData={fromSql(initialData?.sql || undefined)}
@@ -157,28 +162,35 @@ function CubeForm({
             </dl>
           </div>
         </div>
-        <div>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Stepper nonLinear activeStep={activeStep}>
-                {steps.map((step, index) => (
-                  <Step key={step.label}>
-                    <StepButton
-                      onClick={() => {
-                        setActiveStep(index);
-                      }}
-                    >
-                      {step.label}
-                    </StepButton>
-                  </Step>
-                ))}
-              </Stepper>
+
+        <div className="mx-auto max-w-screen-xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-lg text-center">
+            <h1 className="text-2xl font-bold sm:text-3xl">Cube Builder</h1>
+          </div>
+          <div>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Stepper nonLinear activeStep={activeStep}>
+                  {steps.map((step, index) => (
+                    <Step key={step.label}>
+                      <StepButton
+                        onClick={() => {
+                          setActiveStep(index);
+                        }}
+                      >
+                        {step.label}
+                      </StepButton>
+                    </Step>
+                  ))}
+                </Stepper>
+              </Grid>
+              <Grid item xs={12}>
+                {steps[activeStep]?.component}
+              </Grid>
             </Grid>
-            <Grid item xs={12}>
-              {steps[activeStep]?.component}
-            </Grid>
-          </Grid>
+          </div>
         </div>
+        {initialData && <CubeHistoryForm cube={initialData} />}
       </form>
     </FormProvider>
   );

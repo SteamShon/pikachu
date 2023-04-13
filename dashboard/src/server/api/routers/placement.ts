@@ -3,6 +3,8 @@ import { z } from "zod";
 import { campaignWithPlacementSchema } from "../../../components/schema/campaign";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { integrationSchema } from "../../../components/schema/integration";
+import type { Prisma } from "@prisma/client";
 
 export const placementRouter = createTRPCRouter({
   list: protectedProcedure
@@ -71,6 +73,11 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
+          integrations: {
+            include: {
+              integrationInfo: true,
+            },
+          },
         },
       });
 
@@ -112,6 +119,11 @@ export const placementRouter = createTRPCRouter({
                   },
                 },
               },
+            },
+          },
+          integrations: {
+            include: {
+              integrationInfo: true,
             },
           },
         },
@@ -160,6 +172,124 @@ export const placementRouter = createTRPCRouter({
                   },
                 },
               },
+            },
+          },
+          integrations: {
+            include: {
+              integrationInfo: true,
+            },
+          },
+        },
+      });
+
+      return placement;
+    }),
+  addIntegration: protectedProcedure
+    .input(integrationSchema)
+    .mutation(async ({ input }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { integrationInfo, ...integrationInput } = input;
+      const { placementId, ...integration } = integrationInput;
+
+      const placement = await prisma.placement.update({
+        where: {
+          id: placementId,
+        },
+        data: {
+          integrations: {
+            connectOrCreate: {
+              where: {
+                placementId_name: {
+                  placementId,
+                  name: integration.name,
+                },
+              },
+              create: {
+                ...integration,
+              },
+            },
+          },
+        },
+        include: {
+          integrations: {
+            include: {
+              integrationInfo: true,
+            },
+          },
+        },
+      });
+
+      return placement;
+    }),
+  updateIntegration: protectedProcedure
+    .input(integrationSchema)
+    .mutation(async ({ input }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { integrationInfo, ...integrationInput } = input;
+      const { placementId, ...integration } = integrationInput;
+
+      const integrationInfoJson = {
+        id: integrationInfo?.id,
+        details: integrationInfo?.details as Prisma.JsonObject,
+      };
+
+      const placement = await prisma.placement.update({
+        where: {
+          id: placementId,
+        },
+        data: {
+          integrations: {
+            update: {
+              where: {
+                id: integration.id,
+              },
+              data: {
+                ...integration,
+                integrationInfo: {
+                  upsert: {
+                    update: integrationInfoJson,
+                    create: integrationInfoJson,
+                  },
+                },
+              },
+            },
+          },
+        },
+        include: {
+          integrations: {
+            include: {
+              integrationInfo: true,
+            },
+          },
+        },
+      });
+
+      return placement;
+    }),
+  removeIntegration: protectedProcedure
+    .input(
+      z.object({
+        placementId: z.string(),
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { placementId, id } = input;
+      const placement = await prisma.placement.update({
+        where: {
+          id: placementId,
+        },
+        data: {
+          integrations: {
+            delete: {
+              id,
+            },
+          },
+        },
+        include: {
+          integrations: {
+            include: {
+              integrationInfo: true,
             },
           },
         },

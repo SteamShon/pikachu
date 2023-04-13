@@ -23,6 +23,7 @@ import PlacementMenu from "../../../components/PlacementMenu";
 import CampaignMenu from "../../../components/CampaignMenu";
 import ContentTypeMenu from "../../../components/ContentTypeMenu";
 import AdGroupMenu from "../../../components/AdGroupMenu";
+import IntegrationTable from "./integrationTable";
 function Dashboard() {
   const { data: session } = useSession();
   const posthog = usePostHog();
@@ -38,17 +39,19 @@ function Dashboard() {
     id: serviceId as string,
   });
 
+  console.log(service);
+
   useEffect(() => {
     if (service) {
       setTree(buildServiceTree(service));
     }
-    posthog?.identify(session?.user?.id);
-    const eventName = activeStep
-      ? steps[activeStep]?.label.toLocaleLowerCase()
-      : "";
-    posthog?.capture(`dashboard_${eventName}_visited`, {
-      service: service?.name,
-    });
+    // posthog?.identify(session?.user?.id);
+    // const eventName = activeStep
+    //   ? steps[activeStep]?.label.toLocaleLowerCase()
+    //   : "";
+    // posthog?.capture(`dashboard_${eventName}_visited`, {
+    //   service: service?.name,
+    // });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service]);
 
@@ -328,11 +331,38 @@ function Dashboard() {
           />
         ) : null,
     },
-
     {
       label: "RenderPreview",
       description: `renderPreview`,
       table: () => (service ? <RenderPreview serviceId={service.id} /> : null),
+    },
+    {
+      label: "Integrations",
+      description: `integrations`,
+      paths: [
+        <>Home</>,
+        <ServiceMenu key="serviceMenu" />,
+        <>{PlacementContentTypeMenu()}</>,
+        <PlacementMenu key="placementMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "Integrations" },
+            }}
+          >
+            <span className="font-bold">Integration</span>
+          </Link>
+        </>,
+      ],
+      table: () =>
+        service ? (
+          <IntegrationTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
+        ) : null,
     },
   ];
   const activeStep = step

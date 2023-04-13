@@ -6,8 +6,11 @@ import type {
   ContentTypeInfo,
   Creative,
   Cube,
+  CubeHistory,
   Customset,
   CustomsetInfo,
+  Integration,
+  IntegrationInfo,
   Placement,
   Service,
   ServiceConfig,
@@ -36,6 +39,9 @@ export function buildServiceTree(
         })[];
       })[];
       contentType: ContentType | null;
+      integrations: (Integration & {
+        integrationInfo: IntegrationInfo | null;
+      })[];
     })[];
     contentTypes: (ContentType & {
       contentTypeInfo: ContentTypeInfo | null;
@@ -44,7 +50,7 @@ export function buildServiceTree(
     customsets: (Customset & { customsetInfo: CustomsetInfo })[];
     serviceConfig:
       | (ServiceConfig & {
-          cubes: Cube[];
+          cubes: (Cube & { cubeHistories: CubeHistory[] })[];
         })
       | null;
   }
@@ -83,10 +89,12 @@ export function buildPlacementTree(
       })[];
     })[];
     contentType: ContentType | null;
+    integrations: (Integration & { integrationInfo: IntegrationInfo | null })[];
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
   contentType: ContentType | null;
+  integrations: ReturnType<typeof buildIntegraionTree>;
 } {
   const campaigns = arrayToRecord(
     placement.campaigns.map((campaign) => {
@@ -94,7 +102,9 @@ export function buildPlacementTree(
     })
   ) as Record<string, ReturnType<typeof buildCampaignTree>>;
 
-  return { ...placement, campaigns };
+  const integrations = buildIntegraionTree(placement.integrations);
+
+  return { ...placement, campaigns, integrations };
 }
 
 export function buildCampaignTree(
@@ -177,14 +187,20 @@ export function buildCustomsetsTree(
   >;
 }
 
-export function buildCubeTree(cube: Cube): Cube {
-  return { ...cube };
+export function buildCubeTree(
+  cube: Cube & { cubeHistories: CubeHistory[] }
+): Cube & { cubeHistories: Record<string, CubeHistory> } {
+  const cubeHistories = arrayToRecord(cube.cubeHistories) as Record<
+    string,
+    CubeHistory
+  >;
+  return { ...cube, cubeHistories };
 }
 
 export function buildServiceConfigTree(
   serviceConfig:
     | (ServiceConfig & {
-        cubes: Cube[];
+        cubes: (Cube & { cubeHistories: CubeHistory[] })[];
       })
     | null
 ):
@@ -199,4 +215,13 @@ export function buildServiceConfigTree(
   ) as Record<string, ReturnType<typeof buildCubeTree>>;
 
   return serviceConfig ? { ...serviceConfig, cubes } : null;
+}
+
+export function buildIntegraionTree(
+  integrations: (Integration & { integrationInfo: IntegrationInfo | null })[]
+): Record<string, Integration & { integrationInfo: IntegrationInfo | null }> {
+  return arrayToRecord(integrations) as Record<
+    string,
+    Integration & { integrationInfo: IntegrationInfo | null }
+  >;
 }

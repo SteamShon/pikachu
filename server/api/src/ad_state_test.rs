@@ -36,6 +36,7 @@ lazy_static! {
         cube_id: None,
         service: None,
         service_id: Some(SERVICE.id.clone()),
+        integrations: None,
         created_at: *NOW,
         updated_at: *NOW,
     };

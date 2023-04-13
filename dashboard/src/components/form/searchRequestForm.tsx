@@ -84,9 +84,18 @@ function SearchRequestForm({
           if (!serviceConfig) return;
 
           setMatchedAds([]);
+          const columnType = metadata.find(
+            (row) => (row.column_name as string) === field
+          )?.column_type as string | undefined;
 
           const values = (
-            await fetchValues(serviceConfig, cube.sql, field, prefix)
+            await fetchValues(
+              serviceConfig,
+              cube.sql,
+              field,
+              columnType,
+              prefix
+            )
           ).map((value) => String(value));
 
           setOptions(values);

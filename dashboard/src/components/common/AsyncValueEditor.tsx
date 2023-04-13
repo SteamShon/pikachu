@@ -1,6 +1,7 @@
 import {
   Autocomplete,
   CircularProgress,
+  createFilterOptions,
   debounce,
   TextField,
 } from "@mui/material";
@@ -10,6 +11,7 @@ import { ValueEditor } from "react-querybuilder";
 import { fetchValues } from "../../utils/duckdb";
 
 const AsyncValueEditor = (props: ValueEditorProps) => {
+  const columnType = props.fieldData?.columnType;
   const useSearch = props.fieldData?.useSearch || false;
   const { cube } = props.context;
   const [inputValue, setInputValue] = useState<string | undefined>(undefined);
@@ -22,7 +24,13 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
       debounce((prefix?: string) => {
         (async () => {
           const values = (
-            await fetchValues(cube.serviceConfig, cube.sql, props.field, prefix)
+            await fetchValues(
+              cube.serviceConfig,
+              cube.sql,
+              props.field,
+              columnType,
+              prefix
+            )
           ).map((value) => String(value));
 
           setOptions(values);
@@ -45,6 +53,11 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, inputValue, cube.cubeConfig, cube.s3Path]);
 
+  const filterOptions = createFilterOptions({
+    matchFrom: "any",
+    limit: 100,
+  });
+
   const valueSearchEditor = (
     <Autocomplete
       id="async-value-editor"
@@ -56,7 +69,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
         setOpen(false);
       }}
       isOptionEqualToValue={(option, value) => option === value}
-      getOptionLabel={(option) => option}
+      getOptionLabel={(option) => option as string}
       options={options || []}
       loading={loading}
       multiple
@@ -65,11 +78,13 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
       fullWidth
       includeInputInList
       filterSelectedOptions
+      filterOptions={filterOptions}
       value={(props.value as string).split(",").filter((v) => v.length > 0)}
       onInputChange={(_event, newInputValue) => {
         setInputValue(newInputValue);
       }}
-      onChange={(_e, vs: string[], reason) => {
+      onChange={(_e, _vs: unknown[], reason) => {
+        const vs = _vs.map((v) => v as string);
         const prevValues = (props.value as string)
           .split(",")
           .filter((v) => v.length > 0);

@@ -11,7 +11,7 @@ import { pipeline } from "node:stream/promises";
 import pg from "pg";
 import { from as copyFrom } from "pg-copy-streams";
 import { env } from "../../../env/server.mjs";
-import { loadS3 } from "../../../utils/aws";
+import { loadS3, partitionBucketPrefix } from "../../../utils/aws";
 import {
   extractS3AccessKeyId,
   extractS3Region,
@@ -50,6 +50,9 @@ async function getColumns(serviceConfig: ServiceConfig, cube: Cube) {
 
   return rows.map((row) => row.column_name as string);
 }
+function toOutputPath(cubeHistoryId: string) {
+  return `s3://pikachu-dev/dashboard/user-feature/${cubeHistoryId}.csv`;
+}
 
 async function transform(
   serviceConfig: ServiceConfig,
@@ -58,7 +61,7 @@ async function transform(
 ) {
   const columns = await getColumns(serviceConfig, cube);
   const db = await getDuckDB();
-  const outputPath = `s3://pikachu-dev/dashboard/user-feature/${cubeHistory.id}.csv`;
+  const outputPath = toOutputPath(cubeHistory.id);
   const transformSql = withConfiguration(
     serviceConfig,
     `
@@ -111,7 +114,11 @@ async function upload(serviceConfig: ServiceConfig, cubeHistory: CubeHistory) {
   return result;
 }
 
-async function cleanup(serviceConfig: ServiceConfig, cube: Cube, limit: 3) {
+async function cleanup(
+  serviceConfig: ServiceConfig,
+  cube: Cube,
+  limit: number
+) {
   console.log("cleanup");
   const cubeHistoriesToDelete: CubeHistory[] = [];
   const client = new pg.Client(env.DATABASE_URL);
@@ -141,6 +148,21 @@ async function cleanup(serviceConfig: ServiceConfig, cube: Cube, limit: 3) {
     const deleteCubeHistorySql = `DELETE FROM "CubeHistory" WHERE id in (${ids})`;
     console.log(deleteCubeHistorySql);
     await client.query(deleteCubeHistorySql);
+    // delete s3 file
+    const s3 = loadS3(serviceConfig);
+
+    cubeHistoriesToDelete.forEach((cubeHistory) => {
+      const { bucket, prefix } = partitionBucketPrefix(
+        toOutputPath(cubeHistory.id)
+      );
+      if (bucket) {
+        s3.deleteObject({ Bucket: bucket, Key: prefix }, () => {
+          console.log(
+            `delete s3 file success: ${toOutputPath(cubeHistory.id)}`
+          );
+        });
+      }
+    });
   } finally {
     client.end();
   }
@@ -176,14 +198,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       } else if (step === "upload") {
         await upload(serviceConfig, cubeHistory);
       } else if (step === "cleanup") {
-        await cleanup(serviceConfig, cube, 3);
+        await cleanup(serviceConfig, cube, 1);
       } else if (step === "select") {
         const result = await select(cubeHistory);
         res.json(result.rows);
       } else {
         await transform(serviceConfig, cube, cubeHistory);
         await upload(serviceConfig, cubeHistory);
-        await cleanup(serviceConfig, cube, 3);
+        await cleanup(serviceConfig, cube, 1);
       }
 
       res.status(200).end();

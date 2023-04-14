@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Rectangle */
+
+.rectangle {
+  position: absolute;
+  width: 1200px;
+  height: 2917px;
+  left: 0px;
+  top: 0px;
+
+  background: #101322;
+  border-radius: 0px;
+}
+.content {
+  /* Rectangle */
+
+  position: absolute;
+  width: 700px;
+  height: 2917px;
+  left: 250px;
+  top: 0px;
+
+  background: #101322;
+  border-radius: 0px;
+}
+.search {
+  position: absolute;
+  width: 668px;
+  height: 40px;
+  left: 52px;
+  top: 52px;
+
+  background: #172036;
+  border-radius: 8px;
+}

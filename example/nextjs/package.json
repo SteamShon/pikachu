@@ -10,7 +10,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@pikachu/react": "file:../../package/react/pikachu-react-0.0.1.tgz",
+    "@steamshon/pikachu-react": "^0.0.2",
     "@prisma/client": "^4.11.0",
     "@tanstack/react-query": "^4.28.0",
     "@trpc/client": "^10.18.0",

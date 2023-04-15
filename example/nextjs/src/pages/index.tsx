@@ -1,4 +1,4 @@
-import { usePikachu } from "@pikachu/react";
+import { usePikachu } from "@steamshon/pikachu-react";
 import { type NextPage } from "next";
 
 import { LivePreview, LiveProvider } from "react-live-runner";

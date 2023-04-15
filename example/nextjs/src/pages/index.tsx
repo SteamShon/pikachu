@@ -1,176 +1,40 @@
-import axios from "axios";
+import { usePikachu } from "@pikachu/react";
 import { type NextPage } from "next";
-import { useEffect, useState } from "react";
+
 import { LivePreview, LiveProvider } from "react-live-runner";
-
 import { env } from "~/env.mjs";
-
-function jsonParseWithFallback(
-  s: string | undefined | null,
-  fallback: Record<string, unknown> = {}
-): Record<string, unknown> {
-  try {
-    if (!s) return fallback;
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const parsed = JSON.parse(s);
-
-    return parsed as Record<string, unknown>;
-  } catch (error) {
-    return fallback;
-  }
-}
-function removeRenderFunction(code: string): string {
-  const lines = code.split("\n").filter((line) => !line.includes("render ("));
-  return lines.join("\n");
-}
-function replacePropsInFunction({
-  code,
-  contents,
-}: {
-  code: string;
-  contents: Record<string, unknown>[];
-}) {
-  const replaceValue = `render (new Test(${JSON.stringify(contents)}))`;
-
-  return [removeRenderFunction(code), replaceValue].join("\n");
-}
 
 const Home: NextPage = () => {
   const endpoint = env.NEXT_PUBLIC_PIKACHU_SEARCH_API_ENDPOINT;
   const serviceId = env.NEXT_PUBLIC_PIKACHU_SERVICE_ID;
-  const [featured, setFeatured] = useState<string | undefined>(undefined);
-  const [topList, setTopList] = useState<string | undefined>(undefined);
-  const [genre, setGenre] = useState<string | undefined>(undefined);
+  const featuredPlacementId = "clgf56kk0000hl408m2ni4yy0";
+  const rankingCardPlacementId = "clgf7s3ji0005jl08u8oqg3sj";
 
-  const parseResponse = (data: Record<string, unknown>) => {
-    const code: string | undefined = (
-      (
-        (
-          (data.matched_ads as Record<string, unknown>[] | undefined)?.[0]
-            ?.contentType as Record<string, undefined> | undefined
-        )?.contentTypeInfo as Record<string, unknown> | undefined
-      )?.details as Record<string, unknown> | undefined
-    )?.code as string;
-
-    const contents: Record<string, unknown>[] | undefined = (
-      data.matched_ads as Record<string, unknown>[] | undefined
-    )?.flatMap((placement) => {
-      return (placement.campaigns as Record<string, unknown>[])?.flatMap(
-        (campaign) => {
-          return (campaign.adGroups as Record<string, unknown>[])?.flatMap(
-            (adGroup) => {
-              return (adGroup.creatives as Record<string, unknown>[])?.map(
-                (creative) => {
-                  return creative.content as Record<string, unknown>;
-                }
-              );
-            }
-          );
-        }
-      );
-    });
-
-    return { code, contents };
-  };
-
-  useEffect(() => {
-    const fetchComponent = (
-      placementId: string,
-      userInfo: Record<string, unknown>,
-      onSuccess: (data: {
-        code: string | undefined;
-        contents: Record<string, unknown>[] | undefined;
-      }) => void
-    ) => {
-      console.log("fetch component: ", placementId);
-      axios
-        .post(endpoint, {
-          service_id: serviceId,
-          placement_id: placementId,
-          user_info: userInfo,
-        })
-        .then(({ data }) => {
-          console.log(data);
-          const res = parseResponse(data as Record<string, unknown>);
-          onSuccess(res);
-        })
-        .catch((error) => console.error(error));
-    };
-
-    fetchComponent(
-      "clgf56kk0000hl408m2ni4yy0",
-      { genres: [genre] },
-      ({ code, contents }) => {
-        if (!code || !contents) {
-          setFeatured(undefined);
-          return;
-        }
-
-        const props = jsonParseWithFallback(
-          contents[0]?.values as string | null | undefined
-        );
-
-        const newCode = replacePropsInFunction({
-          code,
-          contents: [props],
-        });
-
-        setFeatured(newCode);
-      }
-    );
-    fetchComponent(
-      "clgf7s3ji0005jl08u8oqg3sj",
-      { genres: [genre] },
-      ({ code, contents }) => {
-        if (!code || !contents) {
-          setTopList(undefined);
-          return;
-        }
-
-        const propsList = contents.map((content) => {
-          return jsonParseWithFallback(
-            content?.values as string | null | undefined
-          );
-        });
-
-        const newCode = replacePropsInFunction({
-          code,
-          contents: propsList,
-        });
-        setTopList(newCode);
-      }
-    );
-  }, [endpoint, serviceId, genre]);
+  const { renderCode: featuredRenderCode, setUserInfo: featuredSetUserInfo } =
+    usePikachu(endpoint, serviceId, featuredPlacementId, true);
+  const {
+    renderCode: rankingCardRenderCode,
+    setUserInfo: rankingCardSetUserInfo,
+  } = usePikachu(endpoint, serviceId, rankingCardPlacementId, true);
 
   const renderFeaturedRankingBanner = () => {
-    const code = featured;
-
     return (
       <>
-        {code ? (
-          <LiveProvider code={code}>
+        {featuredRenderCode && (
+          <LiveProvider code={featuredRenderCode}>
             <LivePreview />
           </LiveProvider>
-        ) : (
-          <span className="text-2xl text-white">
-            ReaturedRankingBanner Placement
-          </span>
         )}
       </>
     );
   };
   const renderRankingCard = () => {
-    const code = topList;
-
     return (
       <>
-        {code ? (
-          <LiveProvider code={code}>
+        {rankingCardRenderCode && (
+          <LiveProvider code={rankingCardRenderCode}>
             <LivePreview />
           </LiveProvider>
-        ) : (
-          <span className="text-2xl text-white">RankingCard Placement</span>
         )}
       </>
     );
@@ -250,7 +114,9 @@ const Home: NextPage = () => {
                   <select
                     onChange={(e) => {
                       console.log(e.target.value);
-                      setGenre(e.target.value);
+                      const userInfo = { genres: [e.target.value] };
+                      featuredSetUserInfo(userInfo);
+                      rankingCardSetUserInfo(userInfo);
                     }}
                   >
                     <option value="">Please choose</option>
@@ -264,23 +130,44 @@ const Home: NextPage = () => {
               </div>
             </div>
           </form>
+          <div className="text-white">Dynamic Placements</div>
 
-          <input
-            className="mt-10 w-full border-spacing-2 bg-[#172036]"
-            placeholder="작품명,게시글,감독,배우를 검색해보세요"
-          />
+          <div>
+            <input
+              className="mt-10 w-full border-spacing-2 bg-[#172036]"
+              placeholder="작품명,게시글,감독,배우를 검색해보세요"
+              readOnly={true}
+            />
+          </div>
 
-          <div className="mt-10 font-normal text-[#EFEFEF]">
-            오늘의 넷플릭스 랭킹
+          <div className="relative mt-10 font-normal text-[#EFEFEF]">
+            <span>오늘의 넷플릭스 랭킹</span>
+            <span className="absolute right-0 top-0">
+              <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-sm text-gray-900">
+                Powered By Pikachu
+              </span>
+            </span>
           </div>
 
           <div className="mb-2 mt-2 h-[3%] border-spacing-1">
             {/* Ranking Featured Banner*/}
             {renderFeaturedRankingBanner()}
           </div>
-          {/* Ranking Banner */}
-          {renderRankingCard()}
-
+          <div className="relative mt-10 font-normal text-[#EFEFEF]">
+            <span>랭킹 리스트</span>
+            <span className="absolute right-0 top-0">
+              <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-sm text-gray-900">
+                Powered By Pikachu
+              </span>
+            </span>
+          </div>
+          <div className="mb-2 mt-2 h-[3%] border-spacing-1">
+            {/* Ranking Banner */}
+            {renderRankingCard()}
+          </div>
+        </div>
+        <div className="mx-auto mt-20 max-w-2xl justify-center bg-[#101322]">
+          <div className="text-white">Static Placements</div>
           <div className="mt-10 font-normal text-[#EFEFEF]">
             최신 리뷰 한줄평
           </div>

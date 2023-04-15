@@ -175,6 +175,13 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@pikachu/react@file:../../packages/react/pikachu-react-0.0.1.tgz":
+  version "0.0.1"
+  resolved "file:../../packages/react/pikachu-react-0.0.1.tgz#baf00a7ce45a441578801134a1779ecb7a26d251"
+  dependencies:
+    react-live-runner "^1.0.5"
+    react-runner "^1.0.3"
+
 "@pkgr/utils@^2.3.1":
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/@pkgr/utils/-/utils-2.3.1.tgz#0a9b06ffddee364d6642b3cd562ca76f55b34a03"

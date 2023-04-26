@@ -66,16 +66,9 @@ Chagen DATABASE_URL to your database. The default configuration use postgresql, 
 docker compose up
 ```
 
-The result shoul looks following.
+Check out docker-compose.yml file for detail.
 
-```bash
-CONTAINER ID   IMAGE                COMMAND                  CREATED          STATUS                    PORTS                    NAMES
-7ae0c328cdc1   pikachu-dashboard    "docker-entrypoint.s…"   26 seconds ago   Up 23 seconds             0.0.0.0:3000->3000/tcp   pikachu-dashboard-1
-ea8eb4c937f5   pikachu-server       "./server"               2 days ago       Up 22 seconds             0.0.0.0:8080->8080/tcp   pikachu-server-1
-8991273ccfd9   postgres:12-alpine   "docker-entrypoint.s…"   2 days ago       Up 17 minutes (healthy)   0.0.0.0:5432->5432/tcp   pikachu-postgres-1
-```
-
-now goes to http://localhost:3000 to connect dashboard.
+Now goes to http://localhost:3000 to connect dashboard and http://localhost:8080 for API server.
 
 ### 4. Create an account and connect a data source
 

@@ -8,6 +8,7 @@ use actix_web::{
     web::{self},
     App, HttpResponse, HttpServer, Responder,
 };
+use ad_state::CreativeFeedback;
 use arc_swap::ArcSwap;
 use common::db::{self, PrismaClient};
 use dotenv::dotenv;
@@ -26,21 +27,13 @@ struct Request {
     service_id: String,
     placement_id: String,
     user_info: Value,
+    top_k: Option<usize>
 }
 // copy prev shared state into new struct on heap. then atomically replace Arc using ArcSwap
 async fn load_ad_meta(data: web::Data<ArcSwap<Arc<AdState>>>, client: web::Data<PrismaClient>) {
     let prev = data.load();
     let mut new_ad_state = AdState {
-        services: prev.services.clone(),
-        placements: prev.placements.clone(),
-        campaigns: prev.campaigns.clone(),
-        ad_groups: prev.ad_groups.clone(),
-        creatives: prev.creatives.clone(),
-        contents: prev.contents.clone(),
-        content_types: prev.content_types.clone(),
-        integrations: prev.integrations.clone(),
-        update_info: prev.update_info.clone(),
-        filter_index: prev.filter_index.clone(),
+        ..prev.as_ref().as_ref().clone()
     };
     new_ad_state.load(client.clone().into_inner()).await;
     data.store(Arc::new(Arc::new(new_ad_state)));
@@ -76,6 +69,7 @@ async fn search(
         &request.service_id,
         &request.placement_id,
         &request.user_info,
+        request.top_k,
     );
 
     HttpResponse::Ok().json(matched_ad_groups)
@@ -95,14 +89,14 @@ async fn user_info(
     HttpResponse::Ok().json(user_info)
 }
 
-#[get("/all_dimensions/{service_id}")]
+#[get("/all_dimensions/{placement_id}")]
 async fn all_dimensions(
     data: web::Data<ArcSwap<Arc<AdState>>>,
     path: web::Path<String>,
 ) -> impl Responder {
-    let service_id = path.into_inner();
+    let placement_id = path.into_inner();
 
-    match data.load().filter_index.get(&service_id) {
+    match data.load().filter_index.get(&placement_id) {
         None => HttpResponse::NotFound().json(false),
         Some(filter_index) => {
             let dimensions: HashSet<String> = filter_index.all_dimensions.keys().cloned().collect();
@@ -111,6 +105,22 @@ async fn all_dimensions(
         }
     }
 }
+#[post("/update_feedback")]
+async fn update_feedback(
+    data: web::Data<ArcSwap<Arc<AdState>>>,
+    request: web::Json<Vec<CreativeFeedback>>,
+) -> impl Responder {
+    let prev = data.load();
+    
+    let mut new_ad_state = AdState {
+        ..prev.as_ref().as_ref().clone()
+    };
+    new_ad_state.update_creative_feedback(&request.into_inner());
+
+    data.store(Arc::new(Arc::new(new_ad_state)));
+    HttpResponse::Ok().json(true)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -149,6 +159,7 @@ async fn main() -> std::io::Result<()> {
             .service(user_info)
             .service(update_ad_meta)
             .service(all_dimensions)
+            .service(update_feedback)
             .wrap(cors)
             .wrap(logger)
     })

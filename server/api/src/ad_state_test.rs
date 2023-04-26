@@ -143,14 +143,15 @@ fn test_ad_state_and_search_result_after_update() {
     });
     let mut ad_state = AdState::default();
     init_test_ad_state(&mut ad_state);
-
+    let user_info = AdState::parse_user_info(&user_info_json).unwrap();
     let ad_group_id = String::from(AD_GROUP.id.clone());
     let placement_id = PLACEMENT.id.clone();
     let campaign_id = CAMPAIGN.id.clone();
     let ids = vec![ad_group_id];
 
     // before update.
-    let placement_ids = ad_state.merge_ids_with_ad_metas(&placement_id, ids.iter());
+    let placement_ids = 
+        ad_state.merge_ids_with_ad_metas(&user_info, ids.iter(), None);
 
     assert_eq!(placement_ids.contains_key(&placement_id), true);
     let campaign_ids = placement_ids.get(&placement_id).unwrap();
@@ -166,7 +167,7 @@ fn test_ad_state_and_search_result_after_update() {
     // search result: match since user_info {"age": 10} matches to original
     // filter {"in": [{"var": "age"}, ["10"]]}
 
-    let search_result = ad_state.search(&SERVICE.id, &placement_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &placement_id, &user_info_json, None);
     assert_eq!(search_result.matched_ads.len() > 0, true);
 
     // update ad_group/creative including target filter conditions.
@@ -190,7 +191,8 @@ fn test_ad_state_and_search_result_after_update() {
     ad_state.update_creatives(&vec![new_creative]);
     println!("{:?}", ad_state.filter_index);
 
-    let new_placement_ids = ad_state.merge_ids_with_ad_metas(&placement_id, ids.iter());
+    let new_placement_ids = 
+        ad_state.merge_ids_with_ad_metas(&user_info, ids.iter(), None);
 
     for ad_group in new_placement_ids
         .get(&placement_id)
@@ -205,7 +207,7 @@ fn test_ad_state_and_search_result_after_update() {
     }
     // after update, ad_group should not matched since filter changed from
     // age.10 to age.30 and user_info has age.10
-    let search_result = ad_state.search(&SERVICE.id, &placement_id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &placement_id, &user_info_json, None);
     assert_eq!(search_result.matched_ads.len() == 0, true);
 
     println!("{:?}", new_placement_ids);
@@ -223,7 +225,7 @@ fn test_update_ad_group_filter_and_status_change() {
     init_test_ad_state(&mut ad_state);
 
     // result should contain AD_GROUP since age.10
-    let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None);
     assert_eq!(search_result.matched_ads.len() > 0, true);
 
     // update ad_group's status to exlucde it from index.
@@ -238,7 +240,7 @@ fn test_update_ad_group_filter_and_status_change() {
     ad_state.update_ad_groups(&vec![new_ad_group]);
     // after update, AD_GROUP should be excluded from result since
     // our index suppose to exlude filters_to_delete.
-    let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None);
     assert_eq!(search_result.matched_ads.len() == 0, true);
 
     // back to status published.
@@ -251,6 +253,6 @@ fn test_update_ad_group_filter_and_status_change() {
     ad_state.update_ad_groups(&vec![new_ad_group]);
     // after update, AD_GROUP should be included in result.
     // since ad_group's status has been change back to published.
-    let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json);
+    let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None);
     assert_eq!(search_result.matched_ads.len() > 0, true);
 }

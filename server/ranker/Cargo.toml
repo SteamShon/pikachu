@@ -1,5 +1,5 @@
 [package]
-name = "api"
+name = "ranker"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,17 +10,11 @@ prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust
     "postgresql",
 ] }
 serde = { version = "1.0", features = ["derive"] }
-actix-web = "4"
-log = "^0.4"
-dotenv = "0.15.0"
 filter = { path = "../filter" }
 common = { path = "../common" }
-ranker = { path = "../ranker" }
 serde_json = "1.0.93"
-itertools = "0.10.5"
-actix-cors = "0.6.4"
-env_logger = "0.10.0"
-tokio = "1.26.0"
 arc-swap = "1.6.0"
 lazy_static = "1.4.0"
-futures = "0.3.28"
+rand_distr = "0.4.3"
+rand = "0.8.5"
+rand_chacha = "0.3.1"

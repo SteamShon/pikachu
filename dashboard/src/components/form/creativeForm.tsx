@@ -17,7 +17,7 @@ import type {
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { extractSchema } from "../../utils/contentTypeInfo";
+import { extractSchema, toNewCreative } from "../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../utils/json";
 import ContentPreview from "../builder/contentPreview";
 import CustomLoadingButton from "../common/CustomLoadingButton";
@@ -213,10 +213,15 @@ function CreativeForm({
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Preview</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  {content && 
                   <ContentPreview
-                    contentType={content?.contentType}
-                    contents={[jsonParseWithFallback(content?.values)]}
+                    contentType={content.contentType}
+                    creatives={[
+                      initialData ? { id: initialData.id, content: jsonParseWithFallback(content.values) } 
+                      : toNewCreative(content.values)
+                    ]}
                   />
+                  }
                 </dd>
               </div>
             </dl>

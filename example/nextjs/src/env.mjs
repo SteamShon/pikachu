@@ -17,6 +17,7 @@ const client = z.object({
   // NEXT_PUBLIC_CLIENTVAR: z.string().min(1),
   NEXT_PUBLIC_PIKACHU_SEARCH_API_ENDPOINT: z.string().min(1),
   NEXT_PUBLIC_PIKACHU_SERVICE_ID: z.string().min(1),
+  NEXT_PUBLIC_PIKACHU_EVENT_ENDPOINT: z.string().min(1),
 });
 
 /**
@@ -31,6 +32,7 @@ const processEnv = {
   NEXT_PUBLIC_PIKACHU_SEARCH_API_ENDPOINT:
     process.env.NEXT_PUBLIC_PIKACHU_SEARCH_API_ENDPOINT,
   NEXT_PUBLIC_PIKACHU_SERVICE_ID: process.env.NEXT_PUBLIC_PIKACHU_SERVICE_ID,
+  NEXT_PUBLIC_PIKACHU_EVENT_ENDPOINT: process.env.NEXT_PUBLIC_PIKACHU_EVENT_ENDPOINT,
 };
 
 // Don't touch the part below

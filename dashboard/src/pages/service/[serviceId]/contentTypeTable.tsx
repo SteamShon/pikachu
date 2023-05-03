@@ -29,11 +29,13 @@ import {
   extractCode,
   extractDefaultValues,
   extractSchema,
+  toNewCreative,
 } from "../../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../../utils/json";
 import { extractBuilderPublicKey } from "../../../utils/serviceConfig";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypesTree } from "../../../utils/tree";
+import ContentPreview from "../../../components/builder/contentPreview";
 
 function ContentTypeTable({
   service,
@@ -136,23 +138,8 @@ function ContentTypeTable({
       headerName: "Preview",
       flex: 4,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        return params.row.source === "local" ? (
-          <LiveProvider
-            code={replacePropsInFunction({
-              code: extractCode(params.row.contentTypeInfo),
-              contents: [
-                jsonParseWithFallback(
-                  extractDefaultValues(params.row.contentTypeInfo)
-                ),
-              ],
-            })}
-            noInline={true}
-          >
-            <LivePreview />
-          </LiveProvider>
-        ) : (
-          <>{renderBuilderPreview(service, params.row)}</>
-        );
+        return <ContentPreview contentType={params.row} 
+        creatives={[toNewCreative(extractDefaultValues(params.row.contentTypeInfo))]}/>
       },
     },
     {

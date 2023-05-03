@@ -7,21 +7,21 @@ import { replacePropsInFunction } from "../common/CodeTemplate";
 
 function ContentPreview({
   contentType,
-  contents,
+  creatives,
   showEditor,
 }: {
   contentType?: ContentType & { contentTypeInfo: ContentTypeInfo | null };
-  contents: Record<string, unknown>[];
+  creatives: {id: string; content: {[key:string]:unknown}; [key:string]:unknown}[];
   showEditor?: boolean;
 }) {
   const builderContent =
-    contentType?.source !== "builder.io" || contents.length === 0
+    contentType?.source !== "builder.io" || creatives.length === 0
       ? undefined
-      : (contents[0] as unknown as BuilderContent);
+      : (creatives[0]?.content as unknown as BuilderContent);
 
   const newCode = replacePropsInFunction({
     code: extractCode(contentType?.contentTypeInfo),
-    contents,
+    creatives,
   });
 
   const preview = () => {

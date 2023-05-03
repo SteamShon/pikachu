@@ -4,22 +4,22 @@ import {
   LivePreview,
   LiveProvider,
 } from "react-live-runner";
-import { replacePropsInFunction } from "../common/CodeTemplate";
+import { removeRenderFunction, replacePropsInFunction } from "../common/CodeTemplate";
 
 function CodeEditor({
   code,
-  contents,
+  creatives,
   options,
 }: {
   code?: string;
-  contents: Record<string, unknown>[];
+  creatives: {id: string; content: {[key:string]:unknown}, [key:string]:unknown}[];
   options: {
     editor?: { disable: boolean; onChange?: (newCode: string) => void };
   };
 }) {
   const newCode = replacePropsInFunction({
     code,
-    contents,
+    creatives,
   });
 
   return (
@@ -27,7 +27,7 @@ function CodeEditor({
       {options.editor ? (
         <>
           <LiveCodeEditor
-            value={newCode}
+            value={removeRenderFunction(newCode)}
             disabled={options.editor.disable}
             onChange={(newCode) => {
               if (options.editor?.onChange) {

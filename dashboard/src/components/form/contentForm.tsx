@@ -21,6 +21,7 @@ import {
 import {
   extractDefaultValues,
   extractSchema,
+  toNewCreativeFromObject,
 } from "../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../utils/json";
 import ContentPreview from "../builder/contentPreview";
@@ -367,10 +368,10 @@ function ContentForm({
       <div className="mx-auto mt-8 mb-0 space-y-4 ">
         <ContentPreview
           contentType={contentType}
-          contents={[
-            builderContent
+          creatives={[
+            toNewCreativeFromObject(builderContent
               ? (builderContent as unknown as Record<string, unknown>)
-              : defaultValues,
+              : defaultValues)
           ]}
         />
       </div>

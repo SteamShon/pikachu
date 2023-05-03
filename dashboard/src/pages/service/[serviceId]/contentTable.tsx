@@ -19,6 +19,7 @@ import { api } from "../../../utils/api";
 import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypeTree } from "../../../utils/tree";
+import { toNewCreative } from "../../../utils/contentTypeInfo";
 function ContentTable({
   service,
   serviceTree,
@@ -102,7 +103,7 @@ function ContentTable({
         return (
           <ContentPreview
             contentType={params.row?.contentType}
-            contents={[jsonParseWithFallback(params.row.values)]}
+            creatives={[toNewCreative(params.row.values)]}
           />
         );
       },

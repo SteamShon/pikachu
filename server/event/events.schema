@@ -1,0 +1,28 @@
+{
+  "doc": "Schema for impression/click user action.",
+  "fields": [
+    {
+      "doc": "The epoch time in millis",
+      "name": "timestamp",
+      "type": "long"
+    },
+    {
+      "doc": "The unique user identifier.",
+      "name": "userId",
+      "type": "string"
+    },
+    {
+      "doc": "The name of this event",
+      "name": "event",
+      "type": "string"
+    },
+    {
+      "doc": "The target of this event",
+      "name": "creativeId",
+      "type": "string"
+    }
+  ],
+  "name": "eventRecord",
+  "namespace": "com.pikachu.event",
+  "type": "record"
+}

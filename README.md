@@ -26,8 +26,10 @@ Pikachu includes the following features:
 - [x] server/api: API server that filtering/ranking on registered contents per user request.
 - [ ] server/event: HTTP proxy for collecting SDK's user interactions, ingest to Kafka.
 - [ ] job/stat: the default ETL jobs to calculate statistics on creatives.
-- [ ] job/cube: the default ETL jobs to build cube.
+- [x] job/cube: the default ETL jobs to build cube.
 - [ ] job/message: the default implementations to send app push notification.
+- [x] packages/react: the react client SDK.
+- [x] example/nextjs: the example project using react SDK.
 
 ## Getting started
 

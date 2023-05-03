@@ -21,12 +21,12 @@ export function removeRenderFunction(code?: string): string {
 
 export function replacePropsInFunction({
   code,
-  contents,
+  creatives,
 }: {
   code?: string;
-  contents: Record<string, unknown>[];
+  creatives: {id: string; content: {[key:string]:unknown}, [key:string]:unknown}[];
 }) {
-  const replaceValue = `render (new Test(${JSON.stringify(contents)}))`;
+  const replaceValue = `render (new Test(${JSON.stringify(creatives)}))`;
 
   return [removeRenderFunction(code), replaceValue].join("\n");
   // return (code ? code : InitialCode).replace(

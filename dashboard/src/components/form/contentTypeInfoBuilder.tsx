@@ -12,6 +12,7 @@ import {
   extractCode,
   extractDefaultValues,
   extractSchema,
+  toNewCreative,
 } from "../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../utils/json";
 import CodeEditor from "../builder/codeEditor";
@@ -195,7 +196,7 @@ function ContentTypeInfoBuilder({
                 render={({ field }) => (
                   <CodeEditor
                     code={currentCode()}
-                    contents={[jsonParseWithFallback(defaultValues)]}
+                    creatives={[toNewCreative(defaultValues)]}
                     options={{
                       editor: {
                         disable: false,

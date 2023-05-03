@@ -64,7 +64,7 @@ function ContentTypeInfoForm({
         </div>
       </div>
     </>
-  );
+  )
 }
 
 export default ContentTypeInfoForm;

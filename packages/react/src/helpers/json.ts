@@ -19,12 +19,12 @@ function removeRenderFunction(code: string): string {
 }
 export function replacePropsInFunction({
   code,
-  contents,
+  creatives,
 }: {
   code: string;
-  contents: Record<string, unknown>[];
+  creatives: {id: string; content: {[key:string]:unknown}; [key:string]:unknown}[];
 }) {
-  const replaceValue = `render (new Test(${JSON.stringify(contents)}))`;
+  const replaceValue = `render (new Test(${JSON.stringify(creatives)}))`;
 
   return [removeRenderFunction(code), replaceValue].join('\n');
 }
@@ -38,23 +38,19 @@ export const parseResponse = (data: Record<string, unknown>) => {
     )?.details as Record<string, unknown> | undefined
   )?.code as string;
 
-  const contents: Record<string, unknown>[] | undefined = (
+  const creatives: (Record<string, unknown> & { content?:  Record<string, unknown>})[] | undefined = (
     data.matched_ads as Record<string, unknown>[] | undefined
   )?.flatMap((placement) => {
     return (placement.campaigns as Record<string, unknown>[])?.flatMap(
       (campaign) => {
         return (campaign.adGroups as Record<string, unknown>[])?.flatMap(
           (adGroup) => {
-            return (adGroup.creatives as Record<string, unknown>[])?.map(
-              (creative) => {
-                return creative.content as Record<string, unknown>;
-              },
-            );
+            return (adGroup.creatives as Record<string, unknown>[])
           },
         );
       },
     );
   });
 
-  return { code, contents };
+  return { code, creatives };
 };

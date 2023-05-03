@@ -116,7 +116,8 @@ function CreativeTable({
         return (
           <ContentPreview
             contentType={content?.contentType}
-            contents={[jsonParseWithFallback(content?.values)]}
+            creatives={[{id: params.row.id, content: jsonParseWithFallback(content?.values)}]}
+            //contents={[jsonParseWithFallback(content?.values)]}
             showEditor={false}
           />
         );

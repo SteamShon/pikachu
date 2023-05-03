@@ -1,5 +1,6 @@
 import type { ContentTypeInfo } from "@prisma/client";
-import { extractValue } from "./json";
+import { extractValue, jsonParseWithFallback } from "./json";
+import { v4 as uuidv4 } from 'uuid';
 
 export function extractSchema(contentTypeInfo?: ContentTypeInfo | null) {
   if (!contentTypeInfo) return undefined;
@@ -44,4 +45,18 @@ export function extractModelName(contentTypeInfo?: ContentTypeInfo | null) {
     object: contentTypeInfo?.details,
     paths: ["name"],
   }) as string | undefined;
+}
+
+export function toNewCreative(values: string | undefined) {
+  return {
+    id: uuidv4(),
+    content: jsonParseWithFallback(values),
+  }
+}
+
+export function toNewCreativeFromObject(values: {[key:string]:unknown}) {
+  return {
+    id: uuidv4(),
+    content: values,
+  }
 }

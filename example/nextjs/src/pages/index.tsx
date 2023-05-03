@@ -1,41 +1,38 @@
 import { usePikachu } from "@steamshon/pikachu-react";
 import { type NextPage } from "next";
 
-import { LivePreview, LiveProvider } from "react-live-runner";
 import { env } from "~/env.mjs";
 
 const Home: NextPage = () => {
   const endpoint = env.NEXT_PUBLIC_PIKACHU_SEARCH_API_ENDPOINT;
   const serviceId = env.NEXT_PUBLIC_PIKACHU_SERVICE_ID;
+  const eventEndpoint = env.NEXT_PUBLIC_PIKACHU_EVENT_ENDPOINT;
+
   const featuredPlacementId = "clgf56kk0000hl408m2ni4yy0";
   const rankingCardPlacementId = "clgf7s3ji0005jl08u8oqg3sj";
+  const { 
+    renderCode: featuredRenderCode, 
+    setUserInfo: featuredSetUserInfo, 
+    component: featuredComponent,
+  } = usePikachu({endpoint, serviceId, placementId: featuredPlacementId, eventEndpoint, debug: true});
 
-  const { renderCode: featuredRenderCode, setUserInfo: featuredSetUserInfo } =
-    usePikachu(endpoint, serviceId, featuredPlacementId, true);
   const {
     renderCode: rankingCardRenderCode,
     setUserInfo: rankingCardSetUserInfo,
-  } = usePikachu(endpoint, serviceId, rankingCardPlacementId, true);
+    component: rankingCardComponent,
+  } = usePikachu({endpoint, serviceId, placementId: rankingCardPlacementId, eventEndpoint, debug: true});
 
   const renderFeaturedRankingBanner = () => {
     return (
       <>
-        {featuredRenderCode && (
-          <LiveProvider code={featuredRenderCode}>
-            <LivePreview />
-          </LiveProvider>
-        )}
+        {featuredComponent}
       </>
     );
   };
   const renderRankingCard = () => {
     return (
       <>
-        {rankingCardRenderCode && (
-          <LiveProvider code={rankingCardRenderCode}>
-            <LivePreview />
-          </LiveProvider>
-        )}
+        {rankingCardComponent}
       </>
     );
   };
@@ -114,7 +111,7 @@ const Home: NextPage = () => {
                   <select
                     onChange={(e) => {
                       console.log(e.target.value);
-                      const userInfo = { genres: [e.target.value] };
+                      const userInfo = { userId: "steamshon", info: {genres: [e.target.value] }};
                       featuredSetUserInfo(userInfo);
                       rankingCardSetUserInfo(userInfo);
                     }}
@@ -130,6 +127,31 @@ const Home: NextPage = () => {
               </div>
             </div>
           </form>
+          <div className="mx-auto mt-20 max-w-2xl justify-center bg-[#101322]">
+          <div className="text-white">Static Placements</div>
+          <div className="mt-10 font-normal text-[#EFEFEF]">
+            최신 리뷰 한줄평
+          </div>
+          {/* Review */}
+          <div className="mt-2 grid w-full grid-cols-4 gap-4">
+            {renderReviewCard()}
+            {renderReviewCard()}
+            {renderReviewCard()}
+            {renderReviewCard()}
+          </div>
+
+          <div className="mt-10 font-normal text-[#EFEFEF]">
+            오늘 이거 볼까요?
+          </div>
+          {/* Today Pick */}
+          <div className="mt-2 grid w-full grid-cols-4 gap-4">
+            {renderTodayPickCard()}
+            {renderTodayPickCard()}
+            {renderTodayPickCard()}
+            {renderTodayPickCard()}
+          </div>
+        </div>
+
           <div className="text-white">Dynamic Placements</div>
 
           <div>
@@ -166,30 +188,7 @@ const Home: NextPage = () => {
             {renderRankingCard()}
           </div>
         </div>
-        <div className="mx-auto mt-20 max-w-2xl justify-center bg-[#101322]">
-          <div className="text-white">Static Placements</div>
-          <div className="mt-10 font-normal text-[#EFEFEF]">
-            최신 리뷰 한줄평
-          </div>
-          {/* Review */}
-          <div className="mt-2 grid w-full grid-cols-4 gap-4">
-            {renderReviewCard()}
-            {renderReviewCard()}
-            {renderReviewCard()}
-            {renderReviewCard()}
-          </div>
-
-          <div className="mt-10 font-normal text-[#EFEFEF]">
-            오늘 이거 볼까요?
-          </div>
-          {/* Today Pick */}
-          <div className="mt-2 grid w-full grid-cols-4 gap-4">
-            {renderTodayPickCard()}
-            {renderTodayPickCard()}
-            {renderTodayPickCard()}
-            {renderTodayPickCard()}
-          </div>
-        </div>
+        
       </div>
     </>
   );

@@ -8,10 +8,10 @@ import { replacePropsInFunction } from "../common/CodeTemplate";
 function PlacementData({ placement }: { placement: SearchResult }) {
   const { contentType } = placement;
 
-  const contents = placement.campaigns.flatMap((campaign) => {
+  const creatives = placement.campaigns.flatMap((campaign) => {
     return campaign.adGroups.flatMap((adGroup) => {
-      return adGroup.creatives.flatMap((creative) => {
-        return creative.content;
+      return adGroup.creatives.map((creative) => {
+        return {...creative, content: jsonParseWithFallback(creative.content.values) };
       });
     });
   });
@@ -27,7 +27,7 @@ function PlacementData({ placement }: { placement: SearchResult }) {
         <div className="border-t border-gray-200">
           <ContentPreview
             contentType={contentType}
-            contents={contents.map((c) => jsonParseWithFallback(c.values))}
+            creatives={creatives}
             showEditor={false}
           />
         </div>

@@ -17,7 +17,7 @@ const client = z.object({
   // NEXT_PUBLIC_CLIENTVAR: z.string().min(1),
   NEXT_PUBLIC_PIKACHU_SEARCH_API_ENDPOINT: z.string().min(1),
   NEXT_PUBLIC_PIKACHU_SERVICE_ID: z.string().min(1),
-  NEXT_PUBLIC_PIKACHU_EVENT_ENDPOINT: z.string().min(1),
+  NEXT_PUBLIC_PIKACHU_EVENT_ENDPOINT: z.string().optional(),
 });
 
 /**

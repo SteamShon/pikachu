@@ -5,17 +5,25 @@ use schema_registry_converter::{async_impl::{schema_registry::SrSettings}, schem
 use schema_registry_converter::async_impl::avro::AvroEncoder;
 
 pub struct Publisher<'a> {
-    encoder: AvroEncoder<'a>,
-    producer: FutureProducer<DefaultClientContext>,
+    encoder: Option<AvroEncoder<'a>>,
+    producer: Option<FutureProducer<DefaultClientContext>>,
 }
 impl<'a> Publisher<'a> {
     pub fn new(
-        schema_registry_settings: SrSettings, 
-        producer_configs: HashMap<&str, &str>
+        schema_registry_settings: Option<SrSettings>, 
+        producer_configs: Option<HashMap<&str, String>>
     ) -> Self {
+        let producer = 
+            producer_configs
+                .map(|config| 
+                    Self::init_future_producer(config)
+                );
+        let encoder = 
+            schema_registry_settings.map(|config| AvroEncoder::new(config));
+
         Publisher { 
-            encoder: AvroEncoder::new(schema_registry_settings), 
-            producer: Self::init_future_producer(producer_configs),
+            encoder, 
+            producer,
         }
     }
     
@@ -36,28 +44,35 @@ impl<'a> Publisher<'a> {
         topic: &str,
         event: &serde_json::Value
     ) -> Result<(i32, i64), (rdkafka::error::KafkaError, rdkafka::message::OwnedMessage)> {
-        let values = Self::json_to_avro_value(event);
 
-        let subject_name_strategy = 
-            SubjectNameStrategy::TopicNameStrategy(topic.to_owned(), false);
+        match (&self.producer, &self.encoder) {
+            (Some(producer), Some(encoder)) => {
+                let values = Self::json_to_avro_value(event);
 
-        let payload = self.encoder
-            .encode(values, subject_name_strategy)
-            .await
-            .unwrap();
-
-        let record: FutureRecord<str, Vec<u8>> = FutureRecord {
-            topic,
-            partition: None,
-            payload: Some(&payload),
-            key: None,
-            timestamp: None,
-            headers: None,
-        };
-        self.producer.send(record, Duration::from_secs(0)).await
+                let subject_name_strategy = 
+                    SubjectNameStrategy::TopicNameStrategy(topic.to_owned(), false);
+        
+                let payload = encoder
+                    .encode(values, subject_name_strategy)
+                    .await
+                    .unwrap();
+        
+                let record: FutureRecord<str, Vec<u8>> = FutureRecord {
+                    topic,
+                    partition: None,
+                    payload: Some(&payload),
+                    key: None,
+                    timestamp: None,
+                    headers: None,
+                };
+                
+                producer.send(record, Duration::from_secs(0)).await
+            }
+            _ => Ok((0, 0))
+        }
     }
     
-    fn init_future_producer(config_overrides: HashMap<&str, &str>) -> FutureProducer<DefaultClientContext> {
+    fn init_future_producer(config_overrides: HashMap<&str, String>) -> FutureProducer<DefaultClientContext> {
         let mut config = ClientConfig::new();
         for (key, value) in config_overrides {
             config.set(key, value);

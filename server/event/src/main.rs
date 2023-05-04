@@ -46,31 +46,12 @@ async fn main() -> std::io::Result<()> {
 
     println!("{:?}", env::vars());
 
-    let boostrap_servers = 
-        env::var("BOOTSTRAP_SERVERS")
-        .unwrap();
-        // .unwrap_or("localhost:9092".to_string());
-    let message_timeout_ms = 
-        env::var("MESSAGE_TIMEOUT_MS")
-        .unwrap_or("5000".to_string());
-    let producer_configs = HashMap::from([
-        ("bootstrap.servers", boostrap_servers.as_str()),
-        ("message.timeout.ms", message_timeout_ms.as_str())
-    ]);
-    let schema_registry_url = 
-        env::var("SCHEMA_REGISTRY_URL")
-        .unwrap();
-        // .unwrap_or("http://localhost:8081".to_string());
-    let schema_registry_settings = SrSettings::new(schema_registry_url);
-    
-    // let database_url = env::var("DATABASE_URL").unwrap();
-    // let prisma = Arc::new(db::new_client_with_url(&database_url).await.unwrap());
-    // let client = web::Data::from(prisma);
-    
-    println!("initialize publisher");
-    println!("{:?}", schema_registry_settings);
-    println!("{:?}", producer_configs);
-
+    let producer_configs = 
+        env::var("BOOTSTRAP_SERVERS").ok().map(|v| 
+            HashMap::from([("bootstrap.servers", v)]
+        ));
+    let schema_registry_settings = 
+        env::var("SCHEMA_REGISTRY_URL").ok().map(|v| SrSettings::new(v));
     let publisher = Publisher::new(
         schema_registry_settings, 
         producer_configs

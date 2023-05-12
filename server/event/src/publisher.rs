@@ -1,34 +1,122 @@
-use std::{collections::HashMap, time::Duration};
-use rdkafka::{producer::{FutureRecord, FutureProducer}, client::DefaultClientContext, ClientConfig};
-use apache_avro::types::Value;
-use schema_registry_converter::{async_impl::{schema_registry::SrSettings}, schema_registry_common::SubjectNameStrategy};
+use actix_web::web::Bytes;
+use apache_avro::Writer;
+use apache_avro::{types::Value, Schema};
+use rdkafka::error::KafkaResult;
+use rdkafka::{
+    client::DefaultClientContext,
+    producer::{FutureProducer, FutureRecord},
+    ClientConfig,
+};
 use schema_registry_converter::async_impl::avro::AvroEncoder;
+use schema_registry_converter::error::SRCError;
+use schema_registry_converter::{
+    async_impl::schema_registry::SrSettings, schema_registry_common::SubjectNameStrategy,
+};
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, time::Duration};
 
+pub const EVENT_SCHEMA_RAW: &str = r#"
+{
+  "doc": "Schema for impression/click user action.",
+  "fields": [
+    {
+      "doc": "The epoch time in millis",
+      "name": "when",
+      "type": "long"
+    },
+    {
+      "doc": "The unique user identifier.",
+      "name": "who",
+      "type": "string"
+    },
+    {
+      "doc": "The name of this event",
+      "name": "what",
+      "type": "string"
+    },
+    {
+      "doc": "The target of this event",
+      "name": "which",
+      "type": "string"
+    },
+    {
+      "doc": "The extra properties on this event",
+      "name": "props",
+      "type": "string"
+    }
+  ],
+  "name": "eventRecord",
+  "namespace": "com.pikachu.event",
+  "type": "record"
+}
+"#;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Event {
+    when: u64,
+    who: String,
+    what: String,
+    which: String,
+    props: serde_json::Value,
+}
+
+#[derive(Debug)]
+pub enum PublishError {
+    SerdeJsonError(serde_json::Error),
+    InvalidEventError,
+    SchemaRegistryError(SRCError),
+    EventSchemaNotMatchedError(apache_avro::Error),
+    AvroResultError(apache_avro::Error),
+    KafkaPublishError((rdkafka::error::KafkaError, rdkafka::message::OwnedMessage)),
+}
 pub struct Publisher<'a> {
     encoder: Option<AvroEncoder<'a>>,
     producer: Option<FutureProducer<DefaultClientContext>>,
+    default_avro_schema: apache_avro::Schema,
 }
 impl<'a> Publisher<'a> {
+    fn init_future_producer(
+        config_overrides: HashMap<String, String>,
+    ) -> KafkaResult<FutureProducer<DefaultClientContext>> {
+        let mut config = ClientConfig::new();
+        for (key, value) in config_overrides {
+            config.set(key, value);
+        }
+        config.create()
+    }
     pub fn new(
-        schema_registry_settings: Option<SrSettings>, 
-        producer_configs: Option<HashMap<&str, String>>
+        schema_registry_settings: Option<SrSettings>,
+        producer_configs: Option<HashMap<String, String>>,
     ) -> Self {
-        let producer = 
-            producer_configs
-                .map(|config| 
-                    Self::init_future_producer(config)
-                );
-        let encoder = 
-            schema_registry_settings.map(|config| AvroEncoder::new(config));
+        println!("producer config: {:?}", producer_configs);
+        println!("schema registry config: {:?}", schema_registry_settings);
 
-        Publisher { 
-            encoder, 
+        let producer = match producer_configs {
+            None => None,
+            Some(configs) => match Self::init_future_producer(configs) {
+                Ok(producer) => Some(producer),
+                Err(error) => {
+                    println!("[ERROR]: {:?}", error);
+                    None
+                }
+            },
+        };
+        let encoder = schema_registry_settings.map(|config| AvroEncoder::new(config));
+        let default_avro_schema: Schema = Schema::parse_str(EVENT_SCHEMA_RAW).unwrap();
+
+        Publisher {
+            encoder,
             producer,
+            default_avro_schema,
         }
     }
-    
-    pub fn json_to_avro_value(event: &serde_json::Value) -> Vec<(&str, Value)> {
-        let kvs = event.as_object().unwrap();
+
+    pub fn json_to_avro_value(
+        event: &serde_json::Value,
+    ) -> Result<Vec<(&str, Value)>, PublishError> {
+        let kvs = event
+            .as_object()
+            .map_or(Err(PublishError::InvalidEventError), |object| Ok(object))?;
         let mut values: Vec<(&str, Value)> = Vec::new();
         for (k, v) in kvs {
             if let Ok(avro_value) = apache_avro::to_value(v) {
@@ -36,47 +124,117 @@ impl<'a> Publisher<'a> {
             }
         }
 
-        values
+        Ok(values)
     }
-    
-    pub async fn publish(
-        &self, 
-        topic: &str,
-        event: &serde_json::Value
-    ) -> Result<(i32, i64), (rdkafka::error::KafkaError, rdkafka::message::OwnedMessage)> {
 
+    pub async fn publish(&self, topic: &str, event: &Bytes) -> Result<(i32, i64), PublishError> {
         match (&self.producer, &self.encoder) {
             (Some(producer), Some(encoder)) => {
-                let values = Self::json_to_avro_value(event);
-
-                let subject_name_strategy = 
-                    SubjectNameStrategy::TopicNameStrategy(topic.to_owned(), false);
-        
-                let payload = encoder
-                    .encode(values, subject_name_strategy)
-                    .await
-                    .unwrap();
-        
-                let record: FutureRecord<str, Vec<u8>> = FutureRecord {
-                    topic,
-                    partition: None,
-                    payload: Some(&payload),
-                    key: None,
-                    timestamp: None,
-                    headers: None,
-                };
-                
-                producer.send(record, Duration::from_secs(0)).await
+                Self::publish_with_schema_registry_as_avro(event, topic, encoder, producer).await
             }
-            _ => Ok((0, 0))
+            (Some(producer), None) => {
+                // Self::publish_without_schema_registry_as_avro(
+                //     event,
+                //     &self.default_avro_schema,
+                //     topic,
+                //     producer,
+                // )
+                // .await
+                Self::publish_without_schema_registry_as_json(event, topic, producer).await
+            }
+            _ => Ok((0, 0)),
         }
     }
-    
-    fn init_future_producer(config_overrides: HashMap<&str, String>) -> FutureProducer<DefaultClientContext> {
-        let mut config = ClientConfig::new();
-        for (key, value) in config_overrides {
-            config.set(key, value);
-        }
-        config.create().expect("Failed to create producer")
+    async fn send(
+        producer: &FutureProducer,
+        topic: &str,
+        payload: &Vec<u8>,
+    ) -> Result<(i32, i64), PublishError> {
+        let record: FutureRecord<str, Vec<u8>> = FutureRecord {
+            topic,
+            partition: None,
+            payload: Some(&payload),
+            key: None,
+            timestamp: None,
+            headers: None,
+        };
+
+        producer
+            .send(record, Duration::from_secs(0))
+            .await
+            .map_err(|error| PublishError::KafkaPublishError(error))
+    }
+
+    async fn publish_with_schema_registry_as_avro(
+        event_bytes: &Bytes,
+        topic: &str,
+        encoder: &AvroEncoder<'_>,
+        producer: &FutureProducer,
+    ) -> Result<(i32, i64), PublishError> {
+        let payload = Self::serialize_as_avro_with_schema(topic, event_bytes, encoder).await?;
+
+        Self::send(producer, topic, &payload).await
+    }
+    async fn publish_without_schema_registry_as_json(
+        event_bytes: &Bytes,
+        topic: &str,
+        producer: &FutureProducer,
+    ) -> Result<(i32, i64), PublishError> {
+        let payload = Self::serialize_as_json_without_schema(event_bytes)?;
+
+        Self::send(producer, topic, &payload).await
+    }
+    async fn publish_without_schema_registry_as_avro(
+        event_bytes: &Bytes,
+        avro_schema: &Schema,
+        topic: &str,
+        producer: &FutureProducer,
+    ) -> Result<(i32, i64), PublishError> {
+        let payload = Self::serialize_as_avro_without_schema(event_bytes, avro_schema)?;
+
+        Self::send(producer, topic, &payload).await
+    }
+
+    fn serialize_as_json_without_schema(event_bytes: &Bytes) -> Result<Vec<u8>, PublishError> {
+        // skip validation check
+        // Ok(event_bytes.to_vec())
+        let event: Event = serde_json::from_slice(event_bytes)
+            .map_err(|error| PublishError::SerdeJsonError(error))?;
+        let str =
+            serde_json::to_string(&event).map_err(|error| PublishError::SerdeJsonError(error))?;
+
+        Ok(str.as_bytes().to_vec())
+    }
+    async fn serialize_as_avro_with_schema(
+        topic: &str,
+        event_bytes: &Bytes,
+        encoder: &AvroEncoder<'_>,
+    ) -> Result<Vec<u8>, PublishError> {
+        let event: serde_json::Value = serde_json::from_slice(&event_bytes)
+            .map_err(|error| PublishError::SerdeJsonError(error))?;
+        let values = Self::json_to_avro_value(&event)?;
+
+        let subject_name_strategy = SubjectNameStrategy::TopicNameStrategy(topic.to_owned(), false);
+
+        encoder
+            .encode(values, subject_name_strategy)
+            .await
+            .map_err(|error| PublishError::SchemaRegistryError(error))
+    }
+    fn serialize_as_avro_without_schema(
+        event_bytes: &Bytes,
+        avro_schema: &Schema,
+    ) -> Result<Vec<u8>, PublishError> {
+        let event_payload: Event = serde_json::from_slice(&event_bytes)
+            .map_err(|error| PublishError::SerdeJsonError(error))?;
+        let mut writer = Writer::new(avro_schema, Vec::new());
+
+        writer
+            .append_ser(event_payload)
+            .map_err(|error| PublishError::EventSchemaNotMatchedError(error))?;
+        let payload = writer
+            .into_inner()
+            .map_err(|error| PublishError::AvroResultError(error));
+        payload
     }
 }

@@ -1,7 +1,7 @@
-pub mod publisher;
 pub mod meta;
+pub mod publisher;
+pub mod util;
 
-use std::{collections::HashMap, env};
 use actix_cors::Cors;
 use actix_web::{
     middleware::Logger,
@@ -11,31 +11,31 @@ use actix_web::{
 };
 use dotenv::dotenv;
 use publisher::Publisher;
-use schema_registry_converter::async_impl::schema_registry::SrSettings;
+use serde_json::json;
+use std::env;
 
-
-#[post("/publish/{service_id}")]
+#[post("/publish/{topic}/{service_id}")]
 async fn publish<'a>(
     data: web::Data<Publisher<'a>>,
     body: Bytes,
-    path: web::Path<String>,
+    path: web::Path<(String, String)>,
 ) -> impl Responder {
-    let service_id = path.into_inner();
-    let topic = "events";
+    let (topic, _service_id) = path.into_inner();
     // let topic = data.get_topic(service_id.as_str());
     // if let None = topic {
     //     return HttpResponse::BadRequest().json(false)
     // }
-    let event: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    let result = 
-        data.publish(topic, &event).await;
-    
-    println!("{:?}", result);
+    let result = data.publish(topic.as_str(), &body).await;
 
-    //TODO: 
+    //TODO:
     match result {
-        Ok(x) => HttpResponse::Ok().json(true),
-        Err((error, message)) => HttpResponse::InternalServerError().json(false)
+        Ok((partition, offset)) => HttpResponse::Ok().json(json!({
+            "partition": partition,
+            "offset": offset,
+        })),
+        Err(error) => HttpResponse::InternalServerError().json(json!({
+            "error": format!("{:?}", error),
+        })),
     }
 }
 
@@ -44,18 +44,11 @@ async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     dotenv().ok();
 
-    println!("{:?}", env::vars());
+    let envs = util::parse_envs(env::vars().into_iter());
+    let schema_registry_settings = util::parse_schema_registry_settings(&envs);
+    let kafka_configs = util::parse_kafka_config(&envs);
 
-    let producer_configs = 
-        env::var("BOOTSTRAP_SERVERS").ok().map(|v| 
-            HashMap::from([("bootstrap.servers", v)]
-        ));
-    let schema_registry_settings = 
-        env::var("SCHEMA_REGISTRY_URL").ok().map(|v| SrSettings::new(v));
-    let publisher = Publisher::new(
-        schema_registry_settings, 
-        producer_configs
-    );
+    let publisher = Publisher::new(schema_registry_settings, kafka_configs);
     let data = web::Data::new(publisher);
 
     HttpServer::new(move || {
@@ -64,7 +57,6 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .app_data(data.clone())
-            // .app_data(client.clone())
             .service(publish)
             .wrap(cors)
             .wrap(logger)
@@ -72,6 +64,4 @@ async fn main() -> std::io::Result<()> {
     .bind(("0.0.0.0", 8181))?
     .run()
     .await
-
-    
 }

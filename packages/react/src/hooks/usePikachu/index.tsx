@@ -91,18 +91,25 @@ export const usePikachu = ({
           e.stopPropagation();
           
           const payload = { 
-            userId: userInfo.userId, 
-            event: 'click', 
-            creativeId: nodeId,
-            timestamp: Date.now(), 
+            who: userInfo.userId, 
+            what: 'click', 
+            which: nodeId,
+            when: Date.now(), 
           };
 
           if (debug) {
             console.log(payload);
           }
           if (eventEndpoint) {
+            const topic = eventTopic || "events";
+            const url = `${eventEndpoint}/${topic}/${serviceId}`;
+            
+            if (debug) {
+              console.log(url);
+              console.log(payload);
+            }
             axios
-              .post(`${eventEndpoint}/${serviceId}`, payload)
+              .post(`${url}`, payload)
               .then((res) => console.log(res))
               .catch((e) => console.log(e))
           }

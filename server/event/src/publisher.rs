@@ -57,7 +57,7 @@ pub struct Event {
     who: String,
     what: String,
     which: String,
-    props: serde_json::Value,
+    props: Option<serde_json::Value>,
 }
 
 #[derive(Debug)]

@@ -58,7 +58,7 @@ COPY --from=cacher /app/target target
 COPY --from=cacher /usr/local/cargo /usr/local/cargo
 
 # build the app 
-RUN cargo prisma generate && cargo build --release --bin event
+RUN cargo build --release --bin event
 
 # use google distroless as runtime image
 FROM gcr.io/distroless/cc-debian11

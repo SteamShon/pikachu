@@ -3,22 +3,27 @@
   "fields": [
     {
       "doc": "The epoch time in millis",
-      "name": "timestamp",
+      "name": "when",
       "type": "long"
     },
     {
       "doc": "The unique user identifier.",
-      "name": "userId",
+      "name": "who",
       "type": "string"
     },
     {
       "doc": "The name of this event",
-      "name": "event",
+      "name": "what",
       "type": "string"
     },
     {
       "doc": "The target of this event",
-      "name": "creativeId",
+      "name": "which",
+      "type": "string"
+    },
+    {
+      "doc": "The extra properties encoded in json string on this event",
+      "name": "props",
       "type": "string"
     }
   ],

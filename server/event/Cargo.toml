@@ -20,5 +20,5 @@ apache-avro = "0.14.0"
 #     "postgresql",
 # ] }
 arc-swap = "1.6.0"
-rdkafka = { version = "0.29.0", features = ["cmake-build"] }
+rdkafka = { version = "0.29.0", features = ["cmake-build", "ssl-vendored"] }
 rdkafka-sys = "4.3.0"

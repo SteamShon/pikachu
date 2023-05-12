@@ -73,8 +73,15 @@ export const usePikachu = ({
         }
         if (eventEndpoint) {
           const topic = eventTopic || "events";
+          const url = `${eventEndpoint}/${topic}/${serviceId}`;
+          
+          if (debug) {
+            console.log(url);
+            console.log(payload);
+          }
+
           axios
-            .post(`${eventEndpoint}/${topic}/${serviceId}`, payload)
+            .post(`${url}`, payload)
             .then((res) => console.log(res))
             .catch((e) => console.log(e))
         }

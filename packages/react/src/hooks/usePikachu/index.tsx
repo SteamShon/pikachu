@@ -26,6 +26,7 @@ export const usePikachu = ({
   serviceId,
   placementId,
   eventEndpoint,
+  eventTopic,
   options,
   debug
 }:{
@@ -33,6 +34,7 @@ export const usePikachu = ({
   serviceId: string,
   placementId: string,
   eventEndpoint?: string,
+  eventTopic?: string,
   options?: { 
     threshold: number; 
     triggerOnce: boolean; 
@@ -61,17 +63,18 @@ export const usePikachu = ({
 
         // send impression event
         const payload = { 
-          userId: userInfo.userId, 
-          event: 'impression', 
-          creativeId: nodeId,
-          timestamp: Date.now(), 
+          who: userInfo.userId, 
+          what: 'impression', 
+          which: nodeId,
+          when: Date.now(), 
         };
         if (debug) {
           console.log(payload);
         }
         if (eventEndpoint) {
+          const topic = eventTopic || "events";
           axios
-            .post(`${eventEndpoint}/${serviceId}`, payload)
+            .post(`${eventEndpoint}/${topic}/${serviceId}`, payload)
             .then((res) => console.log(res))
             .catch((e) => console.log(e))
         }

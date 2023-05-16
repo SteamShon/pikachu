@@ -1,11 +1,11 @@
-import type { BuilderContent } from "@builder.io/react";
+// import type { BuilderContent } from "@builder.io/react";
 import type {
   ContentType,
   ContentTypeInfo,
   ServiceConfig,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
-import { getContent } from "../../pages/api/builder.io/builderContent";
+// import { getContent } from "../../pages/api/builder.io/builderContent";
 
 function ContentSync({
   serviceConfig,
@@ -22,30 +22,30 @@ function ContentSync({
     const builderContent =
       contentType?.source !== "builder.io" || contents.length === 0
         ? undefined
-        : (contents[0] as unknown as BuilderContent);
+        : (contents[0] as unknown );//as BuilderContent);
 
-    if (builderContent && contents.length > 0) {
-      getContent({
-        serviceConfig,
-        contentType,
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        contentId: builderContent?.id,
-      }).then((fetched) => {
-        const lastUpdated = (contents[0]?.lastUpdated ||
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          fetched?.lastUpdated) as number | undefined;
-        if (lastUpdated) {
-          setNeedUpdate(
-            lastUpdated <
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              //@ts-ignore
-              fetched?.lastUpdated
-          );
-        }
-      });
-    }
+    // if (builderContent && contents.length > 0) {
+    //   getContent({
+    //     serviceConfig,
+    //     contentType,
+    //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //     // @ts-ignore
+    //     contentId: builderContent?.id,
+    //   }).then((fetched) => {
+    //     const lastUpdated = (contents[0]?.lastUpdated ||
+    //       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //       //@ts-ignore
+    //       fetched?.lastUpdated) as number | undefined;
+    //     if (lastUpdated) {
+    //       setNeedUpdate(
+    //         lastUpdated <
+    //           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //           //@ts-ignore
+    //           fetched?.lastUpdated
+    //       );
+    //     }
+    //   });
+    // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -1,4 +1,4 @@
-import type { BuilderContent } from "@builder.io/react";
+// import type { BuilderContent } from "@builder.io/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   materialCells,
@@ -14,10 +14,10 @@ import type {
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
-import {
-  getContent,
-  getContents,
-} from "../../pages/api/builder.io/builderContent";
+// import {
+//   getContent,
+//   getContents,
+// } from "../../pages/api/builder.io/builderContent";
 import {
   extractDefaultValues,
   extractSchema,
@@ -50,12 +50,12 @@ function ContentForm({
   // eslint-disable-next-line @typescript-eslint/ban-types
   const [defaultValues, setDefaultValues] = useState<{ [x: string]: {} }>({});
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [builderContents, setBuilderContens] = useState<
-    BuilderContent<object>[]
-  >([]);
-  const [builderContent, setBuilderContent] = useState<
-    BuilderContent<object> | undefined
-  >(undefined);
+  // const [builderContents, setBuilderContens] = useState<
+  //   BuilderContent<object>[]
+  // >([]);
+  // const [builderContent, setBuilderContent] = useState<
+  //   BuilderContent<object> | undefined
+  // >(undefined);
   const [needUpdate, setNeedUpdate] = useState(false);
 
   const methods = useForm<ContentWithContentTypeSchemaType>({
@@ -89,27 +89,27 @@ function ContentForm({
         };
 
         setDefaultValues(parsedValues);
-        if (initialContentType && initialContentType?.source === "builder.io") {
-          const contentId = parsedValues?.id as string | undefined;
-          const lastUpdated = parsedValues?.lastUpdated as number | undefined;
+        // if (initialContentType && initialContentType?.source === "builder.io") {
+        //   const contentId = parsedValues?.id as string | undefined;
+        //   const lastUpdated = parsedValues?.lastUpdated as number | undefined;
 
-          getContent({
-            serviceConfig: service?.serviceConfig,
-            contentType: initialContentType,
-            contentId,
-          }).then((content) => {
-            if (content === undefined) return;
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            //@ts-ignore
-            const newLastUpdated = content?.lastUpdated;
-            if (lastUpdated && lastUpdated < newLastUpdated) {
-              setNeedUpdate(true);
-            }
-            setBuilderContent(content);
-            setValue("name", content.name);
-            setValue("values", content as unknown as Record<string, unknown>);
-          });
-        }
+        //   getContent({
+        //     serviceConfig: service?.serviceConfig,
+        //     contentType: initialContentType,
+        //     contentId,
+        //   }).then((content) => {
+        //     if (content === undefined) return;
+        //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //     //@ts-ignore
+        //     const newLastUpdated = content?.lastUpdated;
+        //     if (lastUpdated && lastUpdated < newLastUpdated) {
+        //       setNeedUpdate(true);
+        //     }
+        //     // setBuilderContent(content);
+        //     setValue("name", content.name);
+        //     setValue("values", content as unknown as Record<string, unknown>);
+        //   });
+        // }
 
         reset({
           ...initialData,
@@ -132,11 +132,11 @@ function ContentForm({
     setSchema(extractSchema(newContenType?.contentTypeInfo));
 
     if (newContenType?.source === "builder.io") {
-      const contents = await getContents({
-        serviceConfig: service?.serviceConfig,
-        contentType: newContenType,
-      });
-      setBuilderContens(contents || []);
+      // const contents = await getContents({
+      //   serviceConfig: service?.serviceConfig,
+      //   contentType: newContenType,
+      // });
+      // setBuilderContens(contents || []);
     }
   };
   const handleBuilderContentSelect = async (
@@ -159,23 +159,23 @@ function ContentForm({
     if (!newContenType || newContenType?.source !== "builder.io" || !contentId)
       return;
 
-    const updatedContent = await getContent({
-      serviceConfig: service?.serviceConfig,
-      contentType,
-      contentId,
-    });
+    // const updatedContent = await getContent({
+    //   serviceConfig: service?.serviceConfig,
+    //   contentType,
+    //   contentId,
+    // });
     // const content = builderContents.find((c) => c.id === contentId);
 
-    if (updatedContent) {
-      setValue("name", updatedContent.name);
-      setValue("values", updatedContent as unknown as Record<string, unknown>);
-      setNeedUpdate(
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        (lastUpdated || updatedContent.lastUpdated) < updatedContent.lastUpdated
-      );
-    }
-    setBuilderContent(updatedContent);
+    // if (updatedContent) {
+    //   setValue("name", updatedContent.name);
+    //   setValue("values", updatedContent as unknown as Record<string, unknown>);
+    //   setNeedUpdate(
+    //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //     // @ts-ignore
+    //     (lastUpdated || updatedContent.lastUpdated) < updatedContent.lastUpdated
+    //   );
+    // }
+    // setBuilderContent(updatedContent);
   };
 
   return (
@@ -257,7 +257,7 @@ function ContentForm({
                           value={builderContent?.id}
                         >
                           <option value="">Please choose</option>
-                          {builderContents.map((content) => {
+                          {/* {builderContents.map((content) => {
                             return (
                               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                               // @ts-ignore
@@ -265,7 +265,7 @@ function ContentForm({
                                 {content.name}
                               </option>
                             );
-                          })}
+                          })} */}
                         </select>
                         {errors.contentTypeId && (
                           <p role="alert">{errors.contentTypeId?.message}</p>
@@ -369,9 +369,10 @@ function ContentForm({
         <ContentPreview
           contentType={contentType}
           creatives={[
-            toNewCreativeFromObject(builderContent
-              ? (builderContent as unknown as Record<string, unknown>)
-              : defaultValues)
+            toNewCreativeFromObject(defaultValues)
+            // toNewCreativeFromObject(builderContent
+            //   ? (builderContent as unknown as Record<string, unknown>)
+            //   : defaultValues)
           ]}
         />
       </div>

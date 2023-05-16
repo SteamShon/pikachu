@@ -1,4 +1,4 @@
-import { BuilderComponent } from "@builder.io/react";
+// import { BuilderComponent } from "@builder.io/react";
 import {
   materialCells,
   materialRenderers,
@@ -74,11 +74,12 @@ function ContentTypeTable({
     if (contentType.source !== "builder.io") return <></>;
     const publicKey = extractBuilderPublicKey(service.serviceConfig);
     return (
-      <BuilderComponent
-        key={contentType.id}
-        model={contentType.name}
-        apiKey={publicKey}
-      />
+      // <BuilderComponent
+      //   key={contentType.id}
+      //   model={contentType.name}
+      //   apiKey={publicKey}
+      // />
+      <></>
     );
   };
 

@@ -1,4 +1,4 @@
-import { BuilderComponent } from "@builder.io/react";
+// import { BuilderComponent } from "@builder.io/react";
 import {
   materialCells,
   materialRenderers,
@@ -10,32 +10,26 @@ import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import type {
-  ContentType,
-  ContentTypeInfo,
   Service,
-  ServiceConfig,
+  ServiceConfig
 } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
-import { LivePreview, LiveProvider } from "react-live";
-import { replacePropsInFunction } from "../../../components/common/CodeTemplate";
+import ContentPreview from "../../../components/builder/contentPreview";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type ContentTypeForm from "../../../components/form/contentTypeForm";
 import ContentTypeModal from "../../../components/form/contentTypeModal";
 import { api } from "../../../utils/api";
 import {
-  extractCode,
   extractDefaultValues,
   extractSchema,
   toNewCreative,
 } from "../../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../../utils/json";
-import { extractBuilderPublicKey } from "../../../utils/serviceConfig";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypesTree } from "../../../utils/tree";
-import ContentPreview from "../../../components/builder/contentPreview";
 
 function ContentTypeTable({
   service,
@@ -67,20 +61,6 @@ function ContentTypeTable({
       },
     });
 
-  const renderBuilderPreview = (
-    service: Service & { serviceConfig?: ServiceConfig | null },
-    contentType: ContentType & { contentTypeInfo?: ContentTypeInfo | null }
-  ) => {
-    if (contentType.source !== "builder.io") return <></>;
-    const publicKey = extractBuilderPublicKey(service.serviceConfig);
-    return (
-      <BuilderComponent
-        key={contentType.id}
-        model={contentType.name}
-        apiKey={publicKey}
-      />
-    );
-  };
 
   const rows = serviceTree?.contentTypes
     ? Object.values(serviceTree.contentTypes).map((contentType) => {
@@ -193,7 +173,7 @@ function ContentTypeTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {

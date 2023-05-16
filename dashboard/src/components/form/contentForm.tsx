@@ -1,4 +1,3 @@
-import type { BuilderContent } from "@builder.io/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   materialCells,
@@ -15,13 +14,8 @@ import type {
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import {
-  getContent,
-  getContents,
-} from "../../pages/api/builder.io/builderContent";
-import {
-  extractDefaultValues,
   extractSchema,
-  toNewCreativeFromObject,
+  toNewCreativeFromObject
 } from "../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../utils/json";
 import ContentPreview from "../builder/contentPreview";
@@ -50,14 +44,7 @@ function ContentForm({
   // eslint-disable-next-line @typescript-eslint/ban-types
   const [defaultValues, setDefaultValues] = useState<{ [x: string]: {} }>({});
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [builderContents, setBuilderContens] = useState<
-    BuilderContent<object>[]
-  >([]);
-  const [builderContent, setBuilderContent] = useState<
-    BuilderContent<object> | undefined
-  >(undefined);
-  const [needUpdate, setNeedUpdate] = useState(false);
-
+  
   const methods = useForm<ContentWithContentTypeSchemaType>({
     resolver: zodResolver(contentWithContentTypeSchema),
   });
@@ -66,7 +53,6 @@ function ContentForm({
     control,
     register,
     handleSubmit,
-    setValue,
     reset,
     formState: { errors },
   } = methods;
@@ -74,7 +60,6 @@ function ContentForm({
   useEffect(() => {
     if (initialData) {
       const update = async () => {
-        console.log("initial!!!");
         const initialContentType = contentTypes.find(
           (ct) => ct.id === initialData.contentType?.id
         );
@@ -89,28 +74,7 @@ function ContentForm({
         };
 
         setDefaultValues(parsedValues);
-        if (initialContentType && initialContentType?.source === "builder.io") {
-          const contentId = parsedValues?.id as string | undefined;
-          const lastUpdated = parsedValues?.lastUpdated as number | undefined;
-
-          getContent({
-            serviceConfig: service?.serviceConfig,
-            contentType: initialContentType,
-            contentId,
-          }).then((content) => {
-            if (content === undefined) return;
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            //@ts-ignore
-            const newLastUpdated = content?.lastUpdated;
-            if (lastUpdated && lastUpdated < newLastUpdated) {
-              setNeedUpdate(true);
-            }
-            setBuilderContent(content);
-            setValue("name", content.name);
-            setValue("values", content as unknown as Record<string, unknown>);
-          });
-        }
-
+        
         reset({
           ...initialData,
           contentTypeId: initialData?.contentType.id,
@@ -124,59 +88,14 @@ function ContentForm({
   }, [initialData]);
 
   const handleContentTypeSelect = async (contentTypeId: string) => {
-    console.log("contentType changed!!!");
     const newContenType = contentTypes.find(
       (contentType) => contentType.id === contentTypeId
     );
     setContentType(newContenType);
     setSchema(extractSchema(newContenType?.contentTypeInfo));
-
-    if (newContenType?.source === "builder.io") {
-      const contents = await getContents({
-        serviceConfig: service?.serviceConfig,
-        contentType: newContenType,
-      });
-      setBuilderContens(contents || []);
-    }
   };
-  const handleBuilderContentSelect = async (
-    newContenType: typeof contentType,
-    contentId: string
-  ) => {
-    console.log("content changed!!!");
-    setSchema(extractSchema(newContenType?.contentTypeInfo));
-
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    const parsedValues = jsonParseWithFallback(
-      extractDefaultValues(newContenType?.contentTypeInfo)
-    ) as {
-      // eslint-disable-next-line @typescript-eslint/ban-types
-      [x: string]: {};
-    };
-    setDefaultValues(parsedValues);
-
-    const lastUpdated = parsedValues?.lastUpdated as number | undefined;
-    if (!newContenType || newContenType?.source !== "builder.io" || !contentId)
-      return;
-
-    const updatedContent = await getContent({
-      serviceConfig: service?.serviceConfig,
-      contentType,
-      contentId,
-    });
-    // const content = builderContents.find((c) => c.id === contentId);
-
-    if (updatedContent) {
-      setValue("name", updatedContent.name);
-      setValue("values", updatedContent as unknown as Record<string, unknown>);
-      setNeedUpdate(
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        (lastUpdated || updatedContent.lastUpdated) < updatedContent.lastUpdated
-      );
-    }
-    setBuilderContent(updatedContent);
-  };
+  
+  const needUpdate = false;
 
   return (
     <>
@@ -238,42 +157,7 @@ function ContentForm({
                     )}
                   </dd>
                 </div>
-                {contentType?.source === "builder.io" ? (
-                  <>
-                    <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500">
-                        BuilderIO Content
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                        <select
-                          onChange={(e) =>
-                            handleBuilderContentSelect(
-                              contentType,
-                              e.target.value
-                            )
-                          }
-                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                          // @ts-ignore
-                          value={builderContent?.id}
-                        >
-                          <option value="">Please choose</option>
-                          {builderContents.map((content) => {
-                            return (
-                              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                              // @ts-ignore
-                              <option key={content.name} value={content.id}>
-                                {content.name}
-                              </option>
-                            );
-                          })}
-                        </select>
-                        {errors.contentTypeId && (
-                          <p role="alert">{errors.contentTypeId?.message}</p>
-                        )}
-                      </dd>
-                    </div>
-                  </>
-                ) : null}
+                
                 <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">Name</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
@@ -369,9 +253,7 @@ function ContentForm({
         <ContentPreview
           contentType={contentType}
           creatives={[
-            toNewCreativeFromObject(builderContent
-              ? (builderContent as unknown as Record<string, unknown>)
-              : defaultValues)
+            toNewCreativeFromObject(defaultValues)
           ]}
         />
       </div>

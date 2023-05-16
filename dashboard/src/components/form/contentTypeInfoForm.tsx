@@ -7,7 +7,6 @@ import type {
 } from "@prisma/client";
 import { useFormContext } from "react-hook-form";
 import type { ContentTypeSchemaType } from "../schema/contentType";
-import BuilderIOModelForm from "./builderIOModelForm";
 import ContentTypeInfoBuilder from "./contentTypeInfoBuilder";
 
 function ContentTypeInfoForm({
@@ -28,7 +27,7 @@ function ContentTypeInfoForm({
     switch (source) {
       case "builder.io":
         return (
-          <BuilderIOModelForm service={service} contentType={contentType} />
+          <></>
         );
       default:
         return (

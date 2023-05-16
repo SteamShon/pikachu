@@ -2,9 +2,9 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Breadcrumb from "../../../components/Breadcrumb";
-import Loading from "../../../components/common/Loading";
 import ServiceMenu from "../../../components/ServiceMenu";
 import SideMenu from "../../../components/SideMenu";
+import Loading from "../../../components/common/Loading";
 import { api } from "../../../utils/api";
 import { buildServiceTree } from "../../../utils/tree";
 import AdGroupTable from "./adGroupTable";
@@ -15,18 +15,14 @@ import CreativeTable from "./creativeTable";
 import CubeTable from "./cubeTable";
 import CustomsetTable from "./customsetTable";
 
-import PlacementTable from "./placementTable";
-import RenderPreview from "./renderPreview";
-import { usePostHog } from "posthog-js/react";
-import { useSession } from "next-auth/react";
-import PlacementMenu from "../../../components/PlacementMenu";
+import AdGroupMenu from "../../../components/AdGroupMenu";
 import CampaignMenu from "../../../components/CampaignMenu";
 import ContentTypeMenu from "../../../components/ContentTypeMenu";
-import AdGroupMenu from "../../../components/AdGroupMenu";
+import PlacementMenu from "../../../components/PlacementMenu";
 import IntegrationTable from "./integrationTable";
+import PlacementTable from "./placementTable";
+import RenderPreview from "./renderPreview";
 function Dashboard() {
-  const { data: session } = useSession();
-  const posthog = usePostHog();
   const router = useRouter();
 
   const { serviceId, step } = router.query;
@@ -39,20 +35,10 @@ function Dashboard() {
     id: serviceId as string,
   });
 
-  console.log(service);
-
   useEffect(() => {
     if (service) {
       setTree(buildServiceTree(service));
     }
-    // posthog?.identify(session?.user?.id);
-    // const eventName = activeStep
-    //   ? steps[activeStep]?.label.toLocaleLowerCase()
-    //   : "";
-    // posthog?.capture(`dashboard_${eventName}_visited`, {
-    //   service: service?.name,
-    // });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service]);
 
   const PlacementContentTypeMenu = () => {

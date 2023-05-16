@@ -54,8 +54,6 @@
     "notistack": "^2.0.8",
     "pg": "^8.10.0",
     "pg-copy-streams": "^6.0.5",
-    "posthog-js": "^1.51.5",
-    "posthog-node": "^2.6.0",
     "react": "18.2.0",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",

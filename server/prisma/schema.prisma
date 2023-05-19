@@ -398,3 +398,15 @@ model IntegrationInfo {
 
     @@index(fields: [updatedAt])
 }
+
+model CreativeStat {
+    timeUnit String  
+    time DateTime 
+    creativeId String 
+    impressionCount BigInt 
+    clickCount BigInt 
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@id([timeUnit, time, creativeId])
+}

@@ -15,6 +15,8 @@ use schema_registry_converter::{
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, time::Duration};
 
+use crate::util::init_future_producer;
+
 pub const EVENT_SCHEMA_RAW: &str = r#"
 {
   "doc": "Schema for impression/click user action.",
@@ -53,11 +55,11 @@ pub const EVENT_SCHEMA_RAW: &str = r#"
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Event {
-    when: u64,
-    who: String,
-    what: String,
-    which: String,
-    props: Option<serde_json::Value>,
+    pub when: u64,
+    pub who: String,
+    pub what: String,
+    pub which: String,
+    pub props: Option<serde_json::Value>,
 }
 
 #[derive(Debug)]
@@ -75,25 +77,16 @@ pub struct Publisher<'a> {
     default_avro_schema: apache_avro::Schema,
 }
 impl<'a> Publisher<'a> {
-    fn init_future_producer(
-        config_overrides: HashMap<String, String>,
-    ) -> KafkaResult<FutureProducer<DefaultClientContext>> {
-        let mut config = ClientConfig::new();
-        for (key, value) in config_overrides {
-            config.set(key, value);
-        }
-        config.create()
-    }
     pub fn new(
         schema_registry_settings: Option<SrSettings>,
-        producer_configs: Option<HashMap<String, String>>,
+        producer_configs: &Option<HashMap<String, String>>,
     ) -> Self {
         println!("producer config: {:?}", producer_configs);
         println!("schema registry config: {:?}", schema_registry_settings);
 
         let producer = match producer_configs {
             None => None,
-            Some(configs) => match Self::init_future_producer(configs) {
+            Some(configs) => match init_future_producer(configs) {
                 Ok(producer) => Some(producer),
                 Err(error) => {
                     println!("[ERROR]: {:?}", error);
@@ -127,7 +120,7 @@ impl<'a> Publisher<'a> {
         Ok(values)
     }
 
-    pub async fn publish(&self, topic: &str, event: &Bytes) -> Result<(i32, i64), PublishError> {
+    pub async fn publish(&self, topic: &str, event: &Event) -> Result<(i32, i64), PublishError> {
         match (&self.producer, &self.encoder) {
             (Some(producer), Some(encoder)) => {
                 Self::publish_with_schema_registry_as_avro(event, topic, encoder, producer).await
@@ -145,7 +138,7 @@ impl<'a> Publisher<'a> {
             _ => Ok((0, 0)),
         }
     }
-    async fn send(
+    pub async fn send(
         producer: &FutureProducer,
         topic: &str,
         payload: &Vec<u8>,
@@ -166,21 +159,21 @@ impl<'a> Publisher<'a> {
     }
 
     async fn publish_with_schema_registry_as_avro(
-        event_bytes: &Bytes,
+        event: &Event,
         topic: &str,
         encoder: &AvroEncoder<'_>,
         producer: &FutureProducer,
     ) -> Result<(i32, i64), PublishError> {
-        let payload = Self::serialize_as_avro_with_schema(topic, event_bytes, encoder).await?;
+        let payload = Self::serialize_as_avro_with_schema(topic, event, encoder).await?;
 
         Self::send(producer, topic, &payload).await
     }
     async fn publish_without_schema_registry_as_json(
-        event_bytes: &Bytes,
+        event: &Event,
         topic: &str,
         producer: &FutureProducer,
     ) -> Result<(i32, i64), PublishError> {
-        let payload = Self::serialize_as_json_without_schema(event_bytes)?;
+        let payload = Self::serialize_as_json_without_schema(event)?;
 
         Self::send(producer, topic, &payload).await
     }
@@ -195,10 +188,11 @@ impl<'a> Publisher<'a> {
         Self::send(producer, topic, &payload).await
     }
 
-    fn serialize_as_json_without_schema(event_bytes: &Bytes) -> Result<Vec<u8>, PublishError> {
+    fn serialize_as_json_without_schema(event: &Event) -> Result<Vec<u8>, PublishError> {
         // skip validation check
         // Ok(event_bytes.to_vec())
-        let event: Event = serde_json::from_slice(event_bytes)
+        let event_bytes = serde_json::to_vec(event).unwrap();
+        let event: Event = serde_json::from_slice(&event_bytes)
             .map_err(|error| PublishError::SerdeJsonError(error))?;
         let str =
             serde_json::to_string(&event).map_err(|error| PublishError::SerdeJsonError(error))?;
@@ -207,9 +201,10 @@ impl<'a> Publisher<'a> {
     }
     async fn serialize_as_avro_with_schema(
         topic: &str,
-        event_bytes: &Bytes,
+        event: &Event,
         encoder: &AvroEncoder<'_>,
     ) -> Result<Vec<u8>, PublishError> {
+        let event_bytes = serde_json::to_vec(event).unwrap();
         let event: serde_json::Value = serde_json::from_slice(&event_bytes)
             .map_err(|error| PublishError::SerdeJsonError(error))?;
         let values = Self::json_to_avro_value(&event)?;

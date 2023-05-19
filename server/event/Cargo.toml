@@ -15,10 +15,15 @@ actix-cors = "0.6.4"
 env_logger = "0.10.0"
 schema_registry_converter = { version = "3.1.0", features = ["easy", "avro", "blocking"] }
 apache-avro = "0.14.0"
-# common = { path = "../common" }
-# prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.4", default-features = false, features = [
-#     "postgresql",
-# ] }
+common = { path = "../common" }
+prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.4", default-features = false, features = [
+    "postgresql",
+] }
 arc-swap = "1.6.0"
 rdkafka = { version = "0.29.0", features = ["cmake-build", "ssl-vendored"] }
 rdkafka-sys = "4.3.0"
+tokio = "1.26.0"
+# sqlx = { features = [ "runtime-tokio", "tls-rustls", "chrono" ]}
+chrono = { version = "0.4.24", features = ["serde"] }
+chronoutil = "0.2.4"
+futures = "0.3.28"

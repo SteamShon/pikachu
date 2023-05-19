@@ -56,46 +56,50 @@ export const usePikachu = ({
     onChange: (inView: boolean, entry: IntersectionObserverEntry) => {
       if (!inView) return;
       
+      const nodes: HTMLElement[] = [];
       entry.target.querySelector(".placement")?.childNodes.forEach((node) => {
         const nodeId = (node as HTMLElement).id;
         if (!nodeId) return;
         if (userInfo.userId.length == 0) return;
 
-        // send impression event
-        const payload = { 
+        nodes.push(node as HTMLElement);
+      });
+      const impressions = nodes.map((node) => {
+        return { 
           who: userInfo.userId, 
           what: 'impression', 
-          which: nodeId,
+          which: node.id,
           when: Date.now(), 
         };
-        if (debug) {
-          console.log(payload);
-        }
-        if (eventEndpoint) {
-          const topic = eventTopic || "events";
-          const url = `${eventEndpoint}/${topic}/${serviceId}`;
+      })
+      // send impressions 
+      if (debug) {
+        console.log(impressions);
+      }
+      if (eventEndpoint) {
+        const topic = eventTopic || "events";
+        const url = `${eventEndpoint}/${topic}/${serviceId}`;
           
-          if (debug) {
-            console.log(url);
-            console.log(payload);
-          }
-
-          axios
-            .post(`${url}`, payload)
-            .then((res) => console.log(res))
-            .catch((e) => console.log(e))
+        if (debug) {
+          console.log(url);
+          console.log(impressions);
         }
 
-        // add click handler on child
+        axios
+          .post(`${url}`, impressions)
+          .then((res) => console.log(res))
+          .catch((e) => console.log(e))
+      }
+      nodes.forEach((node) => {
         node.addEventListener('click', e => {
           e.stopPropagation();
           
-          const payload = { 
+          const payload = [{ 
             who: userInfo.userId, 
             what: 'click', 
-            which: nodeId,
+            which: node.id,
             when: Date.now(), 
-          };
+          }];
 
           if (debug) {
             console.log(payload);

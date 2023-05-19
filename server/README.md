@@ -11,3 +11,8 @@ cargo run --bin api
 cd ../
 docker compose up api
 ```
+
+### Deploy to fly.io
+```sh
+flyctl deploy --dockerfile=event/Dockerfile --config=event.fly.toml
+```

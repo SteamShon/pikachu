@@ -1,6 +1,32 @@
 use std::collections::HashMap;
 
+use rdkafka::{
+    client::DefaultClientContext, consumer::StreamConsumer, error::KafkaResult,
+    producer::FutureProducer, ClientConfig,
+};
 use schema_registry_converter::async_impl::schema_registry::SrSettings;
+pub fn init_future_producer(
+    config_overrides: &HashMap<String, String>,
+) -> KafkaResult<FutureProducer<DefaultClientContext>> {
+    let mut config = ClientConfig::new();
+    for (key, value) in config_overrides {
+        config.set(key, value);
+    }
+    config.create()
+}
+pub fn init_consumer(group_id: &str, config_overrides: &HashMap<String, String>) -> StreamConsumer {
+    let mut config = ClientConfig::new();
+    for (key, value) in config_overrides {
+        config.set(key, value);
+    }
+    config.set("group.id", group_id);
+    // config.set("enable.auto.commit", "true");
+    // config.set("auto.offset.reset", "earliest");
+
+    let consumer = config.create().expect("Failed to create consumer");
+
+    consumer
+}
 pub fn parse_schema_registry_settings(envs: &HashMap<String, String>) -> Option<SrSettings> {
     envs.get("SCHEMA_REGISTRY_URL")
         .map(|v| SrSettings::new(v.to_string()))

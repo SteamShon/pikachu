@@ -13,7 +13,7 @@ import type PlacementForm from "../../../components/form/placementForm";
 import PlacementModal from "../../../components/form/placementModal";
 import { api } from "../../../utils/api";
 import { buildServiceTree } from "../../../utils/tree";
-import RenderPreview from "./renderPreview";
+import PlacementChart from "../../../components/chart/PlacementChart";
 
 function PlacementTable({
   service,
@@ -42,6 +42,9 @@ function PlacementTable({
       });
       setModalOpen(false);
     },
+  });
+  const { data: creativeStats, refetch } = api.placement.getStats.useQuery({
+    serviceId: service.id,
   });
 
   const allPlacements = serviceTree
@@ -199,8 +202,11 @@ function PlacementTable({
         />
       </div>
       <div className="mt-4 items-center p-10">
-        {service ? <RenderPreview serviceId={service.id} /> : null}
+        {creativeStats && <PlacementChart creativeStats={creativeStats} />}
       </div>
+      {/* <div className="mt-4 items-center p-10">
+        {service ? <RenderPreview serviceId={service.id} /> : null}
+      </div> */}
     </>
   );
 }

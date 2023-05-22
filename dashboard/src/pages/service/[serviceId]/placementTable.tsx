@@ -14,6 +14,7 @@ import PlacementModal from "../../../components/form/placementModal";
 import { api } from "../../../utils/api";
 import { buildServiceTree } from "../../../utils/tree";
 import PlacementChart from "../../../components/chart/PlacementChart";
+import RenderPreview from "./renderPreview";
 
 function PlacementTable({
   service,
@@ -27,11 +28,14 @@ function PlacementTable({
   >;
 }) {
   const router = useRouter();
-  const [modalOpen, setModalOpen] = useState(false);
   const { placementIds } = router.query;
+
+  const [modalOpen, setModalOpen] = useState(false);
   const [placement, setPlacement] = useState<
     Parameters<typeof PlacementForm>[0]["initialData"] | undefined
   >(undefined);
+  const [tabIndex, setTabIndex] = useState(0);
+
   const selectedIds = (placementIds || []) as string[];
 
   const { mutate: deletePlacement } = api.service.removePlacement.useMutation({
@@ -165,6 +169,18 @@ function PlacementTable({
       setModalOpen(true);
     },
   });
+  const tabs = [
+    {
+      label: "Stat",
+      component: (
+        <>{creativeStats && <PlacementChart creativeStats={creativeStats} />}</>
+      ),
+    },
+    {
+      label: "Playground",
+      component: <>{service && <RenderPreview serviceId={service.id} />}</>,
+    },
+  ];
   return (
     <>
       <div style={{ display: "flex", height: "100%" }}>
@@ -201,12 +217,29 @@ function PlacementTable({
           setServiceTree={setServiceTree}
         />
       </div>
-      <div className="mt-4 items-center p-10">
-        {creativeStats && <PlacementChart creativeStats={creativeStats} />}
-      </div>
-      {/* <div className="mt-4 items-center p-10">
-        {service ? <RenderPreview serviceId={service.id} /> : null}
-      </div> */}
+      <br />
+      <ul className="flex border-b border-gray-200 text-center">
+        {tabs.map((tab, index) => {
+          return (
+            <li key={index} className="flex-1">
+              <a
+                className={`${
+                  index === tabIndex
+                    ? "border-e border-s relative block border-t border-gray-200 bg-white p-4 text-sm font-medium"
+                    : "block bg-gray-100 p-4 text-sm font-medium text-gray-500 ring-1 ring-inset ring-white"
+                }`}
+                onClick={() => setTabIndex(index)}
+              >
+                {index === tabIndex && (
+                  <span className="absolute inset-x-0 -bottom-px h-px w-full bg-white"></span>
+                )}
+                {tab.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="mt-4 items-center p-10">{tabs[tabIndex]?.component}</div>
     </>
   );
 }

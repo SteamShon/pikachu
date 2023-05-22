@@ -49,13 +49,16 @@ function PlacementChart({
   }[];
 }) {
   const [dateRange, setDateRange] = useState<DateValueType>(defaultDateRange());
-  const [limit, setLimit] = useState(3);
+  const [limit, setLimit] = useState(5);
   const [counter, setCounter] = useState(0);
+  const [metricKey, setMetricKey] = useState("impressionCount");
 
   const { labels, datasets, numOfLabels } = buildDatasets({
     startDate: dateRange?.startDate as string,
     endDate: dateRange?.endDate as string,
     creativeStats,
+    groupByKey: "placement",
+    metricKey,
     offset: counter * limit,
     limit,
   });
@@ -109,14 +112,19 @@ function PlacementChart({
     setCounter((count) => count - 1);
   };
 
-  //reset counter
-  const reset = () => {
-    setCounter(0);
-  };
-
   return (
     <>
-      <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+      <div className="w-full bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+        <div className="inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">
+          <select
+            className="inline-flex gap-2 rounded-md px-4 py-2 text-sm text-gray-500 hover:text-gray-700 focus:relative"
+            onChange={(e) => setMetricKey(e.target.value)}
+          >
+            <option value="impressionCount">Impression</option>
+            <option value="clickCount">Click</option>
+            <option value="ctr">Ctr</option>
+          </select>
+        </div>
         <div className="inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">
           <select
             className="inline-flex gap-2 rounded-md px-4 py-2 text-sm text-gray-500 hover:text-gray-700 focus:relative"
@@ -144,7 +152,7 @@ function PlacementChart({
           </button>
         </div>
 
-        <div className="inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">
+        <div className="inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-full sm:text-sm">
           <Datepicker
             value={dateRange}
             onChange={handleValueChange}

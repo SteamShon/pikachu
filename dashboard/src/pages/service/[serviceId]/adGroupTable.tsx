@@ -4,7 +4,7 @@ import NorthIcon from "@mui/icons-material/North";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, Service } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -15,11 +15,14 @@ import AdGroupModal from "../../../components/form/adGroupModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildCampaignTree } from "../../../utils/tree";
+import Stat from "../../../components/chart/Stat";
 
 function AdGroupTable({
+  service,
   serviceTree,
   setServiceTree,
 }: {
+  service: Service;
   serviceTree: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -207,32 +210,37 @@ function AdGroupTable({
   });
 
   return (
-    <div style={{ display: "flex", height: "100%" }}>
-      <div style={{ flexGrow: 1 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          autoHeight
-          getRowHeight={() => "auto"}
-          pageSize={10}
-          rowsPerPageOptions={[10, 20, 30, 40, 50]}
-          disableSelectionOnClick
-          experimentalFeatures={{ newEditingApi: true }}
-          components={{
-            Toolbar: toolbar,
-          }}
+    <>
+      <div style={{ display: "flex", height: "100%" }}>
+        <div style={{ flexGrow: 1 }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            autoHeight
+            getRowHeight={() => "auto"}
+            pageSize={10}
+            rowsPerPageOptions={[10, 20, 30, 40, 50]}
+            disableSelectionOnClick
+            experimentalFeatures={{ newEditingApi: true }}
+            components={{
+              Toolbar: toolbar,
+            }}
+          />
+        </div>
+        <AdGroupModal
+          key="campaignModal"
+          modalOpen={modalOpen}
+          setModalOpen={setModalOpen}
+          campaigns={campaigns}
+          cubes={allCubes}
+          initialData={adGroup}
+          setServiceTree={setServiceTree}
         />
       </div>
-      <AdGroupModal
-        key="campaignModal"
-        modalOpen={modalOpen}
-        setModalOpen={setModalOpen}
-        campaigns={campaigns}
-        cubes={allCubes}
-        initialData={adGroup}
-        setServiceTree={setServiceTree}
-      />
-    </div>
+      <div className="mt-4 items-center p-10">
+        <Stat service={service} defaultGroupByKey="adGroup" />
+      </div>
+    </>
   );
 }
 

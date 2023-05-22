@@ -2,7 +2,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import NorthIcon from "@mui/icons-material/North";
 import SouthIcon from "@mui/icons-material/South";
-import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import type { Service, ServiceConfig } from "@prisma/client";
@@ -18,6 +17,7 @@ import { api } from "../../../utils/api";
 import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildAdGroupTree } from "../../../utils/tree";
+import Stat from "../../../components/chart/Stat";
 function CreativeTable({
   service,
   serviceTree,
@@ -116,7 +116,12 @@ function CreativeTable({
         return (
           <ContentPreview
             contentType={content?.contentType}
-            creatives={[{id: params.row.id, content: jsonParseWithFallback(content?.values)}]}
+            creatives={[
+              {
+                id: params.row.id,
+                content: jsonParseWithFallback(content?.values),
+              },
+            ]}
             //contents={[jsonParseWithFallback(content?.values)]}
             showEditor={false}
           />
@@ -215,34 +220,39 @@ function CreativeTable({
   });
 
   return (
-    <div style={{ display: "flex", height: "100%" }}>
-      <div style={{ flexGrow: 1 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          autoHeight
-          getRowHeight={() => "auto"}
-          rowHeight={100}
-          pageSize={10}
-          rowsPerPageOptions={[10, 20, 30, 40, 50]}
-          disableSelectionOnClick
-          experimentalFeatures={{ newEditingApi: true }}
-          components={{
-            Toolbar: toolbar,
-          }}
+    <>
+      <div style={{ display: "flex", height: "100%" }}>
+        <div style={{ flexGrow: 1 }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            autoHeight
+            getRowHeight={() => "auto"}
+            rowHeight={100}
+            pageSize={10}
+            rowsPerPageOptions={[10, 20, 30, 40, 50]}
+            disableSelectionOnClick
+            experimentalFeatures={{ newEditingApi: true }}
+            components={{
+              Toolbar: toolbar,
+            }}
+          />
+        </div>
+        <CreativeModal
+          key="campaignModal"
+          modalOpen={modalOpen}
+          setModalOpen={setModalOpen}
+          service={service}
+          adGroups={adGroups}
+          contents={contents}
+          initialData={creative}
+          setServiceTree={setServiceTree}
         />
       </div>
-      <CreativeModal
-        key="campaignModal"
-        modalOpen={modalOpen}
-        setModalOpen={setModalOpen}
-        service={service}
-        adGroups={adGroups}
-        contents={contents}
-        initialData={creative}
-        setServiceTree={setServiceTree}
-      />
-    </div>
+      <div className="mt-4 items-center p-10">
+        <Stat service={service} defaultGroupByKey="creative" />
+      </div>
+    </>
   );
 }
 

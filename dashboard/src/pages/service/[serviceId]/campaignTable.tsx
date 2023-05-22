@@ -14,19 +14,25 @@ import CampaignModal from "../../../components/form/campaignModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildPlacementTree } from "../../../utils/tree";
+import type { Service } from "@prisma/client";
+
+import Stat from "../../../components/chart/Stat";
 
 function CampaignTable({
+  service,
   serviceTree,
   setServiceTree,
 }: {
+  service: Service;
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();
-  const [modalOpen, setModalOpen] = useState(false);
   const { placementId } = router.query;
+
+  const [modalOpen, setModalOpen] = useState(false);
   const [campaign, setCampaign] = useState<
     Parameters<typeof CampaignForm>[0]["initialData"] | undefined
   >(undefined);
@@ -203,31 +209,36 @@ function CampaignTable({
     },
   });
   return (
-    <div style={{ display: "flex", height: "100%" }}>
-      <div style={{ flexGrow: 1 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          autoHeight
-          getRowHeight={() => "auto"}
-          pageSize={10}
-          rowsPerPageOptions={[10, 20, 30, 40, 50]}
-          disableSelectionOnClick
-          experimentalFeatures={{ newEditingApi: true }}
-          components={{
-            Toolbar: toolbar,
-          }}
+    <>
+      <div style={{ display: "flex", height: "100%" }}>
+        <div style={{ flexGrow: 1 }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            autoHeight
+            getRowHeight={() => "auto"}
+            pageSize={10}
+            rowsPerPageOptions={[10, 20, 30, 40, 50]}
+            disableSelectionOnClick
+            experimentalFeatures={{ newEditingApi: true }}
+            components={{
+              Toolbar: toolbar,
+            }}
+          />
+        </div>
+        <CampaignModal
+          key="campaignModal"
+          modalOpen={modalOpen}
+          setModalOpen={setModalOpen}
+          placements={placements}
+          initialData={campaign}
+          setServiceTree={setServiceTree}
         />
       </div>
-      <CampaignModal
-        key="campaignModal"
-        modalOpen={modalOpen}
-        setModalOpen={setModalOpen}
-        placements={placements}
-        initialData={campaign}
-        setServiceTree={setServiceTree}
-      />
-    </div>
+      <div className="mt-4 items-center p-10">
+        <Stat service={service} defaultGroupByKey="campaign" />
+      </div>
+    </>
   );
 }
 

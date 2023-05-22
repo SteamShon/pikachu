@@ -37,10 +37,6 @@ function CampaignTable({
     Parameters<typeof CampaignForm>[0]["initialData"] | undefined
   >(undefined);
 
-  const { data: creativeStats } = api.placement.getStats.useQuery({
-    serviceId: service.id,
-  });
-
   const { mutate: deleteCampaign } = api.placement.removeCampaign.useMutation({
     onSuccess(created) {
       setServiceTree((prev) => {

@@ -6,9 +6,11 @@ function Stat({
   service,
   defaultGroupByKey,
 }: {
-  service: Service;
+  service?: Service;
   defaultGroupByKey: string;
 }) {
+  if (!service) return <></>;
+
   const { data: creativeStats } = api.placement.getStats.useQuery({
     serviceId: service.id,
   });

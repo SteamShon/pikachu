@@ -1,4 +1,4 @@
-import {
+import type {
   AdGroup,
   Campaign,
   Creative,
@@ -54,81 +54,35 @@ export function getTotalStat(datasets: Record<string, Record<string, number>>) {
   }, {} as Record<string, number>);
 }
 
-// function mergeCreativeStat(
-//   left: {
-//     stat: CreativeStat;
-//     creative:
-//       | (Creative & {
-//           adGroup: AdGroup & {
-//             campaign: Campaign & {
-//               placement: Placement;
-//             };
-//           };
-//         })
-//       | undefined;
-//   },
-//   right: {
-//     stat: CreativeStat;
-//     creative:
-//       | (Creative & {
-//           adGroup: AdGroup & {
-//             campaign: Campaign & {
-//               placement: Placement;
-//             };
-//           };
-//         })
-//       | undefined;
-//   },
-//   groupByKey: "placement" | "campaign" | "adGroup" | "creative"
+// export function buildOthersDataset(
+//   datasets: Record<string, Record<string, CreativeStat>>
 // ) {
-//   if (
-//     left.stat.timeUnit !== right.stat.timeUnit ||
-//     getTimeString(left.stat.time) !== getTimeString(right.stat.time) ||
-//     toLabel({ creativeStat: left, groupByKey }) !==
-//       toLabel({ creativeStat: right, groupByKey })
-//   ) {
-//     return undefined;
-//   }
+//   const others: Record<string, CreativeStat> = {};
+//   Object.entries(datasets).forEach(([label, timeStats]) => {
+//     Object.entries(timeStats).forEach(([time, stat]) => {
+//       if (!others[`${time}`]) {
+//         others[`${time}`] = {
+//           timeUnit: stat.timeUnit,
+//           time: new Date(time),
+//           creativeId: stat.creativeId,
+//           impressionCount: stat.impressionCount,
+//           clickCount: stat.clickCount,
+//           createdAt: stat.createdAt,
+//           updatedAt: stat.updatedAt,
+//         };
+//       }
+//       const newStat = others[`${time}`];
+//       if (!newStat) return;
 
-//   return {
-//     timeUnit: left.timeUnit,
-//     time: new Date(left.time),
-//     creativeId: stat.creativeId,
-//     impressionCount: stat.impressionCount,
-//     clickCount: stat.clickCount,
-//     createdAt: stat.createdAt,
-//     updatedAt: stat.updatedAt,
-//   };
+//       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+//       newStat!.impressionCount += stat.impressionCount;
+//       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+//       newStat!.clickCount += stat.clickCount;
+//     });
+//   });
+
+//   return others;
 // }
-export function buildOthersDataset(
-  datasets: Record<string, Record<string, CreativeStat>>
-) {
-  const others: Record<string, CreativeStat> = {};
-  Object.entries(datasets).forEach(([label, timeStats]) => {
-    Object.entries(timeStats).forEach(([time, stat]) => {
-      if (!others[`${time}`]) {
-        others[`${time}`] = {
-          timeUnit: stat.timeUnit,
-          time: new Date(time),
-          creativeId: stat.creativeId,
-          impressionCount: stat.impressionCount,
-          clickCount: stat.clickCount,
-          createdAt: stat.createdAt,
-          updatedAt: stat.updatedAt,
-        };
-      }
-      const newStat = others[`${time}`];
-      if (!newStat) return;
-
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      newStat!.impressionCount += stat.impressionCount;
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      newStat!.clickCount += stat.clickCount;
-    });
-  });
-
-  return others;
-}
 export function filterTopDatasets({
   datasets,
   offset,
@@ -151,9 +105,6 @@ export function filterTopDatasets({
     .slice(start, end)
     .map((o) => o.key);
 
-  console.log(start, end);
-  console.log(tops);
-  console.log(sorted);
   const results: Record<string, Record<string, number>> = {};
   const others: Record<string, Record<string, number>> = {};
 
@@ -329,10 +280,11 @@ export function buildDatasets({
   const labelTimeStats = aggregateToMetric({ aggr: aggregated, metricKey });
 
   const numOfLabels = Object.keys(labelTimeStats).length;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { include: top, others } = filterTopDatasets({
     datasets: labelTimeStats,
     offset: offset || 0,
-    limit: limit || 2,
+    limit: limit || 5,
   });
   const datasets = Object.entries(top).map(([label, timeStats]) => {
     const rgb = randomColor(label);

@@ -32,8 +32,9 @@ ChartJS.register(
   Legend
 );
 
-function PlacementChart({
+function StatChart({
   creativeStats,
+  defaultGroupByKey,
 }: {
   creativeStats: {
     stat: CreativeStat;
@@ -47,17 +48,19 @@ function PlacementChart({
         })
       | undefined;
   }[];
+  defaultGroupByKey: string;
 }) {
   const [dateRange, setDateRange] = useState<DateValueType>(defaultDateRange());
   const [limit, setLimit] = useState(5);
   const [counter, setCounter] = useState(0);
+  const [groupByKey, setGroupByKey] = useState(defaultGroupByKey);
   const [metricKey, setMetricKey] = useState("impressionCount");
 
   const { labels, datasets, numOfLabels } = buildDatasets({
     startDate: dateRange?.startDate as string,
     endDate: dateRange?.endDate as string,
     creativeStats,
-    groupByKey: "placement",
+    groupByKey,
     metricKey,
     offset: counter * limit,
     limit,
@@ -79,11 +82,10 @@ function PlacementChart({
         display: true,
         text: `Showing top ${counter * limit} ~ ${
           (counter + 1) * limit
-        } creatives statistics. total labels = ${numOfLabels}`,
+        } ${groupByKey} ${metricKey}. total labels = ${numOfLabels}`,
       },
     },
   };
-  console.log(data);
 
   const handleValueChange = (newValue: DateValueType) => {
     if (!newValue?.startDate || !newValue?.endDate) {
@@ -93,7 +95,6 @@ function PlacementChart({
       startDate: new Date(newValue?.startDate),
       endDate: new Date(newValue?.endDate),
     };
-    console.log("newValue:", newRange);
     setDateRange(newRange);
   };
 
@@ -128,7 +129,20 @@ function PlacementChart({
         <div className="inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">
           <select
             className="inline-flex gap-2 rounded-md px-4 py-2 text-sm text-gray-500 hover:text-gray-700 focus:relative"
+            onChange={(e) => setGroupByKey(e.target.value)}
+            defaultValue={defaultGroupByKey}
+          >
+            <option value="placement">Placement</option>
+            <option value="campaign">Campaign</option>
+            <option value="adGroup">AdGroup</option>
+            <option value="creative">Creative</option>
+          </select>
+        </div>
+        <div className="inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">
+          <select
+            className="inline-flex gap-2 rounded-md px-4 py-2 text-sm text-gray-500 hover:text-gray-700 focus:relative"
             onChange={(e) => setLimit(Number(e.target.value))}
+            defaultValue={limit}
           >
             <option value={3}>3</option>
             <option value={5}>5</option>
@@ -167,4 +181,4 @@ function PlacementChart({
   );
 }
 
-export default PlacementChart;
+export default StatChart;

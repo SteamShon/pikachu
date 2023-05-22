@@ -120,7 +120,11 @@ function Dashboard() {
       ],
       table: () =>
         service ? (
-          <CampaignTable setServiceTree={setTree} serviceTree={tree} />
+          <CampaignTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
         ) : null,
     },
     {
@@ -165,7 +169,11 @@ function Dashboard() {
       ],
       table: () =>
         service && tree ? (
-          <AdGroupTable setServiceTree={setTree} serviceTree={tree} />
+          <AdGroupTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
         ) : null,
     },
     {

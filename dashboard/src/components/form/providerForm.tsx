@@ -1,68 +1,123 @@
-import type { Service, ServiceConfig } from "@prisma/client";
-import { useFormContext } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { Provider, Service, ServiceConfig } from "@prisma/client";
+import { useEffect, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import type { ProviderSchemaType } from "../schema/provider";
-import type ChannelForm from "./channelForm";
+import { providerSchema } from "../schema/provider";
 import Solapi from "./providers/solapi";
-import { ChannelSchemaType } from "../schema/channel";
+import CustomLoadingButton from "../common/CustomLoadingButton";
 
 function ProviderForm({
   service,
-  channel,
+  initialData,
   type,
+  name,
+  onSubmit,
 }: {
   service: Service & { serviceConfig?: ServiceConfig | null };
-  channel: Parameters<typeof ChannelForm>[0]["initialData"];
-  type: string;
+  initialData?: Provider;
+  type?: string;
+  name?: string;
+  onSubmit: (input: ProviderSchemaType) => void;
 }) {
-  const methods = useFormContext<ChannelSchemaType>();
+  const methods = useForm<ProviderSchemaType>({
+    resolver: zodResolver(providerSchema),
+  });
+
   const {
     register,
+    handleSubmit,
+    reset,
+    watch,
     formState: { errors },
   } = methods;
 
+  useEffect(() => {
+    const details = initialData?.details as {
+      // eslint-disable-next-line @typescript-eslint/ban-types
+      [x: string]: {};
+    };
+    if (initialData) {
+      reset({
+        ...initialData,
+        details,
+      });
+    }
+  }, [initialData, reset]);
+
+  const renderDetails = () => {
+    if (type === "SMS" && name === "SOLAPI") {
+      return <Solapi />;
+    } else {
+      return <></>;
+    }
+  };
   return (
     <>
-      <input
-        type="hidden"
-        {...register("provider.channelId")}
-        value={channel?.id}
-      />
-      <div className="mx-auto max-w-screen-xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-lg text-center">
-          <h1 className="text-2xl font-bold sm:text-3xl">Provider</h1>
+      <FormProvider {...methods}>
+        <form onSubmit={handleSubmit(onSubmit)} id="channel-form">
+          <input type="hidden" {...register("serviceId")} value={service.id} />
+          <input type="hidden" {...register("type")} value={type} />
+          <input type="hidden" {...register("name")} value={name} />
 
-          <p className="mt-4 text-gray-500">
-            {/* Define schema, defaultValues, rendering code. */}
-          </p>
-        </div>
-        <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-          <dt className="text-sm font-medium text-gray-500">Name</dt>
-          <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-            <input
-              className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-              {...register("provider.name")}
-              defaultValue={channel?.provider?.name}
-            />
-            {errors.name && <p role="alert">{errors.name?.message}</p>}
-          </dd>
-        </div>
-        <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-          <dt className="text-sm font-medium text-gray-500">Description</dt>
-          <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-            <textarea
-              className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-              rows={3}
-              {...register("provider.description")}
-              defaultValue={channel?.provider?.description || undefined}
-            />
-            {errors.description && (
-              <p role="alert">{errors.description?.message}</p>
-            )}
-          </dd>
-        </div>
+          <div className="overflow-hidden bg-white shadow sm:rounded-lg">
+            <div className="px-4 py-5 sm:px-6">
+              <h3 className="text-lg font-medium leading-6 text-gray-900">
+                {name} Provider
+              </h3>
+            </div>
+            <div className="border-t border-gray-200">
+              <dl>
+                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">
+                    Description
+                  </dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                    <textarea
+                      className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+                      defaultValue={initialData?.description || undefined}
+                      rows={3}
+                      {...register("description")}
+                    />
+                    {errors.description && (
+                      <p role="alert">{errors.description?.message}</p>
+                    )}
+                  </dd>
+                </div>
+                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Status</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                    <select
+                      {...register("status")}
+                      defaultValue={initialData?.status}
+                    >
+                      <option value="CREATED">CREATED</option>
+                      <option value="PUBLISHED">PUBLISHED</option>
+                      <option value="ARCHIVED">ARCHIVED</option>
+                    </select>
+                    {errors.status && (
+                      <p role="alert">{errors.status?.message}</p>
+                    )}
+                  </dd>
+                </div>
+                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Details</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                    {renderDetails()}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
 
-        <Solapi channel={channel} />
-      </div>
+          <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+            <CustomLoadingButton
+              handleSubmit={handleSubmit}
+              onSubmit={onSubmit}
+            />
+          </div>
+        </form>
+      </FormProvider>
     </>
   );
 }

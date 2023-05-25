@@ -7,7 +7,7 @@ import { placementSchema } from "../../../components/schema/placement";
 import { serviceSchema } from "../../../components/schema/service";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { channelSchema } from "../../../components/schema/channel";
+import { providerSchema } from "../../../components/schema/provider";
 
 export const getIncludes = {
   placements: {
@@ -58,11 +58,7 @@ export const getIncludes = {
       },
     },
   },
-  channels: {
-    include: {
-      provider: true,
-    },
-  },
+  providers: true,
 };
 export const serviceRouter = createTRPCRouter({
   create: protectedProcedure
@@ -499,94 +495,68 @@ export const serviceRouter = createTRPCRouter({
 
       return service;
     }),
-  addChannel: protectedProcedure
-    .input(channelSchema)
+  addProvider: protectedProcedure
+    .input(providerSchema)
     .mutation(async ({ input }) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { provider, ...channelInput } = input;
-      const { serviceId, ...channel } = channelInput;
+      const { serviceId, ...provider } = input;
 
       const service = await prisma.service.update({
         where: {
           id: serviceId,
         },
         data: {
-          channels: {
+          providers: {
             connectOrCreate: {
               where: {
-                serviceId_name: {
-                  serviceId,
-                  name: channel.name,
+                serviceId_type_name: {
+                  serviceId: serviceId || "",
+                  type: provider?.type,
+                  name: provider?.name,
                 },
               },
               create: {
-                ...channel,
+                ...provider,
+                details: provider?.details as Prisma.JsonObject,
               },
             },
           },
         },
         include: {
-          channels: {
-            include: {
-              provider: true,
-            },
-          },
+          providers: true,
         },
       });
 
       return service;
     }),
-  updateChannel: protectedProcedure
-    .input(channelSchema)
+  updateProvider: protectedProcedure
+    .input(providerSchema)
     .mutation(async ({ input }) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { provider, ...channelInput } = input;
-      const { serviceId, ...channel } = channelInput;
-      const providerInJson = {
-        id: provider?.id || "",
-        name: provider?.name || "",
-        description: provider?.description,
-        details: provider?.details as Prisma.JsonObject,
-      };
-      const channelUpdateData = provider
-        ? {
-            ...channel,
-            provider: {
-              upsert: {
-                update: providerInJson,
-                create: providerInJson,
-              },
-            },
-          }
-        : {
-            ...channel,
-          };
+      const { serviceId, ...provider } = input;
       const service = await prisma.service.update({
         where: {
           id: serviceId,
         },
         data: {
-          channels: {
+          providers: {
             update: {
               where: {
-                id: channel.id,
+                id: provider.id,
               },
-              data: channelUpdateData,
+              data: {
+                ...provider,
+                details: (provider?.details || {}) as Prisma.JsonObject,
+              },
             },
           },
         },
         include: {
-          channels: {
-            include: {
-              provider: true,
-            },
-          },
+          providers: true,
         },
       });
 
       return service;
     }),
-  removeChannel: protectedProcedure
+  removeProvider: protectedProcedure
     .input(
       z.object({
         serviceId: z.string(),
@@ -600,18 +570,14 @@ export const serviceRouter = createTRPCRouter({
           id: serviceId,
         },
         data: {
-          channels: {
+          providers: {
             delete: {
               id,
             },
           },
         },
         include: {
-          channels: {
-            include: {
-              provider: true,
-            },
-          },
+          providers: true,
         },
       });
 

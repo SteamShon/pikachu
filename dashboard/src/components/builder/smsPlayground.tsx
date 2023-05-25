@@ -1,8 +1,7 @@
 import { Provider } from "@prisma/client";
-import ContentPreview from "./contentPreview";
-import { useState } from "react";
 import axios from "axios";
-import { useFormContext } from "react-hook-form";
+import { useState } from "react";
+import ContentPreview from "./contentPreview";
 
 function SMSPlayground({
   service,
@@ -20,9 +19,9 @@ function SMSPlayground({
   >(undefined);
 
   const providers: Provider[] = [];
-  service?.channels.forEach((channel) => {
-    if (!channel.provider) return;
-    providers.push(channel?.provider);
+  service?.providers?.forEach((provider) => {
+    if (!provider) return;
+    providers.push(provider);
   });
 
   const validate = async (method: string) => {

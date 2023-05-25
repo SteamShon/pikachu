@@ -1,26 +1,25 @@
 import axios from "axios";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import type { ChannelSchemaType } from "../../schema/channel";
-import type ChannelForm from "../channelForm";
-import Badge from "../../common/Badge";
 
-function Solapi({
-  channel,
-}: {
-  channel: Parameters<typeof ChannelForm>[0]["initialData"];
-}) {
+import Badge from "../../common/Badge";
+import type { ProviderSchemaType } from "../../schema/provider";
+
+function Solapi() {
   const [checked, setChecked] = useState<boolean | undefined>(undefined);
-  const methods = useFormContext<ChannelSchemaType>();
-  const { register, watch } = methods;
+  const methods = useFormContext<ProviderSchemaType>();
+  const { register, watch, setValue } = methods;
 
   const getMessageList = async () => {
-    const provider = watch("provider");
+    const provider = watch();
     try {
       const result = await axios.post(`/api/provider/solapi`, {
         provider,
         method: "getMessageList",
       });
+      if (result.status === 200) {
+        setValue("status", "PUBLISHED");
+      }
       setChecked(result.status === 200);
     } catch (error) {
       setChecked(false);
@@ -42,7 +41,7 @@ function Solapi({
               <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                 <input
                   className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                  {...register("provider.details.apiKey")}
+                  {...register("details.apiKey")}
                 />
               </dd>
             </div>
@@ -51,7 +50,7 @@ function Solapi({
               <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                 <input
                   className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                  {...register("provider.details.apiSecret")}
+                  {...register("details.apiSecret")}
                 />
               </dd>
             </div>

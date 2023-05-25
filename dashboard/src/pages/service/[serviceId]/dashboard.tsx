@@ -14,15 +14,15 @@ import ContentTypeTable from "./contentTypeTable";
 import CreativeTable from "./creativeTable";
 import CubeTable from "./cubeTable";
 import CustomsetTable from "./customsetTable";
-
 import AdGroupMenu from "../../../components/AdGroupMenu";
 import CampaignMenu from "../../../components/CampaignMenu";
 import ContentTypeMenu from "../../../components/ContentTypeMenu";
 import PlacementMenu from "../../../components/PlacementMenu";
 import IntegrationTable from "./integrationTable";
 import PlacementTable from "./placementTable";
+import ProviderTable from "./providerTable";
 import RenderPreview from "./renderPreview";
-import ChannelTable from "./channelTable";
+
 function Dashboard() {
   const router = useRouter();
 
@@ -364,7 +364,7 @@ function Dashboard() {
       description: `channels`,
       table: () =>
         service ? (
-          <ChannelTable
+          <ProviderTable
             service={service}
             setServiceTree={setTree}
             serviceTree={tree}

@@ -1,7 +1,6 @@
 import type {
   AdGroup,
   Campaign,
-  Channel,
   Content,
   ContentType,
   ContentTypeInfo,
@@ -55,14 +54,14 @@ export function buildServiceTree(
           cubes: (Cube & { cubeHistories: CubeHistory[] })[];
         })
       | null;
-    channels: (Channel & { provider: Provider | null })[];
+    providers: Provider[];
   }
 ): Service & {
   placements: Record<string, ReturnType<typeof buildPlacementTree>>;
   contentTypes: Record<string, ReturnType<typeof buildContentTypeTree>>;
   customsets: Record<string, Customset & { customsetInfo: CustomsetInfo }>;
   serviceConfig: ReturnType<typeof buildServiceConfigTree>;
-  channels: ReturnType<typeof buildChannelTree>;
+  providers: Record<string, Provider>;
 } {
   const placements = arrayToRecord(
     service.placements.map((placement) => {
@@ -80,7 +79,7 @@ export function buildServiceTree(
 
   const serviceConfig = buildServiceConfigTree(service.serviceConfig);
 
-  const channels = buildChannelTree(service.channels);
+  const providers = buildProviderTree(service.providers);
 
   return {
     ...service,
@@ -88,7 +87,7 @@ export function buildServiceTree(
     contentTypes,
     customsets,
     serviceConfig,
-    channels,
+    providers,
   };
 }
 
@@ -239,11 +238,8 @@ export function buildIntegraionTree(
   >;
 }
 
-export function buildChannelTree(
-  channels: (Channel & { provider: Provider | null })[]
-): Record<string, Channel & { provider: Provider | null }> {
-  return arrayToRecord(channels) as Record<
-    string,
-    Channel & { provider: Provider | null }
-  >;
+export function buildProviderTree(
+  providers: Provider[]
+): Record<string, Provider> {
+  return arrayToRecord(providers) as Record<string, Provider>;
 }

@@ -7,15 +7,11 @@ import { JsonForms } from "@jsonforms/react";
 import type {
   AdGroup,
   Campaign,
-  Channel,
   Content,
   ContentType,
   ContentTypeInfo,
   Creative,
   Placement,
-  Provider,
-  Service,
-  ServiceConfig,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -33,10 +29,7 @@ function CreativeForm({
   onSubmit,
   initialData,
 }: {
-  service: Service & {
-    serviceConfig?: ServiceConfig | null;
-    channels: (Channel & { provider: Provider | null })[];
-  };
+  service: Parameters<typeof ContentPreview>[0]["service"];
   adGroups: (AdGroup & { campaign: Campaign & { placement: Placement } })[];
   contents: (Content & {
     contentType: ContentType & { contentTypeInfo: ContentTypeInfo | null };

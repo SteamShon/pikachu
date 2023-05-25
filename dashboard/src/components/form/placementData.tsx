@@ -1,4 +1,3 @@
-import type { Channel, Provider, Service } from "@prisma/client";
 import { jsonParseWithFallback } from "../../utils/json";
 import type { SearchResult } from "../../utils/search";
 import ContentPreview from "../builder/contentPreview";
@@ -7,7 +6,7 @@ function PlacementData({
   service,
   placement,
 }: {
-  service: Service & { channels: (Channel & { provider: Provider | null })[] };
+  service: Parameters<typeof ContentPreview>[0]["service"];
   placement: SearchResult;
 }) {
   const { contentType } = placement;

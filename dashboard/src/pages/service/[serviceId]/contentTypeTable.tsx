@@ -9,7 +9,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Channel, Provider, Service, ServiceConfig } from "@prisma/client";
+import type { Provider, Service, ServiceConfig } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -33,10 +33,7 @@ function ContentTypeTable({
   serviceTree,
   setServiceTree,
 }: {
-  service: Service & {
-    serviceConfig?: ServiceConfig | null;
-    channels: (Channel & { provider: Provider | null })[];
-  };
+  service: Parameters<typeof ContentPreview>[0]["service"];
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>

@@ -5,7 +5,6 @@ import {
 } from "@jsonforms/material-renderers";
 import { JsonForms } from "@jsonforms/react";
 import type {
-  Channel,
   Content,
   ContentType,
   ContentTypeInfo,
@@ -27,7 +26,6 @@ import type {
   ContentWithContentTypeSchemaType,
 } from "../schema/content";
 import { contentWithContentTypeSchema } from "../schema/content";
-import SMSPlayground from "../builder/smsPlayground";
 
 function ContentForm({
   service,
@@ -35,10 +33,7 @@ function ContentForm({
   initialData,
   onSubmit,
 }: {
-  service: Service & {
-    serviceConfig?: ServiceConfig | null;
-    channels: (Channel & { provider: Provider | null })[];
-  };
+  service: Parameters<typeof ContentPreview>[0]["service"];
   contentTypes: (ContentType & { contentTypeInfo: ContentTypeInfo | null })[];
   initialData?: Content & { contentType: ContentType };
   onSubmit: (input: ContentSchemaType & { contentTypeId: string }) => void;

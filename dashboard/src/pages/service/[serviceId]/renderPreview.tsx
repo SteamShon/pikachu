@@ -1,25 +1,25 @@
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Accordion,
+  AccordionDetails,
   AccordionSummary,
   Typography,
-  AccordionDetails,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import { useSnackbar } from "notistack";
 import { useState } from "react";
+import type ContentPreview from "../../../components/builder/contentPreview";
 import PlacementData from "../../../components/form/placementData";
 import SearchRequestForm from "../../../components/form/searchRequestForm";
 import type { SearchRequestSchemaType } from "../../../components/schema/searchRequest";
 import { api } from "../../../utils/api";
 import type { SearchResult } from "../../../utils/search";
-import { search, buildUserInfo } from "../../../utils/search";
-import type { Service, Channel, Provider } from "@prisma/client";
+import { buildUserInfo, search } from "../../../utils/search";
 
 function RenderPreview({
   service,
 }: {
-  service: Service & { channels: (Channel & { provider: Provider | null })[] };
+  service: Parameters<typeof ContentPreview>[0]["service"];
 }) {
   const serviceId = service?.id;
   const { enqueueSnackbar } = useSnackbar();

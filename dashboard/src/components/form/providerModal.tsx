@@ -1,21 +1,26 @@
 import { Dialog, DialogContent } from "@mui/material";
+import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import { buildChannelTree, buildServiceTree } from "../../utils/tree";
-import type { ChannelSchemaType } from "../schema/channel";
-import ChannelForm from "./channelForm";
-import { inferRouterOutputs } from "@trpc/server";
-import { serviceRouter } from "../../server/api/routers/service";
+import type { serviceRouter } from "../../server/api/routers/service";
 import { api } from "../../utils/api";
+import { buildProviderTree, buildServiceTree } from "../../utils/tree";
 
-function ChannelModal({
+import ProviderForm from "./providerForm";
+import type { ProviderSchemaType } from "../schema/provider";
+
+function ProviderModal({
   service,
   initialData,
+  type,
+  name,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
-  service: Parameters<typeof ChannelForm>[0]["service"];
-  initialData?: Parameters<typeof ChannelForm>[0]["initialData"];
+  service: Parameters<typeof ProviderForm>[0]["service"];
+  initialData?: Parameters<typeof ProviderForm>[0]["initialData"];
+  type?: Parameters<typeof ProviderForm>[0]["type"];
+  name?: Parameters<typeof ProviderForm>[0]["name"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
@@ -23,30 +28,30 @@ function ChannelModal({
   >;
 }) {
   type RouterOutput = inferRouterOutputs<typeof serviceRouter>;
-  type OutputType = RouterOutput["addChannel"];
+  type OutputType = RouterOutput["addProvider"];
 
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
       if (!prev) return undefined;
-      prev.channels = buildChannelTree(created.channels);
+      prev.providers = buildProviderTree(created.providers);
       return prev;
     });
 
     setModalOpen(false);
   };
-  const { mutate: create } = api.service.addChannel.useMutation({
+  const { mutate: create } = api.service.addProvider.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
 
-  const { mutate: update } = api.service.updateChannel.useMutation({
+  const { mutate: update } = api.service.updateProvider.useMutation({
     onSuccess(updated) {
       handleSuccess(updated);
     },
   });
 
-  const onSubmit = (input: ChannelSchemaType) => {
+  const onSubmit = (input: ProviderSchemaType) => {
     if (initialData) update(input);
     else create(input);
   };
@@ -59,9 +64,11 @@ function ChannelModal({
       maxWidth="lg"
     >
       <DialogContent>
-        <ChannelForm
+        <ProviderForm
           service={service}
           initialData={initialData}
+          type={type}
+          name={name}
           onSubmit={onSubmit}
           //onClose={() => setModalOpen(false)}
         />
@@ -70,4 +77,4 @@ function ChannelModal({
   );
 }
 
-export default ChannelModal;
+export default ProviderModal;

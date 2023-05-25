@@ -1,20 +1,14 @@
 // import type { BuilderContent } from "@builder.io/react";
 // import { BuilderComponent } from "@builder.io/react";
-import {
-  materialCells,
-  materialRenderers,
-} from "@jsonforms/material-renderers";
-import { JsonForms } from "@jsonforms/react";
 import type {
-  Channel,
   ContentType,
   ContentTypeInfo,
   Provider,
   Service,
+  ServiceConfig,
 } from "@prisma/client";
 import { LiveEditor, LivePreview, LiveProvider } from "react-live";
-import { extractCode, extractSchema } from "../../utils/contentTypeInfo";
-import { jsonParseWithFallback } from "../../utils/json";
+import { extractCode } from "../../utils/contentTypeInfo";
 import { replacePropsInFunction } from "../common/CodeTemplate";
 import SMSPlayground from "./smsPlayground";
 
@@ -24,7 +18,10 @@ function ContentPreview({
   creatives,
   showEditor,
 }: {
-  service: Service & { channels: (Channel & { provider: Provider | null })[] };
+  service: Service & {
+    serviceConfig?: ServiceConfig | null;
+    providers: Provider[];
+  };
   contentType?: ContentType & { contentTypeInfo: ContentTypeInfo | null };
   creatives: {
     id: string;

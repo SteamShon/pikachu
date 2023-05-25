@@ -14,8 +14,14 @@ import type { SearchRequestSchemaType } from "../../../components/schema/searchR
 import { api } from "../../../utils/api";
 import type { SearchResult } from "../../../utils/search";
 import { search, buildUserInfo } from "../../../utils/search";
+import type { Service, Channel, Provider } from "@prisma/client";
 
-function RenderPreview({ serviceId }: { serviceId: string }) {
+function RenderPreview({
+  service,
+}: {
+  service: Service & { channels: (Channel & { provider: Provider | null })[] };
+}) {
+  const serviceId = service?.id;
   const { enqueueSnackbar } = useSnackbar();
   const { data: placements } = api.placement.list.useQuery({
     serviceId: serviceId as string,
@@ -89,7 +95,7 @@ function RenderPreview({ serviceId }: { serviceId: string }) {
               {matchedAds.map((placement) => {
                 return (
                   <div key={placement.id}>
-                    <PlacementData placement={placement} />
+                    <PlacementData service={service} placement={placement} />
                   </div>
                 );
               })}

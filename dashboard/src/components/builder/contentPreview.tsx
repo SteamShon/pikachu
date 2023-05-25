@@ -33,6 +33,7 @@ function ContentPreview({
   }[];
   showEditor?: boolean;
 }) {
+  console.log(creatives[0]?.content);
   const newCode = replacePropsInFunction({
     code: extractCode(contentType?.contentTypeInfo),
     creatives,
@@ -40,7 +41,14 @@ function ContentPreview({
 
   const preview = () => {
     if (contentType?.type === "SMS") {
-      return <></>;
+      return (
+        <>
+          <SMSPlayground
+            service={service}
+            values={creatives[0]?.content || {}}
+          />
+        </>
+      );
     } else {
       return (
         <>

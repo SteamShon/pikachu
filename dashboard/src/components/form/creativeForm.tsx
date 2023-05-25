@@ -7,11 +7,13 @@ import { JsonForms } from "@jsonforms/react";
 import type {
   AdGroup,
   Campaign,
+  Channel,
   Content,
   ContentType,
   ContentTypeInfo,
   Creative,
   Placement,
+  Provider,
   Service,
   ServiceConfig,
 } from "@prisma/client";
@@ -31,7 +33,10 @@ function CreativeForm({
   onSubmit,
   initialData,
 }: {
-  service: Service & { serviceConfig?: ServiceConfig | null };
+  service: Service & {
+    serviceConfig?: ServiceConfig | null;
+    channels: (Channel & { provider: Provider | null })[];
+  };
   adGroups: (AdGroup & { campaign: Campaign & { placement: Placement } })[];
   contents: (Content & {
     contentType: ContentType & { contentTypeInfo: ContentTypeInfo | null };
@@ -213,15 +218,20 @@ function CreativeForm({
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Preview</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  {content && 
-                  <ContentPreview
-                    contentType={content.contentType}
-                    creatives={[
-                      initialData ? { id: initialData.id, content: jsonParseWithFallback(content.values) } 
-                      : toNewCreative(content.values)
-                    ]}
-                  />
-                  }
+                  {content && (
+                    <ContentPreview
+                      service={service}
+                      contentType={content.contentType}
+                      creatives={[
+                        initialData
+                          ? {
+                              id: initialData.id,
+                              content: jsonParseWithFallback(content.values),
+                            }
+                          : toNewCreative(content.values),
+                      ]}
+                    />
+                  )}
                 </dd>
               </div>
             </dl>

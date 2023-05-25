@@ -8,7 +8,6 @@ import type {
 import { useFormContext } from "react-hook-form";
 import type { ContentTypeSchemaType } from "../schema/contentType";
 import DisplayContentTypeInfoBuilder from "./displayContentTypeInfoBuilder";
-import SMSContentTypeInfoBuilder from "./smsContentTypeInfoBuilder";
 
 function ContentTypeInfoForm({
   service,
@@ -31,7 +30,7 @@ function ContentTypeInfoForm({
       case "SMS":
         return (
           <>
-            <SMSContentTypeInfoBuilder contentType={contentType} />
+            <DisplayContentTypeInfoBuilder contentType={contentType} />
           </>
         );
       default:

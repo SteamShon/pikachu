@@ -329,7 +329,7 @@ function Dashboard() {
     {
       label: "RenderPreview",
       description: `renderPreview`,
-      table: () => (service ? <RenderPreview serviceId={service.id} /> : null),
+      table: () => (service ? <RenderPreview service={service} /> : null),
     },
     {
       label: "Integrations",

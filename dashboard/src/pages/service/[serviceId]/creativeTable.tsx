@@ -4,7 +4,7 @@ import NorthIcon from "@mui/icons-material/North";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Service, ServiceConfig } from "@prisma/client";
+import type { Channel, Provider, Service, ServiceConfig } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -23,7 +23,10 @@ function CreativeTable({
   serviceTree,
   setServiceTree,
 }: {
-  service: Service & { serviceConfig?: ServiceConfig | null };
+  service: Service & {
+    serviceConfig?: ServiceConfig | null;
+    channels: (Channel & { provider: Provider | null })[];
+  };
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -113,19 +116,24 @@ function CreativeTable({
         const content = contents.find(
           (content) => content.id === params.row.contentId
         );
-        return (
-          <ContentPreview
-            contentType={content?.contentType}
-            creatives={[
-              {
-                id: params.row.id,
-                content: jsonParseWithFallback(content?.values),
-              },
-            ]}
-            //contents={[jsonParseWithFallback(content?.values)]}
-            showEditor={false}
-          />
-        );
+        if (content?.contentType?.type === "DISPLAY") {
+          return (
+            <ContentPreview
+              service={service}
+              contentType={content?.contentType}
+              creatives={[
+                {
+                  id: params.row.id,
+                  content: jsonParseWithFallback(content?.values),
+                },
+              ]}
+              //contents={[jsonParseWithFallback(content?.values)]}
+              showEditor={false}
+            />
+          );
+        } else {
+          return <></>;
+        }
       },
     },
     {

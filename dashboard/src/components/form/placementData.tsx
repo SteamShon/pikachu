@@ -1,17 +1,24 @@
-import { LiveEditor, LivePreview, LiveProvider } from "react-live";
-import { extractCode } from "../../utils/contentTypeInfo";
+import type { Channel, Provider, Service } from "@prisma/client";
 import { jsonParseWithFallback } from "../../utils/json";
 import type { SearchResult } from "../../utils/search";
 import ContentPreview from "../builder/contentPreview";
-import { replacePropsInFunction } from "../common/CodeTemplate";
 
-function PlacementData({ placement }: { placement: SearchResult }) {
+function PlacementData({
+  service,
+  placement,
+}: {
+  service: Service & { channels: (Channel & { provider: Provider | null })[] };
+  placement: SearchResult;
+}) {
   const { contentType } = placement;
 
   const creatives = placement.campaigns.flatMap((campaign) => {
     return campaign.adGroups.flatMap((adGroup) => {
       return adGroup.creatives.map((creative) => {
-        return {...creative, content: jsonParseWithFallback(creative.content.values) };
+        return {
+          ...creative,
+          content: jsonParseWithFallback(creative.content.values),
+        };
       });
     });
   });
@@ -26,6 +33,7 @@ function PlacementData({ placement }: { placement: SearchResult }) {
         </div>
         <div className="border-t border-gray-200">
           <ContentPreview
+            service={service}
             contentType={contentType}
             creatives={creatives}
             showEditor={false}

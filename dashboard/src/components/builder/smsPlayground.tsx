@@ -6,8 +6,10 @@ import { useFormContext } from "react-hook-form";
 
 function SMSPlayground({
   service,
+  values,
 }: {
   service: Parameters<typeof ContentPreview>[0]["service"];
+  values: Record<string, unknown>;
 }) {
   const [provider, setProvider] = useState<Provider | undefined>(undefined);
   const [tos, setTos] = useState<string[]>([]);
@@ -16,9 +18,6 @@ function SMSPlayground({
     | { data: Record<string, unknown>[]; status: number; statusText: string }
     | undefined
   >(undefined);
-  // const [senders, setSenders] = useState<string[]>([]);
-  const methods = useFormContext();
-  const { watch } = methods;
 
   const providers: Provider[] = [];
   service?.channels.forEach((channel) => {
@@ -27,7 +26,6 @@ function SMSPlayground({
   });
 
   const validate = async (method: string) => {
-    const values = watch("values");
     if (tos.length === 0) return;
 
     const payload = {
@@ -35,41 +33,30 @@ function SMSPlayground({
         return { to: t, from: values.from, text: values.text };
       }),
     };
-    console.log(payload);
-    // const result = await axios.post(`/api/provider/solapi`, {
-    //   provider,
-    //   method,
-    //   payload,
-    // });
 
-    // setResponse({
-    //   status: result.status,
-    //   statusText: result.statusText,
-    //   data: result.data,
-    // });
+    const result = await axios.post(`/api/provider/solapi`, {
+      provider,
+      method,
+      payload,
+    });
+
+    setResponse({
+      status: result.status,
+      statusText: result.statusText,
+      data: result.data,
+    });
   };
   const handleProviderChange = async (providerId: string) => {
     const provider = providers.find((p) => p.id === providerId);
     setProvider(provider);
-    // const result = await axios.post(`/api/provider/solapi`, {
-    //   provider,
-    //   method: "getSenderList",
-    //   payload: watch("values"),
-    // });
-    // setSenders(result.data as string[]);
   };
   return (
     <>
       <div className="overflow-hidden bg-white shadow sm:rounded-lg">
         <div className="px-4 py-5 sm:px-6">
           <h3 className="text-lg font-medium leading-6 text-gray-900">
-            Playground
+            SMS Test Playground
           </h3>
-          <p>
-            The Content is required to be registered under creatives to speficy
-            receivers using customer segment specified on adGroup.
-          </p>
-          <p>This playground provide test environment before register this.</p>
         </div>
         <div className="border-t border-gray-200">
           <dl>

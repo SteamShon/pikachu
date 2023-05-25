@@ -7,6 +7,7 @@ import { placementSchema } from "../../../components/schema/placement";
 import { serviceSchema } from "../../../components/schema/service";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { channelSchema } from "../../../components/schema/channel";
 
 export const getIncludes = {
   placements: {
@@ -55,6 +56,11 @@ export const getIncludes = {
           cubeHistories: true,
         },
       },
+    },
+  },
+  channels: {
+    include: {
+      provider: true,
     },
   },
 };
@@ -486,6 +492,124 @@ export const serviceRouter = createTRPCRouter({
             include: {
               customsetInfo: true,
               createdBy: true,
+            },
+          },
+        },
+      });
+
+      return service;
+    }),
+  addChannel: protectedProcedure
+    .input(channelSchema)
+    .mutation(async ({ input }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { provider, ...channelInput } = input;
+      const { serviceId, ...channel } = channelInput;
+
+      const service = await prisma.service.update({
+        where: {
+          id: serviceId,
+        },
+        data: {
+          channels: {
+            connectOrCreate: {
+              where: {
+                serviceId_name: {
+                  serviceId,
+                  name: channel.name,
+                },
+              },
+              create: {
+                ...channel,
+              },
+            },
+          },
+        },
+        include: {
+          channels: {
+            include: {
+              provider: true,
+            },
+          },
+        },
+      });
+
+      return service;
+    }),
+  updateChannel: protectedProcedure
+    .input(channelSchema)
+    .mutation(async ({ input }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { provider, ...channelInput } = input;
+      const { serviceId, ...channel } = channelInput;
+      const providerInJson = {
+        id: provider?.id || "",
+        name: provider?.name || "",
+        description: provider?.description,
+        details: provider?.details as Prisma.JsonObject,
+      };
+      const channelUpdateData = provider
+        ? {
+            ...channel,
+            provider: {
+              upsert: {
+                update: providerInJson,
+                create: providerInJson,
+              },
+            },
+          }
+        : {
+            ...channel,
+          };
+      const service = await prisma.service.update({
+        where: {
+          id: serviceId,
+        },
+        data: {
+          channels: {
+            update: {
+              where: {
+                id: channel.id,
+              },
+              data: channelUpdateData,
+            },
+          },
+        },
+        include: {
+          channels: {
+            include: {
+              provider: true,
+            },
+          },
+        },
+      });
+
+      return service;
+    }),
+  removeChannel: protectedProcedure
+    .input(
+      z.object({
+        serviceId: z.string(),
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { serviceId, id } = input;
+      const service = await prisma.service.update({
+        where: {
+          id: serviceId,
+        },
+        data: {
+          channels: {
+            delete: {
+              id,
+            },
+          },
+        },
+        include: {
+          channels: {
+            include: {
+              provider: true,
             },
           },
         },

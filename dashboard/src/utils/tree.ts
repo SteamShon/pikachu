@@ -1,6 +1,7 @@
 import type {
   AdGroup,
   Campaign,
+  Channel,
   Content,
   ContentType,
   ContentTypeInfo,
@@ -12,6 +13,7 @@ import type {
   Integration,
   IntegrationInfo,
   Placement,
+  Provider,
   Service,
   ServiceConfig,
 } from "@prisma/client";
@@ -53,12 +55,14 @@ export function buildServiceTree(
           cubes: (Cube & { cubeHistories: CubeHistory[] })[];
         })
       | null;
+    channels: (Channel & { provider: Provider | null })[];
   }
 ): Service & {
   placements: Record<string, ReturnType<typeof buildPlacementTree>>;
   contentTypes: Record<string, ReturnType<typeof buildContentTypeTree>>;
   customsets: Record<string, Customset & { customsetInfo: CustomsetInfo }>;
   serviceConfig: ReturnType<typeof buildServiceConfigTree>;
+  channels: ReturnType<typeof buildChannelTree>;
 } {
   const placements = arrayToRecord(
     service.placements.map((placement) => {
@@ -76,7 +80,16 @@ export function buildServiceTree(
 
   const serviceConfig = buildServiceConfigTree(service.serviceConfig);
 
-  return { ...service, placements, contentTypes, customsets, serviceConfig };
+  const channels = buildChannelTree(service.channels);
+
+  return {
+    ...service,
+    placements,
+    contentTypes,
+    customsets,
+    serviceConfig,
+    channels,
+  };
 }
 
 export function buildPlacementTree(
@@ -223,5 +236,14 @@ export function buildIntegraionTree(
   return arrayToRecord(integrations) as Record<
     string,
     Integration & { integrationInfo: IntegrationInfo | null }
+  >;
+}
+
+export function buildChannelTree(
+  channels: (Channel & { provider: Provider | null })[]
+): Record<string, Channel & { provider: Provider | null }> {
+  return arrayToRecord(channels) as Record<
+    string,
+    Channel & { provider: Provider | null }
   >;
 }

@@ -22,6 +22,7 @@ import PlacementMenu from "../../../components/PlacementMenu";
 import IntegrationTable from "./integrationTable";
 import PlacementTable from "./placementTable";
 import RenderPreview from "./renderPreview";
+import ChannelTable from "./channelTable";
 function Dashboard() {
   const router = useRouter();
 
@@ -352,6 +353,18 @@ function Dashboard() {
       table: () =>
         service ? (
           <IntegrationTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
+        ) : null,
+    },
+    {
+      label: "Channels",
+      description: `channels`,
+      table: () =>
+        service ? (
+          <ChannelTable
             service={service}
             setServiceTree={setTree}
             serviceTree={tree}

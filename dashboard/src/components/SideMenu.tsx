@@ -46,6 +46,11 @@ function SideMenu() {
           icon: <AiOutlineApi />,
           link: `/service/${serviceId}/dashboard?step=Integrations`,
         },
+        {
+          title: "channels",
+          icon: <AiOutlineApi />,
+          link: `/service/${serviceId}/dashboard?step=Channels`,
+        },
       ],
     },
     {

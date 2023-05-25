@@ -46,6 +46,7 @@
     "aws-sdk": "^2.1309.0",
     "axios": "^1.3.2",
     "chart.js": "^4.3.0",
+    "crypto-js": "^4.1.1",
     "dayjs": "^1.11.7",
     "duckdb-async": "^0.7.1",
     "json-schema-editor-visual": "^2.0.0",

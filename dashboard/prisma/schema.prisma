@@ -92,6 +92,7 @@ model Service {
     updatedAt     DateTime          @updatedAt
     customsets    Customset[]
     serviceConfig ServiceConfig?
+    channels Channel[]
 
     @@unique([name])
     @@index(fields: [updatedAt])
@@ -139,6 +140,8 @@ model Placement {
     AdvertisersOnPlacements AdvertisersOnPlacements[]
     contentType             ContentType?              @relation(fields: [contentTypeId], references: [id])
     contentTypeId           String?
+    channel                 Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+    channelId String?
     // createdBy               User                      @relation("createdPlacements", fields: [creatorId], references: [id], onDelete: Cascade)
     // creatorId               String
     status                  String                    @default("CREATED")
@@ -405,4 +408,35 @@ model CreativeStat {
     updatedAt DateTime @updatedAt
 
     @@id([timeUnit, time, creativeId])
+}
+
+model Channel {
+    id          String   @id @default(cuid())
+    name        String
+    description String?
+    type        String // display/inapp_push/sms/ata+fta
+
+    service     Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+    serviceId   String?
+
+    provider Provider?
+    placements Placement[]
+
+    status    String   @default("CREATED")
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([serviceId, name])
+    @@index(fields: [updatedAt])
+}
+
+model Provider {
+    id            String      @id @default(cuid())
+    details       Json        @default("{}")
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+    channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+    channelId String      @unique
+
+    @@index(fields: [updatedAt])
 }

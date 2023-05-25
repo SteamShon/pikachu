@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import { AiFillEnvironment, AiOutlinePicture } from "react-icons/ai";
+import {
+  AiFillEnvironment,
+  AiOutlinePicture,
+  AiOutlineApi,
+} from "react-icons/ai";
 import { BiSitemap } from "react-icons/bi";
 import {
   BsArrowLeftShort,
@@ -37,6 +41,11 @@ function SideMenu() {
           icon: <BiSitemap />,
           link: `/service/${serviceId}/dashboard?step=Placements`,
         },
+        {
+          title: "integration",
+          icon: <AiOutlineApi />,
+          link: `/service/${serviceId}/dashboard?step=Integrations`,
+        },
       ],
     },
     {
@@ -69,7 +78,7 @@ function SideMenu() {
     },
   ];
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [openedSubMenus, setOpenedSubMenus] = useState(
     menus.map(({ title }) => title)
   );
@@ -77,7 +86,7 @@ function SideMenu() {
   return (
     <div
       className={`relative h-screen ${
-        open ? "w-64" : "w-[4.5rem]"
+        open ? "w-72" : "w-[4.5rem]"
       } bg-slate-200 p-1 pt-8 duration-300`}
     >
       <BsArrowLeftShort

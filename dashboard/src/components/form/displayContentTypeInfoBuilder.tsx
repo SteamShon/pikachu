@@ -18,7 +18,7 @@ import { jsonParseWithFallback } from "../../utils/json";
 import CodeEditor from "../builder/codeEditor";
 import { removeRenderFunction } from "../common/CodeTemplate";
 
-function ContentTypeInfoBuilder({
+function DisplayContentTypeInfoBuilder({
   contentType,
 }: {
   contentType?: ContentType & {
@@ -226,4 +226,4 @@ function ContentTypeInfoBuilder({
   );
 }
 
-export default ContentTypeInfoBuilder;
+export default DisplayContentTypeInfoBuilder;

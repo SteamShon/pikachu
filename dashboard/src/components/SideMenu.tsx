@@ -41,11 +41,11 @@ function SideMenu() {
           icon: <BiSitemap />,
           link: `/service/${serviceId}/dashboard?step=Placements`,
         },
-        {
-          title: "integration",
-          icon: <AiOutlineApi />,
-          link: `/service/${serviceId}/dashboard?step=Integrations`,
-        },
+        // {
+        //   title: "integration",
+        //   icon: <AiOutlineApi />,
+        //   link: `/service/${serviceId}/dashboard?step=Integrations`,
+        // },
         {
           title: "channels",
           icon: <AiOutlineApi />,

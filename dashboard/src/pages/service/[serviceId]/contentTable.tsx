@@ -82,6 +82,14 @@ function ContentTable({
       flex: 1,
     },
     {
+      field: "type",
+      headerName: "Type",
+      flex: 1,
+      renderCell: (params: GridRenderCellParams<Date>) => {
+        return <>{params.row.contentType?.type}</>;
+      },
+    },
+    {
       field: "update",
       headerName: "Update",
       flex: 1,
@@ -100,12 +108,15 @@ function ContentTable({
       headerName: "Preview",
       flex: 4,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        return (
-          <ContentPreview
-            contentType={params.row?.contentType}
-            creatives={[toNewCreative(params.row.values)]}
-          />
-        );
+        if (params.row?.contentType?.type === "DISPLAY") {
+          return (
+            <ContentPreview
+              service={service}
+              contentType={params.row?.contentType}
+              creatives={[toNewCreative(params.row.values)]}
+            />
+          );
+        }
       },
     },
     {

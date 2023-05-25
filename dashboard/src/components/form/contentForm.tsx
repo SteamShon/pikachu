@@ -5,9 +5,11 @@ import {
 } from "@jsonforms/material-renderers";
 import { JsonForms } from "@jsonforms/react";
 import type {
+  Channel,
   Content,
   ContentType,
   ContentTypeInfo,
+  Provider,
   Service,
   ServiceConfig,
 } from "@prisma/client";
@@ -15,7 +17,7 @@ import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import {
   extractSchema,
-  toNewCreativeFromObject
+  toNewCreativeFromObject,
 } from "../../utils/contentTypeInfo";
 import { jsonParseWithFallback } from "../../utils/json";
 import ContentPreview from "../builder/contentPreview";
@@ -25,6 +27,7 @@ import type {
   ContentWithContentTypeSchemaType,
 } from "../schema/content";
 import { contentWithContentTypeSchema } from "../schema/content";
+import SMSPlayground from "../builder/smsPlayground";
 
 function ContentForm({
   service,
@@ -32,7 +35,10 @@ function ContentForm({
   initialData,
   onSubmit,
 }: {
-  service: Service & { serviceConfig?: ServiceConfig | null };
+  service: Service & {
+    serviceConfig?: ServiceConfig | null;
+    channels: (Channel & { provider: Provider | null })[];
+  };
   contentTypes: (ContentType & { contentTypeInfo: ContentTypeInfo | null })[];
   initialData?: Content & { contentType: ContentType };
   onSubmit: (input: ContentSchemaType & { contentTypeId: string }) => void;
@@ -44,12 +50,13 @@ function ContentForm({
   // eslint-disable-next-line @typescript-eslint/ban-types
   const [defaultValues, setDefaultValues] = useState<{ [x: string]: {} }>({});
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  
+
   const methods = useForm<ContentWithContentTypeSchemaType>({
     resolver: zodResolver(contentWithContentTypeSchema),
   });
 
   const {
+    watch,
     control,
     register,
     handleSubmit,
@@ -74,7 +81,7 @@ function ContentForm({
         };
 
         setDefaultValues(parsedValues);
-        
+
         reset({
           ...initialData,
           contentTypeId: initialData?.contentType.id,
@@ -94,7 +101,7 @@ function ContentForm({
     setContentType(newContenType);
     setSchema(extractSchema(newContenType?.contentTypeInfo));
   };
-  
+
   const needUpdate = false;
 
   return (
@@ -157,7 +164,7 @@ function ContentForm({
                     )}
                   </dd>
                 </div>
-                
+
                 <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">Name</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
@@ -235,7 +242,7 @@ function ContentForm({
               </dl>
             </div>
           </div>
-
+          {contentType?.type === "SMS" && <SMSPlayground service={service} />}
           <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
             <CustomLoadingButton
               handleSubmit={handleSubmit}
@@ -244,19 +251,11 @@ function ContentForm({
           </div>
         </form>
       </FormProvider>
-      <div className="mx-auto max-w-screen-xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-lg text-center">
-          <h1 className="text-2xl font-bold sm:text-3xl">Preview</h1>
-        </div>
-      </div>
-      <div className="mx-auto mt-8 mb-0 space-y-4 ">
-        <ContentPreview
-          contentType={contentType}
-          creatives={[
-            toNewCreativeFromObject(defaultValues)
-          ]}
-        />
-      </div>
+      <ContentPreview
+        service={service}
+        contentType={contentType}
+        creatives={[toNewCreativeFromObject(defaultValues)]}
+      />
     </>
   );
 }

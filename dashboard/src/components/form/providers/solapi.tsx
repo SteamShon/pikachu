@@ -1,34 +1,30 @@
-import { useFormContext } from "react-hook-form";
-import type { ProviderSchemaType } from "../../schema/provider";
-import type ChannelForm from "../channelForm";
 import axios from "axios";
-import { extractValue } from "../../../utils/json";
-import { createHmac } from "crypto";
-import { ChannelSchemaType } from "../../schema/channel";
 import { useState } from "react";
+import { useFormContext } from "react-hook-form";
+import type { ChannelSchemaType } from "../../schema/channel";
+import type ChannelForm from "../channelForm";
+import Badge from "../../common/Badge";
+
 function Solapi({
   channel,
 }: {
   channel: Parameters<typeof ChannelForm>[0]["initialData"];
 }) {
-  const [response, setResponse] = useState<
-    | { data: Record<string, unknown>[]; status: number; statusText: string }
-    | undefined
-  >(undefined);
+  const [checked, setChecked] = useState<boolean | undefined>(undefined);
   const methods = useFormContext<ChannelSchemaType>();
   const { register, watch } = methods;
 
-  const validate = async () => {
+  const getMessageList = async () => {
     const provider = watch("provider");
-    const result = await axios.post(`/api/provider/solapi`, {
-      provider,
-    });
-
-    setResponse({
-      status: result.status,
-      statusText: result.statusText,
-      data: result.data,
-    });
+    try {
+      const result = await axios.post(`/api/provider/solapi`, {
+        provider,
+        method: "getMessageList",
+      });
+      setChecked(result.status === 200);
+    } catch (error) {
+      setChecked(false);
+    }
   };
 
   return (
@@ -65,14 +61,18 @@ function Solapi({
           <button
             className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
             type="button"
-            onClick={() => validate()}
+            onClick={() => getMessageList()}
           >
-            Validate
+            Check
           </button>
+          {checked === undefined ? (
+            "Please Verify"
+          ) : checked ? (
+            <Badge variant="success" label="valid" />
+          ) : (
+            <Badge variant="error" label="not valid" />
+          )}
         </div>
-      </div>
-      <div className="w-full bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-        {response && JSON.stringify(response)}
       </div>
     </>
   );

@@ -25,6 +25,7 @@ function ContentTypeForm({
   onSubmit: (input: ContentTypeSchemaType & { serviceId: string }) => void;
 }) {
   const [source, setSource] = useState<string | undefined>(undefined);
+  const [type, setType] = useState<string | undefined>(undefined);
   // eslint-disable-next-line @typescript-eslint/ban-types
   const details = initialData?.contentTypeInfo?.details as { [x: string]: {} };
   const methods = useForm<ContentTypeSchemaType & { serviceId: string }>({
@@ -48,13 +49,15 @@ function ContentTypeForm({
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { serviceId, contentTypeInfo, source, ...others } = initialData || {};
+    const { serviceId, contentTypeInfo, source, type, ...others } =
+      initialData || {};
 
     reset({
       ...others,
       serviceId: serviceId || undefined,
     });
     setSource(source);
+    setType(type);
   }, [initialData, reset]);
 
   return (
@@ -103,6 +106,20 @@ function ContentTypeForm({
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Type</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <select
+                    {...register("type")}
+                    defaultValue={initialData?.type || "DISPLAY"}
+                    onChange={(e) => setType(e.target.value)}
+                  >
+                    <option value="">Please select</option>
+                    <option value="DISPLAY">DISPLAY</option>
+                    <option value="SMS">SMS</option>
+                  </select>
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Source</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
@@ -141,6 +158,7 @@ function ContentTypeForm({
               service={service}
               contentType={initialData}
               source={source || "local"}
+              type={type || "DISPLAY"}
             />
           ) : null}
         </div>

@@ -160,6 +160,7 @@ model ContentType {
     name        String
     description String?
     source      String   @default("local")
+    type String @default("DISPLAY") // INAPP_PUSH/SMS
     service     Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
     serviceId   String?
 

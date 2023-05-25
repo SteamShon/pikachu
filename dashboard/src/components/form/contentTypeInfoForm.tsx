@@ -7,12 +7,14 @@ import type {
 } from "@prisma/client";
 import { useFormContext } from "react-hook-form";
 import type { ContentTypeSchemaType } from "../schema/contentType";
-import ContentTypeInfoBuilder from "./contentTypeInfoBuilder";
+import DisplayContentTypeInfoBuilder from "./displayContentTypeInfoBuilder";
+import SMSContentTypeInfoBuilder from "./smsContentTypeInfoBuilder";
 
 function ContentTypeInfoForm({
   service,
   contentType,
   source,
+  type,
 }: {
   service: Service & { serviceConfig?: ServiceConfig | null };
   contentType?: ContentType & {
@@ -20,19 +22,22 @@ function ContentTypeInfoForm({
     contents: Content[];
   };
   source: string;
+  type: string;
 }) {
   const methods = useFormContext<ContentTypeSchemaType>();
   const { register } = methods;
   const detailsBuilder = () => {
-    switch (source) {
-      case "builder.io":
+    switch (type) {
+      case "SMS":
         return (
-          <></>
+          <>
+            <SMSContentTypeInfoBuilder contentType={contentType} />
+          </>
         );
       default:
         return (
           <>
-            <ContentTypeInfoBuilder contentType={contentType} />;
+            <DisplayContentTypeInfoBuilder contentType={contentType} />;
           </>
         );
     }
@@ -63,7 +68,7 @@ function ContentTypeInfoForm({
         </div>
       </div>
     </>
-  )
+  );
 }
 
 export default ContentTypeInfoForm;

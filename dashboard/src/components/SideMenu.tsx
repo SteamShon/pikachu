@@ -5,6 +5,7 @@ import {
   AiFillEnvironment,
   AiOutlinePicture,
   AiOutlineApi,
+  AiOutlineUsergroupAdd,
 } from "react-icons/ai";
 import { BiSitemap } from "react-icons/bi";
 import {
@@ -19,67 +20,63 @@ import { GrGroup, GrResources } from "react-icons/gr";
 import { HiTemplate } from "react-icons/hi";
 function SideMenu() {
   const router = useRouter();
-  const { serviceId } = router.query;
+  const { serviceId, step } = router.query;
   const menus = [
     {
-      title: "publisher",
-      icon: <HiTemplate />,
-      link: "#",
-      subMenus: [
-        {
-          title: "contentType",
-          icon: <BsDatabase />,
-          link: `/service/${serviceId}/dashboard?step=ContentTypes`,
-        },
-        {
-          title: "cube",
-          icon: <BsTable />,
-          link: `/service/${serviceId}/dashboard?step=Cubes`,
-        },
-        {
-          title: "placement",
-          icon: <BiSitemap />,
-          link: `/service/${serviceId}/dashboard?step=Placements`,
-        },
-        // {
-        //   title: "integration",
-        //   icon: <AiOutlineApi />,
-        //   link: `/service/${serviceId}/dashboard?step=Integrations`,
-        // },
-        {
-          title: "channels",
-          icon: <AiOutlineApi />,
-          link: `/service/${serviceId}/dashboard?step=Channels`,
-        },
-      ],
-    },
-    {
-      title: "advertiser",
-      icon: <CiBullhorn />,
-      link: "#",
+      title: "contentType",
+      icon: <BsDatabase />,
+      link: `/service/${serviceId}/dashboard?step=contentTypes`,
       subMenus: [
         {
           title: "contents",
           icon: <GrResources />,
-          link: `/service/${serviceId}/dashboard?step=Contents`,
+          link: `/service/${serviceId}/dashboard?step=contents`,
         },
+      ],
+    },
+    {
+      title: "cube",
+      icon: <BsTable />,
+      link: `/service/${serviceId}/dashboard?step=cubes`,
+      subMenus: [
+        {
+          title: "segments",
+          icon: <AiOutlineUsergroupAdd />,
+          link: `/service/${serviceId}/dashboard?step=segments`,
+        },
+      ],
+    },
+    {
+      title: "placement",
+      icon: <BiSitemap />,
+      link: `/service/${serviceId}/dashboard?step=placements`,
+      subMenus: [
         {
           title: "campaign",
           icon: <GiBullseye />,
-          link: `/service/${serviceId}/dashboard?step=Campaigns`,
+          link: `/service/${serviceId}/dashboard?step=campaigns`,
         },
         {
           title: "adGroup",
           icon: <GrGroup />,
-          link: `/service/${serviceId}/dashboard?step=AdGroups`,
+          link: `/service/${serviceId}/dashboard?step=adGroups`,
         },
         {
           title: "creative",
           icon: <AiOutlinePicture />,
-          link: `/service/${serviceId}/dashboard?step=Creatives`,
+          link: `/service/${serviceId}/dashboard?step=creatives`,
         },
       ],
-      spacing: true,
+    },
+    // {
+    //   title: "integration",
+    //   icon: <AiOutlineApi />,
+    //   link: `/service/${serviceId}/dashboard?step=Integrations`,
+    // },
+    {
+      title: "providers",
+      icon: <AiOutlineApi />,
+      link: `/service/${serviceId}/dashboard?step=providers`,
     },
   ];
 
@@ -118,9 +115,7 @@ function SideMenu() {
           <>
             <li
               key={index}
-              className={`mt-2 flex cursor-pointer items-center gap-x-4 rounded-md p-2 text-sm text-gray-700 hover:bg-slate-50 ${
-                menu.spacing ? "mt-2" : "mt-2"
-              }`}
+              className={`mt-2 flex cursor-pointer items-center gap-x-4 rounded-md p-2 text-sm text-gray-700 hover:bg-slate-50 ${"mt-2"}`}
             >
               <Link href={menu.link}>
                 <span className={`float-left block text-2xl`}>{menu.icon}</span>
@@ -152,9 +147,9 @@ function SideMenu() {
                 {menu.subMenus.map((subMenu, index) => (
                   <li
                     key={index}
-                    className={`mt-2 flex cursor-pointer items-center gap-x-4 rounded-md p-2 text-sm text-gray-700 hover:bg-slate-50 ${
-                      menu.spacing ? "mt-2" : "mt-2"
-                    } ${open && "ml-4"}`}
+                    className={`mt-2 flex cursor-pointer items-center gap-x-4 rounded-md p-2 text-sm text-gray-700 hover:bg-slate-50 ${"mt-2"} ${
+                      open && "ml-4"
+                    }`}
                   >
                     <Link href={subMenu.link}>
                       <span className={`float-left block text-2xl`}>

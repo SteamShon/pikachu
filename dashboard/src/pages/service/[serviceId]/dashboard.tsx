@@ -64,7 +64,7 @@ function Dashboard() {
 
   const steps = [
     {
-      label: "Placements",
+      label: "placements",
       description: `placements`,
       paths: [
         <>Home</>,
@@ -74,7 +74,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Campaigns" },
+              query: { ...router.query, step: "campaigns" },
             }}
           >
             Campaign
@@ -91,7 +91,7 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "Campaigns",
+      label: "campaigns",
       description: `campaigns`,
       paths: [
         <>Home</>,
@@ -102,7 +102,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Campaigns" },
+              query: { ...router.query, step: "campaigns" },
             }}
           >
             <span className="font-bold">Campaign</span>
@@ -112,7 +112,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "AdGroups" },
+              query: { ...router.query, step: "adGroups" },
             }}
           >
             AdGroup
@@ -129,7 +129,7 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "AdGroups",
+      label: "adGroups",
       description: `adGroups`,
       paths: [
         <>Home</>,
@@ -140,7 +140,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Campaigns" },
+              query: { ...router.query, step: "campaigns" },
             }}
           >
             Campaign
@@ -151,7 +151,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "AdGroups" },
+              query: { ...router.query, step: "adGroups" },
             }}
           >
             <span className="font-bold">AdGroup</span>
@@ -161,7 +161,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Creatives" },
+              query: { ...router.query, step: "creatives" },
             }}
           >
             Creative
@@ -178,7 +178,7 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "Creatives",
+      label: "creatives",
       description: `creatives`,
       paths: [
         <>Home</>,
@@ -189,7 +189,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Campaigns" },
+              query: { ...router.query, step: "campaigns" },
             }}
           >
             Campaign
@@ -200,7 +200,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "AdGroups" },
+              query: { ...router.query, step: "adGroups" },
             }}
           >
             AdGroup
@@ -211,7 +211,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Creatives" },
+              query: { ...router.query, step: "creatives" },
             }}
           >
             <span className="font-bold">Creative</span>
@@ -221,7 +221,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Contents" },
+              query: { ...router.query, step: "contents" },
             }}
           >
             Content
@@ -238,7 +238,7 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "ContentTypes",
+      label: "contentTypes",
       description: `contentTypes`,
       paths: [
         <>Home</>,
@@ -248,7 +248,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Contents" },
+              query: { ...router.query, step: "contents" },
             }}
           >
             Content
@@ -265,7 +265,7 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "Contents",
+      label: "contents",
       description: `contents`,
       paths: [
         <>Home</>,
@@ -276,7 +276,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Contents" },
+              query: { ...router.query, step: "contents" },
             }}
           >
             <span className="font-bold">Content</span>
@@ -286,7 +286,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Creatives" },
+              query: { ...router.query, step: "creatives" },
             }}
           >
             Creative
@@ -303,7 +303,7 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "Customsets",
+      label: "customsets",
       description: `customsets`,
       table: () =>
         service ? (
@@ -315,7 +315,7 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "Cubes",
+      label: "cubes",
       description: `cubes`,
       table: () =>
         service ? (
@@ -327,12 +327,12 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "RenderPreview",
+      label: "renderPreview",
       description: `renderPreview`,
       table: () => (service ? <RenderPreview service={service} /> : null),
     },
     {
-      label: "Integrations",
+      label: "integrations",
       description: `integrations`,
       paths: [
         <>Home</>,
@@ -343,7 +343,7 @@ function Dashboard() {
           <Link
             href={{
               pathname: `/service/[serviceId]/dashboard`,
-              query: { ...router.query, step: "Integrations" },
+              query: { ...router.query, step: "integrations" },
             }}
           >
             <span className="font-bold">Integration</span>
@@ -360,8 +360,8 @@ function Dashboard() {
         ) : null,
     },
     {
-      label: "Channels",
-      description: `channels`,
+      label: "providers",
+      description: `providers`,
       table: () =>
         service ? (
           <ProviderTable

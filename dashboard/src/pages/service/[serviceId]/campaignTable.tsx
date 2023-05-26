@@ -172,7 +172,7 @@ function CampaignTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "AdGroups",
+                    step: "adGroups",
                     campaignId: params.row.id,
                   },
                 });
@@ -188,7 +188,7 @@ function CampaignTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Placements",
+                    step: "placements",
                   },
                 });
               }}

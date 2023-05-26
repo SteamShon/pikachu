@@ -182,7 +182,7 @@ function ContentTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Creatives",
+                    step: "creatives",
                   },
                 });
               }}
@@ -197,7 +197,7 @@ function ContentTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "ContentTypes",
+                    step: "contentTypes",
                   },
                 });
               }}

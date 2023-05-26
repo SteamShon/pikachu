@@ -41,8 +41,13 @@ function ProviderTable({
     (provider) => provider.name === name
   );
   const typeNames = {
-    SMS: ["SOLAPI", "COOLSMS"],
+    API: [{ name: "PIKACHU_API", enabled: true }],
+    SMS: [
+      { name: "SOLAPI", enabled: true },
+      { name: "COOLSMS", enabled: false },
+    ],
   };
+
   return (
     <>
       <div>
@@ -54,23 +59,36 @@ function ProviderTable({
                   {type}
                 </h3>
               </div>
-              <ul>
-                {names.map((name) => {
+              <ul className="flex">
+                {names.map(({ name, enabled }) => {
                   return (
                     <li key={`${type}_${name}`}>
                       <button
+                        className="relative flex items-start justify-between rounded-xl border border-gray-100 p-4 shadow-xl sm:p-6 lg:p-8"
                         type="button"
+                        disabled={!enabled}
                         onClick={() => {
                           setType(type);
                           setName(name);
                           setModalOpen(true);
                         }}
                       >
-                        {name}
-                        {getProvider(type, name)?.status === "PUBLISHED" ? (
-                          <Badge variant="success" label="active" />
-                        ) : (
-                          <></>
+                        <div className="pt-4 text-gray-500">
+                          <h3
+                            className={`mt-4 text-lg font-bold text-gray-900 sm:text-xl ${
+                              !enabled && "line-through"
+                            }`}
+                          >
+                            {name}
+                          </h3>
+
+                          <p className="mt-2 hidden text-sm sm:block"></p>
+                        </div>
+
+                        {getProvider(type, name)?.status === "PUBLISHED" && (
+                          <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-medium text-green-600">
+                            <Badge variant="success" label="active" />
+                          </span>
                         )}
                       </button>
                     </li>

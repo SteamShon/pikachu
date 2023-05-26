@@ -172,7 +172,7 @@ function AdGroupTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Creatives",
+                    step: "creatives",
                     adGroupId: params.row.id,
                   },
                 });
@@ -188,7 +188,7 @@ function AdGroupTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Campaigns",
+                    step: "campaigns",
                   },
                 });
               }}

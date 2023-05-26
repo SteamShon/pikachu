@@ -13,6 +13,7 @@ export const getIncludes = {
   placements: {
     include: {
       contentType: true,
+      provider: true,
       campaigns: {
         include: {
           adGroups: {

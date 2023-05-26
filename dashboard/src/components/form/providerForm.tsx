@@ -6,6 +6,7 @@ import type { ProviderSchemaType } from "../schema/provider";
 import { providerSchema } from "../schema/provider";
 import Solapi from "./providers/solapi";
 import CustomLoadingButton from "../common/CustomLoadingButton";
+import PikachuAPI from "./providers/pikachuApi";
 
 function ProviderForm({
   service,
@@ -48,6 +49,8 @@ function ProviderForm({
   const renderDetails = () => {
     if (type === "SMS" && name === "SOLAPI") {
       return <Solapi />;
+    } else if (type === "API" && name === "PIKACHU_API") {
+      return <PikachuAPI />;
     } else {
       return <></>;
     }

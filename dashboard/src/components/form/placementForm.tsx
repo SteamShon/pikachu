@@ -5,6 +5,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { PlacementSchemaType } from "../schema/placement";
 import { placementSchema } from "../schema/placement";
+import type ContentPreview from "../builder/contentPreview";
 
 function PlacementForm({
   service,
@@ -13,12 +14,13 @@ function PlacementForm({
   initialData,
   onSubmit,
 }: {
-  service: Service;
+  service: Parameters<typeof ContentPreview>[0]["service"];
   contentTypes: ContentType[];
   cubes: Cube[];
   initialData?: Placement;
   onSubmit: (input: PlacementSchemaType) => void;
 }) {
+  const providers = service?.providers;
   const methods = useForm<PlacementSchemaType>({
     resolver: zodResolver(placementSchema),
   });
@@ -140,6 +142,27 @@ function PlacementForm({
                   </select>
                   {errors.contentTypeId && (
                     <p role="alert">{errors.contentTypeId?.message}</p>
+                  )}
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Provider</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <select
+                    {...register("providerId")}
+                    defaultValue={initialData?.providerId || undefined}
+                  >
+                    <option value="">Please choose</option>
+                    {providers.map((provider) => {
+                      return (
+                        <option key={provider.id} value={provider.id}>
+                          {`[${provider.type}]: ${provider.name}`}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {errors.providerId && (
+                    <p role="alert">{errors.providerId?.message}</p>
                   )}
                 </dd>
               </div>

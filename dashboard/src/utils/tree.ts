@@ -39,6 +39,7 @@ export function buildServiceTree(
           })[];
         })[];
       })[];
+      provider: Provider | null;
       contentType: ContentType | null;
       integrations: (Integration & {
         integrationInfo: IntegrationInfo | null;
@@ -101,11 +102,13 @@ export function buildPlacementTree(
       })[];
     })[];
     contentType: ContentType | null;
+    provider: Provider | null;
     integrations: (Integration & { integrationInfo: IntegrationInfo | null })[];
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
   contentType: ContentType | null;
+  provider: Provider | null;
   integrations: ReturnType<typeof buildIntegraionTree>;
 } {
   const campaigns = arrayToRecord(

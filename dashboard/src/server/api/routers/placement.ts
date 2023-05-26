@@ -4,7 +4,13 @@ import { campaignWithPlacementSchema } from "../../../components/schema/campaign
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { integrationSchema } from "../../../components/schema/integration";
-import type { AdGroup, Campaign, Creative, Placement, Prisma } from "@prisma/client";
+import type {
+  AdGroup,
+  Campaign,
+  Creative,
+  Placement,
+  Prisma,
+} from "@prisma/client";
 
 export const placementRouter = createTRPCRouter({
   list: protectedProcedure
@@ -56,6 +62,7 @@ export const placementRouter = createTRPCRouter({
         },
         include: {
           service: true,
+          provider: true,
           contentType: true,
           campaigns: {
             orderBy: {
@@ -104,6 +111,7 @@ export const placementRouter = createTRPCRouter({
         },
         include: {
           service: true,
+          provider: true,
           contentType: true,
           campaigns: {
             orderBy: {
@@ -157,6 +165,7 @@ export const placementRouter = createTRPCRouter({
         },
         include: {
           service: true,
+          provider: true,
           contentType: true,
           campaigns: {
             orderBy: {
@@ -306,41 +315,41 @@ export const placementRouter = createTRPCRouter({
           adGroup: {
             campaign: {
               placement: {
-                serviceId
-              }
-            }
-          }
+                serviceId,
+              },
+            },
+          },
         },
         include: {
           adGroup: {
             include: {
               campaign: {
                 include: {
-                  placement: true
-                }
-              }
-            }
-          }
-        }
+                  placement: true,
+                },
+              },
+            },
+          },
+        },
       });
       const creativeIds = creatives.reduce((prev, creative) => {
         prev[`${creative.id}`] = creative;
         return prev;
-      }, {} as Record<string, Creative & { adGroup: AdGroup & { campaign: Campaign & { placement: Placement}}}>);
-      
+      }, {} as Record<string, Creative & { adGroup: AdGroup & { campaign: Campaign & { placement: Placement } } }>);
+
       const stats = await prisma.creativeStat.findMany({
         where: {
           creativeId: {
             in: Object.keys(creativeIds),
-          }
+          },
         },
         orderBy: {
-          creativeId: "desc"
-        }
-      })
-      
+          creativeId: "desc",
+        },
+      });
+
       return stats.map((stat) => {
-        return {stat, creative: creativeIds[stat.creativeId]};
+        return { stat, creative: creativeIds[stat.creativeId] };
       });
     }),
 });

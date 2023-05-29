@@ -377,27 +377,17 @@ model Integration {
     name            String
     description     String?
     type            String // DB/HTTP
+    details       Json        @default("{}")
     status          String           @default("CREATED")
     createdAt       DateTime         @default(now())
     updatedAt       DateTime         @updatedAt
     placement       Placement        @relation(fields: [placementId], references: [id])
     placementId     String
-    integrationInfo IntegrationInfo?
 
     @@unique([placementId, name])
     @@index(fields: [updatedAt])
 }
 
-model IntegrationInfo {
-    id            String      @id @default(cuid())
-    details       Json        @default("{}")
-    createdAt     DateTime    @default(now())
-    updatedAt     DateTime    @updatedAt
-    integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-    integrationId String      @unique
-
-    @@index(fields: [updatedAt])
-}
 
 model CreativeStat {
     timeUnit String  

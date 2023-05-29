@@ -90,6 +90,7 @@ model Service {
     status        String            @default("CREATED")
     createdAt     DateTime          @default(now())
     updatedAt     DateTime          @updatedAt
+    
     customsets    Customset[]
     serviceConfig ServiceConfig?
     providers Provider[]

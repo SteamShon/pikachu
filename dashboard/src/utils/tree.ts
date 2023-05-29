@@ -38,7 +38,6 @@ export function buildServiceTree(
           })[];
         })[];
       })[];
-      provider: Provider | null;
       contentType: ContentType | null;
       integrations: Integration[];
     })[];

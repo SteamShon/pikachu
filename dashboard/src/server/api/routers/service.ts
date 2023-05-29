@@ -180,10 +180,12 @@ export const serviceRouter = createTRPCRouter({
   get: protectedProcedure
     .input(
       z.object({
-        id: z.string(),
+        id: z.string().optional(),
       })
     )
     .query(({ input }) => {
+      if (!input.id) return null;
+
       return prisma.service.findFirst({
         where: {
           id: input.id,

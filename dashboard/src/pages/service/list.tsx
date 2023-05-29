@@ -11,8 +11,10 @@ import Loading from "../../components/common/Loading";
 import type ServiceForm from "../../components/form/serviceForm";
 import ServiceModal from "../../components/form/serviceModal";
 import { api } from "../../utils/api";
+import { useSession } from "next-auth/react";
 
 function ServiceList() {
+  const { data: session } = useSession();
   const router = useRouter();
   const [service, setService] =
     useState<Parameters<typeof ServiceForm>[0]["initialData"]>(undefined);
@@ -21,6 +23,11 @@ function ServiceList() {
   >([]);
   const [modalOpen, setModalOpen] = useState(false);
   const { serviceIds } = router.query;
+  const { data: myServices } = api.usersOnServices.getAll.useQuery({
+    userId: session?.user?.id || "",
+  });
+  console.log(myServices);
+
   const { data: allServices, isLoading } =
     api.service.getAllOnlyServices.useQuery();
 

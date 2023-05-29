@@ -1,4 +1,4 @@
-import type { Integration, IntegrationInfo, Placement } from "@prisma/client";
+import type { Integration, Placement } from "@prisma/client";
 import { useFormContext } from "react-hook-form";
 import { extractParams } from "../../pages/api/integration/db";
 // import { LiveEditor, LiveError, LivePreview, LiveProvider } from "react-live";
@@ -8,7 +8,6 @@ function IntegrationInfoBuilder({
 }: {
   integration?: Integration & {
     placement: Placement;
-    integrationInfo: IntegrationInfo | null;
   };
 }) {
   // const [schema, setSchema] = useState<string | undefined>(undefined);
@@ -35,7 +34,7 @@ function IntegrationInfoBuilder({
               <textarea
                 className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
                 rows={3}
-                {...register("integrationInfo.details.DATABASE_URL")}
+                {...register("details.DATABASE_URL")}
               />
             </dd>
           </div>
@@ -45,27 +44,25 @@ function IntegrationInfoBuilder({
               <textarea
                 className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
                 rows={10}
-                {...register("integrationInfo.details.SQL")}
+                {...register("details.SQL")}
               />
             </dd>
           </div>
           <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
             <dt className="text-sm font-medium text-gray-500">DATA</dt>
             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-              {extractParams(watch("integrationInfo.details.SQL")).map(
-                (param, index) => (
-                  <>
-                    <div>
-                      {param}:
-                      <input
-                        key={index}
-                        className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                        {...register(`integrationInfo.details.${param}`)}
-                      />
-                    </div>
-                  </>
-                )
-              )}
+              {extractParams(watch("details.SQL")).map((param, index) => (
+                <>
+                  <div>
+                    {param}:
+                    <input
+                      key={index}
+                      className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+                      {...register(`details.${param}`)}
+                    />
+                  </div>
+                </>
+              ))}
             </dd>
           </div>
         </dl>

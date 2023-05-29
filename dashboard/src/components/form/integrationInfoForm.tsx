@@ -1,6 +1,5 @@
 import type {
   Integration,
-  IntegrationInfo,
   Placement,
   Service,
   ServiceConfig,
@@ -17,7 +16,6 @@ function IntegrationInfoForm({
   service: Service & { serviceConfig?: ServiceConfig | null };
   integration?: Integration & {
     placement: Placement;
-    integrationInfo: IntegrationInfo | null;
   };
   type: string;
 }) {
@@ -34,11 +32,6 @@ function IntegrationInfoForm({
             {/* Define schema, defaultValues, rendering code. */}
           </p>
         </div>
-        <input
-          type="hidden"
-          {...register("integrationInfo.integrationId")}
-          value={integration?.id}
-        />
 
         <div className="mx-auto mt-8 mb-0 space-y-4">
           <label

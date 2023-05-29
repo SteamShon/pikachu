@@ -3,15 +3,16 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { serviceRouter } from "../../server/api/routers/service";
 import { api } from "../../utils/api";
-import { buildProviderTree, buildServiceTree } from "../../utils/tree";
+import type { buildServiceTree } from "../../utils/tree";
+import { buildProviderTree } from "../../utils/tree";
 
-import ProviderForm from "./providerForm";
 import type { ProviderSchemaType } from "../schema/provider";
+import ProviderForm from "./providerForm";
 
 function ProviderModal({
   service,
   initialData,
-  type,
+  provide,
   name,
   modalOpen,
   setModalOpen,
@@ -19,7 +20,7 @@ function ProviderModal({
 }: {
   service: Parameters<typeof ProviderForm>[0]["service"];
   initialData?: Parameters<typeof ProviderForm>[0]["initialData"];
-  type?: Parameters<typeof ProviderForm>[0]["type"];
+  provide?: Parameters<typeof ProviderForm>[0]["provide"];
   name?: Parameters<typeof ProviderForm>[0]["name"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -67,7 +68,7 @@ function ProviderModal({
         <ProviderForm
           service={service}
           initialData={initialData}
-          type={type}
+          provide={provide}
           name={name}
           onSubmit={onSubmit}
           //onClose={() => setModalOpen(false)}

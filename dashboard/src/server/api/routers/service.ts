@@ -27,11 +27,7 @@ export const getIncludes = {
           },
         },
       },
-      integrations: {
-        include: {
-          integrationInfo: true,
-        },
-      },
+      integrations: true,
     },
   },
   contentTypes: {
@@ -509,9 +505,9 @@ export const serviceRouter = createTRPCRouter({
           providers: {
             connectOrCreate: {
               where: {
-                serviceId_type_name: {
+                serviceId_provide_name: {
                   serviceId: serviceId || "",
-                  type: provider?.type,
+                  provide: provider?.provide,
                   name: provider?.name,
                 },
               },

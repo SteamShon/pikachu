@@ -1,10 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type {
-  Integration,
-  IntegrationInfo,
-  Placement,
-  Service,
-} from "@prisma/client";
+import type { Integration, Placement, Service } from "@prisma/client";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -21,7 +16,6 @@ function IntegrationForm({
   service: Service & { placements: Placement[] };
   initialData?: Integration & {
     placement: Placement;
-    integrationInfo: IntegrationInfo | null;
   };
   onSubmit: (input: IntegrationSchemaType) => void;
 }) {
@@ -44,24 +38,20 @@ function IntegrationForm({
   } = methods;
 
   useEffect(() => {
-    const details = initialData?.integrationInfo?.details as {
+    const details = initialData?.details as {
       // eslint-disable-next-line @typescript-eslint/ban-types
       [x: string]: {};
     };
     if (initialData) {
       reset({
         ...initialData,
-        integrationInfo: {
-          ...initialData.integrationInfo,
-          integrationId: initialData.id,
-          details,
-        },
+        details,
       });
     }
   }, [initialData, reset]);
 
   const checkIntegration = async () => {
-    const config = watch("integrationInfo.details");
+    const config = watch("details");
     const result = await axios.post(`/api/integration/db`, config);
 
     setResponse({

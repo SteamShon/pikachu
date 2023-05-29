@@ -11,13 +11,13 @@ import PikachuAPI from "./providers/pikachuApi";
 function ProviderForm({
   service,
   initialData,
-  type,
+  provide,
   name,
   onSubmit,
 }: {
   service: Service & { serviceConfig?: ServiceConfig | null };
   initialData?: Provider;
-  type?: string;
+  provide?: string;
   name?: string;
   onSubmit: (input: ProviderSchemaType) => void;
 }) {
@@ -47,9 +47,9 @@ function ProviderForm({
   }, [initialData, reset]);
 
   const renderDetails = () => {
-    if (type === "SMS" && name === "SOLAPI") {
+    if (provide === "SMS" && name === "SOLAPI") {
       return <Solapi />;
-    } else if (type === "API" && name === "PIKACHU_API") {
+    } else if (provide === "API" && name === "PIKACHU_API") {
       return <PikachuAPI />;
     } else {
       return <></>;
@@ -60,7 +60,7 @@ function ProviderForm({
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)} id="channel-form">
           <input type="hidden" {...register("serviceId")} value={service.id} />
-          <input type="hidden" {...register("type")} value={type} />
+          <input type="hidden" {...register("provide")} value={provide} />
           <input type="hidden" {...register("name")} value={name} />
 
           <div className="overflow-hidden bg-white shadow sm:rounded-lg">

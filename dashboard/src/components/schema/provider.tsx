@@ -4,7 +4,7 @@ export const providerSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
   description: z.string().optional().nullable().default(null),
-  type: z.string().min(1),
+  provide: z.string().min(1),
   //enum(["DISPLAY", "INAPP_PUSH", "SMS", "EMAIL", "ATA", "FTA"]),
   status: z.string().min(1),
   serviceId: z.string().min(1),

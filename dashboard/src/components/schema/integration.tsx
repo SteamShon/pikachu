@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { integrationInfoSchema } from "./integrationInfo";
 
 export const integrationSchema = z.object({
   id: z.string().optional(),
@@ -9,7 +8,7 @@ export const integrationSchema = z.object({
   //enum(["DB", "HTTP"]),
   status: z.string().min(1),
   placementId: z.string().min(1),
-  integrationInfo: integrationInfoSchema.optional(),
+  details: z.optional(z.record(z.unknown())),
 });
 
 export type IntegrationSchemaType = z.infer<typeof integrationSchema>;

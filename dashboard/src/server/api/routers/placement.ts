@@ -80,11 +80,7 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: {
-            include: {
-              integrationInfo: true,
-            },
-          },
+          integrations: true,
         },
       });
 
@@ -129,11 +125,7 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: {
-            include: {
-              integrationInfo: true,
-            },
-          },
+          integrations: true,
         },
       });
 
@@ -183,11 +175,7 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: {
-            include: {
-              integrationInfo: true,
-            },
-          },
+          integrations: true,
         },
       });
 
@@ -196,9 +184,8 @@ export const placementRouter = createTRPCRouter({
   addIntegration: protectedProcedure
     .input(integrationSchema)
     .mutation(async ({ input }) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { integrationInfo, ...integrationInput } = input;
-      const { placementId, ...integration } = integrationInput;
+      const { placementId, ...integration } = input;
+      const details = integration.details as Prisma.JsonObject;
 
       const placement = await prisma.placement.update({
         where: {
@@ -215,16 +202,13 @@ export const placementRouter = createTRPCRouter({
               },
               create: {
                 ...integration,
+                details,
               },
             },
           },
         },
         include: {
-          integrations: {
-            include: {
-              integrationInfo: true,
-            },
-          },
+          integrations: true,
         },
       });
 
@@ -233,14 +217,8 @@ export const placementRouter = createTRPCRouter({
   updateIntegration: protectedProcedure
     .input(integrationSchema)
     .mutation(async ({ input }) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { integrationInfo, ...integrationInput } = input;
-      const { placementId, ...integration } = integrationInput;
-
-      const integrationInfoJson = {
-        id: integrationInfo?.id,
-        details: integrationInfo?.details as Prisma.JsonObject,
-      };
+      const { placementId, ...integration } = input;
+      const details = integration.details as Prisma.JsonObject;
 
       const placement = await prisma.placement.update({
         where: {
@@ -254,22 +232,13 @@ export const placementRouter = createTRPCRouter({
               },
               data: {
                 ...integration,
-                integrationInfo: {
-                  upsert: {
-                    update: integrationInfoJson,
-                    create: integrationInfoJson,
-                  },
-                },
+                details,
               },
             },
           },
         },
         include: {
-          integrations: {
-            include: {
-              integrationInfo: true,
-            },
-          },
+          integrations: true,
         },
       });
 
@@ -296,11 +265,7 @@ export const placementRouter = createTRPCRouter({
           },
         },
         include: {
-          integrations: {
-            include: {
-              integrationInfo: true,
-            },
-          },
+          integrations: true,
         },
       });
 

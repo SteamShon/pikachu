@@ -156,7 +156,7 @@ function PlacementForm({
                     {providers.map((provider) => {
                       return (
                         <option key={provider.id} value={provider.id}>
-                          {`[${provider.type}]: ${provider.name}`}
+                          {`[${provider.provide}]: ${provider.name}`}
                         </option>
                       );
                     })}

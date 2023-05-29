@@ -405,7 +405,7 @@ model Provider {
     id            String      @id @default(cuid())
     name        String
     description String?
-    type        String // display/inapp_push/sms/ata+fta
+    provide        String // display/inapp_push/sms/ata+fta
 
     service     Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
     serviceId   String
@@ -418,5 +418,5 @@ model Provider {
     placements Placement[]
 
     @@index(fields: [updatedAt])
-    @@unique([serviceId, type, name])
+    @@unique([serviceId, provide, name])
 }

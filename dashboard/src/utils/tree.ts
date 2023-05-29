@@ -10,7 +10,6 @@ import type {
   Customset,
   CustomsetInfo,
   Integration,
-  IntegrationInfo,
   Placement,
   Provider,
   Service,
@@ -41,9 +40,7 @@ export function buildServiceTree(
       })[];
       provider: Provider | null;
       contentType: ContentType | null;
-      integrations: (Integration & {
-        integrationInfo: IntegrationInfo | null;
-      })[];
+      integrations: Integration[];
     })[];
     contentTypes: (ContentType & {
       contentTypeInfo: ContentTypeInfo | null;
@@ -103,7 +100,7 @@ export function buildPlacementTree(
     })[];
     contentType: ContentType | null;
     provider: Provider | null;
-    integrations: (Integration & { integrationInfo: IntegrationInfo | null })[];
+    integrations: Integration[];
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
@@ -233,12 +230,9 @@ export function buildServiceConfigTree(
 }
 
 export function buildIntegraionTree(
-  integrations: (Integration & { integrationInfo: IntegrationInfo | null })[]
-): Record<string, Integration & { integrationInfo: IntegrationInfo | null }> {
-  return arrayToRecord(integrations) as Record<
-    string,
-    Integration & { integrationInfo: IntegrationInfo | null }
-  >;
+  integrations: Integration[]
+): Record<string, Integration> {
+  return arrayToRecord(integrations) as Record<string, Integration>;
 }
 
 export function buildProviderTree(

@@ -6,31 +6,32 @@ import {
   CircularProgress,
   TextField,
 } from "@mui/material";
-import type { ServiceConfig } from "@prisma/client";
+import type { Provider } from "@prisma/client";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useFieldArray } from "react-hook-form";
+
 import {
+  fetchParquetSchema,
   listFoldersRecursively,
   loadS3,
   partitionBucketPrefix,
-} from "../../utils/aws";
-import { fetchParquetSchema } from "../../utils/duckdb";
-import { extractS3Buckets } from "../../utils/serviceConfig";
+  extractS3Buckets,
+} from "../../utils/providers/awsS3DuckDB";
 import type { DatasetSchemaType } from "../schema/dataset";
 import JoinConditionBuilder from "./joinConditionBuilder";
 import type { TableMetadata } from "./sqlBuilder";
 
 function JoinCandidateBuilder({
-  serviceConfig,
+  provider,
   initialData,
   index,
   methods,
   tableColumns,
   setTableColumns,
 }: {
-  serviceConfig: ServiceConfig;
+  provider: Provider;
   index: number;
   initialData?: DatasetSchemaType;
   methods: UseFormReturn<DatasetSchemaType, unknown>;
@@ -52,7 +53,7 @@ function JoinCandidateBuilder({
   const loadPaths = useMemo(
     () => async (bucketName: string, prefix?: string) => {
       setBucket(bucketName);
-      const s3 = loadS3(serviceConfig);
+      const s3 = loadS3(provider);
       const folders = await listFoldersRecursively({
         s3,
         bucketName: bucketName,
@@ -65,11 +66,11 @@ function JoinCandidateBuilder({
 
       setPaths(newPaths);
     },
-    [serviceConfig]
+    [provider]
   );
   const loadMetadata = useMemo(
     () => async (path: string) => {
-      const rows = await fetchParquetSchema(serviceConfig, path);
+      const rows = await fetchParquetSchema(provider, path);
       const columns = rows.map((row) => String(row.name));
       setTableColumns((prev) => {
         prev[`${index}`] = { columns };
@@ -78,7 +79,7 @@ function JoinCandidateBuilder({
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [serviceConfig]
+    [provider]
   );
 
   const getBucket = () => {
@@ -89,7 +90,7 @@ function JoinCandidateBuilder({
   };
 
   const s3Buckets = () => {
-    const s3Buckets = extractS3Buckets(serviceConfig);
+    const s3Buckets = extractS3Buckets(provider);
 
     return s3Buckets?.split(",") || [];
   };

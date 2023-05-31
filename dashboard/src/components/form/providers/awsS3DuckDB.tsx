@@ -1,11 +1,27 @@
+import axios from "axios";
 import { useFieldArray, useFormContext } from "react-hook-form";
+import { ProviderSchemaType } from "../../schema/provider";
+import { useState } from "react";
+import Badge from "../../common/Badge";
 
-function AWSS3ConfigForm({ name }: { name: string }) {
-  const { register, control } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "buckets",
-  });
+function AWSS3DuckDB() {
+  const [checked, setChecked] = useState<boolean | undefined>(undefined);
+  const methods = useFormContext<ProviderSchemaType>();
+  const { register, watch, setValue } = methods;
+
+  const validate = async () => {
+    const provider = watch();
+
+    try {
+      const result = await axios.post(`/api/provider/awsS3DuckDB`, provider);
+      if (result.status === 200) {
+        setValue("status", "PUBLISHED");
+      }
+      setChecked(result.status === 200);
+    } catch (error) {
+      setChecked(false);
+    }
+  };
 
   return (
     <>
@@ -28,7 +44,7 @@ function AWSS3ConfigForm({ name }: { name: string }) {
             <select
               id="s3Region"
               className="peer h-8 w-full border-none bg-transparent p-0 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
-              {...register(`${name}.s3Region`)}
+              {...register(`details.s3Region`)}
             >
               <option value="">Please select</option>
               <option value="ap-northeast-2">ap-northeast-2</option>
@@ -46,7 +62,7 @@ function AWSS3ConfigForm({ name }: { name: string }) {
               id="s3AccessKeyId"
               placeholder="s3AccessKeyId"
               className="peer h-8 w-full border-none bg-transparent p-0 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
-              {...register(`${name}.s3AccessKeyId`)}
+              {...register(`details.s3AccessKeyId`)}
             />
 
             <span className="absolute left-3 top-3 -translate-y-1/2 text-xs text-gray-700 transition-all peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm peer-focus:top-3 peer-focus:text-xs">
@@ -61,7 +77,7 @@ function AWSS3ConfigForm({ name }: { name: string }) {
               id="s3SecretAccessKey"
               placeholder="s3SecretAccessKey"
               className="peer h-8 w-full border-none bg-transparent p-0 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
-              {...register(`${name}.s3SecretAccessKey`)}
+              {...register(`details.s3SecretAccessKey`)}
             />
 
             <span className="absolute left-3 top-3 -translate-y-1/2 text-xs text-gray-700 transition-all peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm peer-focus:top-3 peer-focus:text-xs">
@@ -76,7 +92,7 @@ function AWSS3ConfigForm({ name }: { name: string }) {
               id="s3Buckets"
               placeholder="s3Buckets seperated by ','"
               className="peer h-8 w-full border-none bg-transparent p-0 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
-              {...register(`${name}.s3Buckets`)}
+              {...register(`details.s3Buckets`)}
             />
 
             <span className="absolute left-3 top-3 -translate-y-1/2 text-xs text-gray-700 transition-all peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm peer-focus:top-3 peer-focus:text-xs">
@@ -84,8 +100,24 @@ function AWSS3ConfigForm({ name }: { name: string }) {
             </span>
           </label>
         </div>
+        <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+          <button
+            className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+            type="button"
+            onClick={() => validate()}
+          >
+            Check
+          </button>
+          {checked === undefined ? (
+            "Please Verify"
+          ) : checked ? (
+            <Badge variant="success" label="valid" />
+          ) : (
+            <Badge variant="error" label="not valid" />
+          )}
+        </div>
       </div>
     </>
   );
 }
-export default AWSS3ConfigForm;
+export default AWSS3DuckDB;

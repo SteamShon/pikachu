@@ -34,18 +34,18 @@ function SideMenu() {
         },
       ],
     },
-    {
-      title: "cube",
-      icon: <BsTable />,
-      link: `/service/${serviceId}/dashboard?step=cubes`,
-      subMenus: [
-        {
-          title: "segments",
-          icon: <AiOutlineUsergroupAdd />,
-          link: `/service/${serviceId}/dashboard?step=segments`,
-        },
-      ],
-    },
+    // {
+    //   title: "cube",
+    //   icon: <BsTable />,
+    //   link: `/service/${serviceId}/dashboard?step=cubes`,
+    //   subMenus: [
+    //     {
+    //       title: "segments",
+    //       icon: <AiOutlineUsergroupAdd />,
+    //       link: `/service/${serviceId}/dashboard?step=segments`,
+    //     },
+    //   ],
+    // },
     {
       title: "placement",
       icon: <BiSitemap />,
@@ -68,15 +68,17 @@ function SideMenu() {
         },
       ],
     },
-    // {
-    //   title: "integration",
-    //   icon: <AiOutlineApi />,
-    //   link: `/service/${serviceId}/dashboard?step=Integrations`,
-    // },
     {
       title: "providers",
       icon: <AiOutlineApi />,
       link: `/service/${serviceId}/dashboard?step=providers`,
+      subMenus: [
+        {
+          title: "integration",
+          icon: <AiOutlineApi />,
+          link: `/service/${serviceId}/dashboard?step=integrations`,
+        },
+      ],
     },
   ];
 

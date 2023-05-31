@@ -1,0 +1,440 @@
+import type { Cube, Provider } from "@prisma/client";
+import { extractValue } from "../json";
+import S3 from "aws-sdk/clients/s3";
+import type { Buckets, Object as S3Object } from "aws-sdk/clients/s3";
+import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
+import * as duckdb from "@duckdb/duckdb-wasm";
+import { MyCache } from "../cache";
+import type { RuleGroupType } from "@react-querybuilder/ts";
+import { formatQuery } from "react-querybuilder";
+import type { DatasetSchemaType } from "../../components/schema/dataset";
+
+export function extractS3Region(provider?: Provider | null) {
+  if (!provider) return undefined;
+
+  return extractValue({
+    object: provider?.details,
+    paths: ["s3Region"],
+  }) as string | undefined;
+}
+
+export function extractS3AccessKeyId(provider?: Provider | null) {
+  if (!provider) return undefined;
+
+  return extractValue({
+    object: provider?.details,
+    paths: ["s3AccessKeyId"],
+  }) as string | undefined;
+}
+
+export function extractS3SecretAccessKey(provider?: Provider | null) {
+  if (!provider) return undefined;
+
+  return extractValue({
+    object: provider?.details,
+    paths: ["s3SecretAccessKey"],
+  }) as string | undefined;
+}
+
+export function extractS3Buckets(provider?: Provider | null) {
+  if (!provider) return undefined;
+
+  return extractValue({
+    object: provider?.details,
+    paths: ["s3Buckets"],
+  }) as string | undefined;
+}
+
+export function extractBuilderPrivateKey(provider?: Provider | null) {
+  if (!provider) return undefined;
+
+  return extractValue({
+    object: provider?.details,
+    paths: ["privateKey"],
+  }) as string | undefined;
+}
+
+export function extractBuilderPublicKey(provider?: Provider | null) {
+  if (!provider) return undefined;
+
+  return extractValue({
+    object: provider?.details,
+    paths: ["publicKey"],
+  }) as string | undefined;
+}
+
+export type TreeNode = {
+  name: string;
+  path: string;
+  children: TreeNode[];
+};
+
+export function loadS3(provider: Provider): S3 {
+  const s3Region = extractS3Region(provider);
+  const s3AccessKeyId = extractS3AccessKeyId(provider);
+  const s3SecretAccessKey = extractS3SecretAccessKey(provider);
+
+  return new S3({
+    region: s3Region,
+    accessKeyId: s3AccessKeyId,
+    secretAccessKey: s3SecretAccessKey,
+    signatureVersion: "v4",
+  });
+}
+export function buildPath(
+  nodes: TreeNode[],
+  paths: TreeNode[],
+  targetNodeName: string
+): TreeNode[] {
+  const found = nodes.find((n) => n.name === targetNodeName);
+
+  if (found) {
+    return [...paths, found];
+  }
+
+  let subPaths: TreeNode[] = [];
+  nodes.forEach((node) => {
+    node.children.forEach((child) => {
+      subPaths = buildPath([child], [...paths, node], targetNodeName);
+      if (subPaths.length > 0) return subPaths;
+    });
+  });
+
+  return subPaths;
+}
+
+export function objectsToTree({ paths }: { paths: S3Object[] }) {
+  return paths.reduce((prev: TreeNode[], p) => {
+    const names = p.Key?.split("/") || [];
+
+    names.reduce((q, name) => {
+      if (name === "") return q;
+
+      let temp = q.find((o) => o.name === name);
+      if (!temp) {
+        q.push((temp = { name, path: p.Key || "", children: [] }));
+      }
+
+      return temp.children;
+    }, prev);
+
+    return prev;
+  }, []);
+}
+export async function listBuckets({
+  s3,
+}: {
+  s3: S3;
+}): Promise<Buckets | undefined> {
+  const buckets = await s3.listBuckets().promise();
+  return buckets.Buckets;
+}
+export async function listFoldersRecursively({
+  s3,
+  bucketName,
+  prefix = "",
+}: {
+  s3: S3;
+  bucketName: string;
+  prefix?: string;
+}) {
+  let continuationToken: string | undefined;
+  const folders: S3Object[] = [];
+
+  const response = await s3
+    .listObjectsV2({
+      Bucket: bucketName,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+    })
+    .promise();
+  for (const item of response?.Contents || []) {
+    if (item.Key && item.Key !== prefix) {
+      folders.push(item);
+
+      // folders.push(
+      //   ...(await listFoldersRecursively({
+      //     s3,
+      //     bucketName,
+      //     prefix: item.Key,
+      //   }))
+      // );
+    }
+  }
+
+  // do {
+
+  //   continuationToken = response?.NextContinuationToken;
+  // } while (continuationToken);
+
+  return folders;
+}
+
+export function partitionBucketPrefix(path: string) {
+  const tokens = path.replace("s3://", "").split("/");
+  const bucket = tokens.shift();
+
+  return { bucket, prefix: tokens.join("/") };
+}
+
+const pool = new MyCache<Provider, AsyncDuckDB | undefined>({
+  max: 3, // # of items
+  ttl: 10 * 60 * 1000, // expiration in ms (10 min)
+});
+const queryCache = new MyCache<
+  { provider: Provider; query: string },
+  Record<string, unknown>[]
+>({
+  max: 50, // # of items
+  ttl: 10 * 60 * 1000, // expiration in ms (10 min)
+});
+
+async function loadDuckDBInner(
+  provider: Provider
+): Promise<AsyncDuckDB | undefined> {
+  const allBundles = duckdb.getJsDelivrBundles();
+  const bestBundle = await duckdb.selectBundle(allBundles);
+
+  if (!bestBundle.mainWorker) {
+    console.error("can't initialize workder");
+    return Promise.resolve(undefined);
+  }
+
+  const worker = await duckdb.createWorker(bestBundle.mainWorker);
+  // Instantiate the asynchronus version of DuckDB-wasm
+  const logger = new duckdb.ConsoleLogger();
+  const db = new duckdb.AsyncDuckDB(logger, worker);
+  await db.instantiate(bestBundle.mainModule, bestBundle.pthreadWorker);
+
+  const s3Region = extractS3Region(provider);
+  const s3AccessKeyId = extractS3AccessKeyId(provider);
+  const s3SecretAccessKey = extractS3SecretAccessKey(provider);
+  // set s3 config.
+  const setQuery = `
+SET home_directory='~/';
+SET s3_region='${s3Region}';
+SET s3_access_key_id='${s3AccessKeyId}';
+SET s3_secret_access_key='${s3SecretAccessKey}';
+  `;
+
+  const conn = await db.connect();
+  await conn.query(setQuery);
+  console.log("duckdb: load db instance success.");
+
+  return db;
+}
+export async function loadDuckDB(
+  provider: Provider
+): Promise<AsyncDuckDB | undefined> {
+  return pool.get(provider, loadDuckDBInner);
+}
+
+async function executeQueryInner({
+  provider,
+  query,
+}: {
+  provider: Provider;
+  query: string;
+}): Promise<Record<string, unknown>[]> {
+  const startedAt = new Date().getTime();
+  const db = await loadDuckDB(provider);
+  if (!db) return Promise.reject(new Error("duckdb instance is not loaded."));
+
+  const conn = await db.connect();
+  const result = await conn.query(query);
+  const duration = new Date().getTime() - startedAt;
+
+  console.log(`duckdb[${duration}]: ${query}`);
+
+  const buffer: Record<string, unknown>[] = [];
+  (result?.batches || []).forEach((rows) => {
+    for (let r = 0; r < rows.numRows; r++) {
+      const row = rows.get(r);
+      if (!row) return {};
+      // const kvs = Object.entries(row.toJSON()).map(([key, value]) => {
+      //   return [key, value];
+      // });
+      const kvs: { [x: string]: unknown } = {};
+      Object.entries(row.toJSON()).forEach(([key, value]) => {
+        // console.log(typeof value);
+        // if (typeof value === "object") {
+        //   console.log(value);
+        // }
+        kvs[key] = typeof value === "bigint" ? value.toString() : value;
+      });
+
+      buffer.push(kvs);
+    }
+  });
+  return buffer;
+}
+
+export async function executeQuery(
+  provider: Provider,
+  query: string
+): Promise<Record<string, unknown>[]> {
+  return queryCache.get({ provider, query }, executeQueryInner);
+}
+export async function describe(
+  provider: Provider,
+  cube: Cube
+): Promise<Record<string, unknown>[]> {
+  const query = `DESCRIBE ${cube.sql}`;
+
+  return executeQuery(provider, query);
+}
+export async function fetchParquetSchema(
+  provider: Provider,
+  path: string
+): Promise<Record<string, unknown>[]> {
+  const query = `
+SELECT * FROM parquet_schema('${path}');
+  `;
+
+  return executeQuery(provider, query);
+}
+
+export async function fetchValues(
+  provider: Provider,
+  sql: string,
+  fieldName: string,
+  columnType?: string,
+  value?: string
+): Promise<unknown[]> {
+  const column = columnType?.endsWith("[]")
+    ? `unnest(${fieldName}) AS ${fieldName}`
+    : `${fieldName}`;
+  const where = value ? ` WHERE ${fieldName} like '%${value}%'` : ``;
+  const query = `
+SELECT distinct ${column} FROM (${sql}) ${where};
+  `;
+
+  const rows = await executeQuery(provider, query);
+  return rows.map((row) => {
+    return row[`${fieldName}`];
+  });
+}
+
+export async function countPopulation({
+  provider,
+  sql,
+  where,
+  idFieldName,
+  distinct,
+}: {
+  provider: Provider;
+  sql: string;
+  where?: string;
+  idFieldName?: string;
+  distinct?: boolean;
+}): Promise<string> {
+  const distinctClause = distinct || false ? "DISTINCT" : "";
+  const columnClause = idFieldName || "*";
+  const selectClause = `COUNT(${distinctClause} ${columnClause}) as popoulation`;
+  const whereClause = where ? `WHERE ${where}` : "";
+  const query = `
+SELECT ${selectClause} FROM (${sql}) ${whereClause};
+  `;
+
+  const rows = await executeQuery(provider, query);
+  return String(rows[0]?.popoulation);
+}
+
+export function formatQueryCustom(query: RuleGroupType) {
+  const jsonLogicToSql = (
+    node: Record<string, unknown>
+  ): string | undefined => {
+    if (node.or) {
+      const childrens = node.or as Record<string, unknown>[];
+      return childrens
+        .map((child) => {
+          return `(${jsonLogicToSql(child)})`;
+        })
+        .join(" OR ");
+    }
+    if (node.and) {
+      const childrens = node.and as Record<string, unknown>[];
+      return childrens
+        .map((child) => {
+          return `(${jsonLogicToSql(child)})`;
+        })
+        .join(" AND ");
+    }
+    if (node.in) {
+      const kvs = node.in as unknown[];
+      const key = (kvs[0] as { var: string }).var;
+      const values = kvs[1] as string[];
+      // check if key is list type.
+      const ls = values.map((value) => {
+        return `array_contains(${key}, '${value}')`;
+      });
+      return ls.join(" OR ");
+    }
+
+    return undefined;
+  };
+
+  const jsonLogic = formatQuery(query, "jsonlogic");
+  return jsonLogicToSql(jsonLogic as Record<string, unknown>);
+}
+
+export async function listFiles(provider: Provider) {
+  const sql = `
+  .files;
+  `;
+  return await executeQuery(provider, sql);
+}
+
+export function buildJoinSql({
+  provider,
+  dataset,
+}: {
+  provider: Provider;
+  dataset: DatasetSchemaType;
+}) {
+  const targets = dataset.tables.map((target, index) => {
+    const read = target.files.map((file) => `'${file}'`).join(",");
+    const conditions = target.conditions.map(
+      ({ sourceTable, sourceColumn, targetColumn }) => {
+        return `t_${sourceTable}.${sourceColumn} = t_${index}.${targetColumn}`;
+      }
+    );
+    const conditionsClause =
+      conditions.length === 0 ? "" : `ON (${conditions.join(" AND ")})`;
+    return `read_parquet([${read}]) AS t_${index} ${conditionsClause}`;
+  });
+  const from = targets.join(" JOIN ");
+  return `
+SELECT  *
+FROM    ${from}
+    `;
+}
+
+export function fromSql(sql?: string): DatasetSchemaType | undefined {
+  if (!sql) return undefined;
+
+  const matches = sql.matchAll(/read_parquet(.*?)AS(.*?)(JOIN|\n)/gm);
+  const datasets = [];
+
+  for (const match of matches) {
+    const files = (
+      match[1]?.replace(/\[|\]|\(|\)|'/g, "")?.split(",") || []
+    ).map((file) => file.trim());
+    const conditions = [];
+    for (const condition of match[2]?.matchAll(/\((.*)\.(.*)=(.*)\.(.*)\)/gm) ||
+      []) {
+      const tokens = condition[1]?.split("_");
+      const sourceTable = tokens?.[tokens.length - 1];
+      if (sourceTable && condition[2] && condition[4]) {
+        conditions.push({
+          sourceTable,
+          sourceColumn: condition[2],
+          targetColumn: condition[4],
+        });
+      }
+    }
+    datasets.push({ files, conditions });
+  }
+
+  return { tables: datasets };
+}

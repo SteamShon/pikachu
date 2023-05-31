@@ -27,13 +27,13 @@ function CubeModal({
   type RouterOutput = inferRouterOutputs<typeof cubeRouter>;
   type OutputType = RouterOutput["create"];
   const handleSuccess = (created: OutputType): void => {
-    setServiceTree((prev) => {
-      if (!prev) return prev;
-      if (!prev.serviceConfig?.cubes) return prev;
+    // setServiceTree((prev) => {
+    //   if (!prev) return prev;
+    //   if (!prev.serviceConfig?.cubes) return prev;
 
-      prev.serviceConfig.cubes[created.id] = buildCubeTree(created);
-      return prev;
-    });
+    //   prev.serviceConfig.cubes[created.id] = buildCubeTree(created);
+    //   return prev;
+    // });
 
     setModalOpen(false);
   };
@@ -48,6 +48,7 @@ function CubeModal({
     },
   });
   const onSubmit = (input: CubeSchemaType) => {
+    console.log(input);
     if (initialData) update(input);
     else create(input);
   };

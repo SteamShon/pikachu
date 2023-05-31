@@ -1,36 +1,39 @@
+import moment from "moment";
 import { z } from "zod";
 import { cubeSchema } from "../../../components/schema/cube";
+import { cubeHistorySchema } from "../../../components/schema/cubeHistory";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import moment from "moment";
-import type { CubeHistory } from "@prisma/client";
-import { cubeHistorySchema } from "../../../components/schema/cubeHistory";
 
 export const cubeRouter = createTRPCRouter({
   create: protectedProcedure.input(cubeSchema).mutation(async ({ input }) => {
-    const cube = await prisma.cube.create({
-      data: input,
+    const { providerId, ...cube } = input;
+    return await prisma.cube.create({
+      data: {
+        ...cube,
+        provider: {
+          connect: {
+            id: providerId,
+          },
+        },
+      },
       include: {
-        serviceConfig: true,
         cubeHistories: true,
+        provider: true,
       },
     });
-
-    return cube;
   }),
   update: protectedProcedure.input(cubeSchema).mutation(async ({ input }) => {
-    const cube = await prisma.cube.update({
+    return await prisma.cube.update({
       where: {
         id: input.id,
       },
       data: input,
       include: {
-        serviceConfig: true,
         cubeHistories: true,
+        provider: true,
       },
     });
-
-    return cube;
   }),
   //TODO: Refactor all remove apis use id instead of name.
   remove: protectedProcedure
@@ -61,12 +64,8 @@ export const cubeRouter = createTRPCRouter({
           id: input.id,
         },
         include: {
-          serviceConfig: {
-            include: {
-              service: true,
-            },
-          },
           cubeHistories: true,
+          provider: true,
         },
       });
 
@@ -91,8 +90,8 @@ export const cubeRouter = createTRPCRouter({
           },
         },
         include: {
-          serviceConfig: true,
           cubeHistories: true,
+          provider: true,
         },
       });
 
@@ -118,8 +117,8 @@ export const cubeRouter = createTRPCRouter({
           },
         },
         include: {
-          serviceConfig: true,
           cubeHistories: true,
+          provider: true,
         },
       });
 

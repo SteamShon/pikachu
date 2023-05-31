@@ -1,24 +1,20 @@
 import SendIcon from "@mui/icons-material/Send";
 import LoadingButton from "@mui/lab/LoadingButton";
-import type { ServiceConfig } from "@prisma/client";
-import { useState } from "react";
-import { executeQuery } from "../../utils/duckdb";
-import QueryResultTable from "../common/QueryResultTable";
 
-function SqlPreview({
-  serviceConfig,
-  sql,
-}: {
-  serviceConfig: ServiceConfig;
-  sql: string;
-}) {
+import { useState } from "react";
+
+import QueryResultTable from "../common/QueryResultTable";
+import type { Provider } from "@prisma/client";
+import { executeQuery } from "../../utils/providers/awsS3DuckDB";
+
+function SqlPreview({ provider, sql }: { provider: Provider; sql: string }) {
   const [rows, setRows] = useState<{ [x: string]: unknown }[]>([]);
   const [loading, setLoading] = useState(false);
 
   const runQuery = async () => {
     setLoading(true);
     const withLimit = `${sql} LIMIT 100`;
-    const result = await executeQuery(serviceConfig, withLimit);
+    const result = await executeQuery(provider, withLimit);
     setRows(result);
     setLoading(false);
   };

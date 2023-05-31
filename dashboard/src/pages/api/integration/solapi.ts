@@ -1,8 +1,8 @@
 import type { Provider } from "@prisma/client";
 import axios from "axios";
-import { createHmac } from "crypto";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { extractValue, jsonParseWithFallback } from "../../../utils/json";
+import { createHmac } from "crypto";
 function getAuthHeader(provider?: Provider) {
   const now = new Date().toISOString();
 
@@ -31,23 +31,18 @@ function getAuthHeader(provider?: Provider) {
     Authorization: `HMAC-SHA256 apiKey=${apiKey}, date=${now}, salt=${salt}, signature=${signature}`,
   };
 }
-async function getRequestWithAuth({
-  provider,
-  uri,
-}: {
-  provider?: Provider;
-  uri: string;
-}) {
-  const headers = getAuthHeader(provider);
-  const { data } = await axios.get(uri, {
-    headers,
-  });
-
-  return data;
-}
 async function getSenderList({ provider }: { provider?: Provider }) {
-  const uri = `https://api.solapi.com/senderid/v1/numbers/active`;
-  return await getRequestWithAuth({ uri, provider });
+  const uri = `https://api.solapi.com/messages/v4/list?limit=1`;
+  const headers = getAuthHeader(provider);
+  try {
+    const { data } = await axios.get(uri, {
+      headers,
+    });
+
+    return data;
+  } catch (e) {
+    console.log(e);
+  }
 }
 async function sendMessages({
   provider,
@@ -56,31 +51,27 @@ async function sendMessages({
   provider?: Provider;
   payload?: Record<string, unknown>;
 }) {
-  const uri = `https://api.solapi.com/messages/v4/send-many/detail`;
-
-  const headers = getAuthHeader(provider);
-  const { data } = await axios.post(uri, payload, {
-    headers,
-  });
-
-  return data;
-}
-async function getMessageList({ provider }: { provider?: Provider }) {
-  const uri = `https://api.solapi.com/messages/v4/list?limit=1`;
+  const uri = extractValue({
+    object: provider?.details,
+    paths: ["uri"],
+  }) as string | undefined;
   const headers = jsonParseWithFallback(
     extractValue({
       object: provider?.details,
       paths: ["headers"],
     }) as string | undefined
   ) as Record<string, string>;
+  if (!uri || Object.keys(headers).length === 0) return;
+  // const uri = `https://api.solapi.com/messages/v4/send-many/detail`;
 
-  const { data } = await axios.get(uri, {
+  // const headers = getAuthHeader(provider);
+  const { data } = await axios.post(uri, payload, {
     headers,
+    timeout: 5000,
   });
 
   return data;
 }
-
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const config = req.body as Record<string, unknown>;
   const provider = config["provider"] as Provider | undefined;
@@ -92,10 +83,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(404).end();
   } else {
     try {
-      if (method === "getMessageList") {
-        const messageList = await getMessageList({ provider });
-        res.json(messageList);
-      } else if (method === "getSenderList") {
+      if (method === "getSenderList") {
         const senderList = await getSenderList({ provider });
         res.json(senderList);
       } else if (method === "sendMessages") {
@@ -106,10 +94,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     } catch (error) {
       res.status(500).end();
     }
-
-    //const result = await upload(serviceConfig, cubeHistory);
-    //if (result) res.status(200).end();
-    //else res.status(500).end();
   }
 };
 

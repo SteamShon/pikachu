@@ -12,6 +12,7 @@ export type TreeNode = {
   path: string;
   children: TreeNode[];
 };
+
 export function loadS3(serviceConfig: ServiceConfig): S3 {
   const s3Region = extractS3Region(serviceConfig);
   const s3AccessKeyId = extractS3AccessKeyId(serviceConfig);

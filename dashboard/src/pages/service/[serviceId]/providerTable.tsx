@@ -42,6 +42,8 @@ function ProviderTable({
   );
   const typeNames = {
     API: [{ name: "PIKACHU_API", enabled: true }],
+    CUBE: [{ name: "AWS_S3_DUCKDB", enabled: true }],
+    USER_FEATURE: [{ name: "POSTGRES", enabled: true }],
     SMS: [
       { name: "SOLAPI", enabled: true },
       { name: "COOLSMS", enabled: false },

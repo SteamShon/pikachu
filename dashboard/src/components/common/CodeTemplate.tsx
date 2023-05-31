@@ -1,12 +1,32 @@
 export const InitialCode = `
-function Test(contents) {
-  const styles = {
-    color: "red",
-  };
+
+/*
+ * Define how to render this placement with creatives fetched from API. 
+ * user provided form will consist content variable.
+ * 
+ * creatives: { 
+ *  id: string; 
+ *  content: {[key:string]: unknown}; 
+ *  [key:string]: unknown
+ * }[]
+ */
+function Test(creatives) {
   return(
-    <div style={styles}>
-    {contents.map((props) => {
-      return <p>{props.title}</p>;
+    /* root div must use class placement */
+    <div class="placement">
+    {creatives.map(({id, content}, index) => {
+      /* 
+       * each creative div must use class creative
+       * also key and id prop need to be set with creative's unique id
+       * to send click/impression event correctly
+       */
+      return (
+        <>
+          <div key={id} id={id} className="creative flex border-spacing-1 p-4">
+            {/* modify here to code how to each creative will be rendered */}
+          </div>
+        </>
+      );
     })}
     </div>
   )
@@ -24,7 +44,11 @@ export function replacePropsInFunction({
   creatives,
 }: {
   code?: string;
-  creatives: {id: string; content: {[key:string]:unknown}, [key:string]:unknown}[];
+  creatives: {
+    id: string;
+    content: { [key: string]: unknown };
+    [key: string]: unknown;
+  }[];
 }) {
   const replaceValue = `render (new Test(${JSON.stringify(creatives)}))`;
 

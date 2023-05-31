@@ -7,7 +7,7 @@ import type {
 } from "@prisma/client";
 import { useFormContext } from "react-hook-form";
 import type { ContentTypeSchemaType } from "../schema/contentType";
-import DisplayContentTypeInfoBuilder from "./displayContentTypeInfoBuilder";
+import ContentTypeInfoBuilder from "./contentTypeInfoBuilder";
 
 function ContentTypeInfoForm({
   service,
@@ -30,13 +30,13 @@ function ContentTypeInfoForm({
       case "SMS":
         return (
           <>
-            <DisplayContentTypeInfoBuilder contentType={contentType} />
+            <ContentTypeInfoBuilder contentType={contentType} />
           </>
         );
       default:
         return (
           <>
-            <DisplayContentTypeInfoBuilder contentType={contentType} />;
+            <ContentTypeInfoBuilder contentType={contentType} />;
           </>
         );
     }

@@ -1,26 +1,25 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ContentType, Cube, Placement, Service } from "@prisma/client";
+import type { ContentType, Integration, Placement } from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import type ContentPreview from "../builder/contentPreview";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import type { PlacementSchemaType } from "../schema/placement";
 import { placementSchema } from "../schema/placement";
-import type ContentPreview from "../builder/contentPreview";
 
 function PlacementForm({
   service,
   contentTypes,
-  cubes,
+  integrations,
   initialData,
   onSubmit,
 }: {
   service: Parameters<typeof ContentPreview>[0]["service"];
   contentTypes: ContentType[];
-  cubes: Cube[];
+  integrations: Integration[];
   initialData?: Placement;
   onSubmit: (input: PlacementSchemaType) => void;
 }) {
-  const providers = service?.providers;
   const methods = useForm<PlacementSchemaType>({
     resolver: zodResolver(placementSchema),
   });
@@ -125,44 +124,26 @@ function PlacementForm({
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Cube</dt>
+                <dt className="text-sm font-medium text-gray-500">
+                  Integrations
+                </dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
-                    {...register("cubeId")}
-                    defaultValue={initialData?.cubeId || undefined}
+                    multiple
+                    {...register("integrationIds")}
+                    // defaultValue={initialData?.integrations || undefined}
                   >
                     <option value="">Please choose</option>
-                    {cubes.map((cube) => {
+                    {integrations.map((integration) => {
                       return (
-                        <option key={cube.id} value={cube.id}>
-                          {cube.name}
+                        <option key={integration.id} value={integration.id}>
+                          {integration.name}
                         </option>
                       );
                     })}
                   </select>
-                  {errors.contentTypeId && (
-                    <p role="alert">{errors.contentTypeId?.message}</p>
-                  )}
-                </dd>
-              </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Provider</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <select
-                    {...register("providerId")}
-                    defaultValue={initialData?.providerId || undefined}
-                  >
-                    <option value="">Please choose</option>
-                    {providers.map((provider) => {
-                      return (
-                        <option key={provider.id} value={provider.id}>
-                          {`[${provider.provide}]: ${provider.name}`}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {errors.providerId && (
-                    <p role="alert">{errors.providerId?.message}</p>
+                  {errors.integrationIds && (
+                    <p role="alert">{errors.integrationIds?.message}</p>
                   )}
                 </dd>
               </div>

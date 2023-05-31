@@ -7,6 +7,9 @@ import { providerSchema } from "../schema/provider";
 import Solapi from "./providers/solapi";
 import CustomLoadingButton from "../common/CustomLoadingButton";
 import PikachuAPI from "./providers/pikachuApi";
+import AWSS3ConfigForm from "./awsS3ConfigForm";
+import PostgresUserFeature from "./providers/postgresUserFeature";
+import AWSS3DuckDB from "./providers/awsS3DuckDB";
 
 function ProviderForm({
   service,
@@ -51,6 +54,10 @@ function ProviderForm({
       return <Solapi />;
     } else if (provide === "API" && name === "PIKACHU_API") {
       return <PikachuAPI />;
+    } else if (provide === "CUBE" && name === "AWS_S3_DUCKDB") {
+      return <AWSS3DuckDB />;
+    } else if (provide === "USER_FEATURE" && name === "POSTGRES") {
+      return <PostgresUserFeature />;
     } else {
       return <></>;
     }

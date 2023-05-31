@@ -13,7 +13,6 @@ export const getIncludes = {
   placements: {
     include: {
       contentType: true,
-      provider: true,
       campaigns: {
         include: {
           adGroups: {
@@ -27,7 +26,11 @@ export const getIncludes = {
           },
         },
       },
-      integrations: true,
+      integrations: {
+        include: {
+          provider: true,
+        },
+      },
     },
   },
   contentTypes: {
@@ -46,16 +49,19 @@ export const getIncludes = {
       createdBy: true,
     },
   },
-  serviceConfig: {
+  integrations: {
     include: {
-      cubes: {
-        include: {
-          cubeHistories: true,
-        },
-      },
+      provider: true,
+      service: true,
+      placements: true,
     },
   },
-  providers: true,
+  providers: {
+    include: {
+      service: true,
+      integrations: true,
+    },
+  },
 };
 export const serviceRouter = createTRPCRouter({
   create: protectedProcedure
@@ -171,10 +177,12 @@ export const serviceRouter = createTRPCRouter({
   getOnlyService: protectedProcedure
     .input(
       z.object({
-        id: z.string(),
+        id: z.string().optional(),
       })
     )
     .query(({ input }) => {
+      if (!input?.id) return null;
+
       return prisma.service.findUnique({ where: { id: input.id } });
     }),
   get: protectedProcedure
@@ -521,7 +529,11 @@ export const serviceRouter = createTRPCRouter({
           },
         },
         include: {
-          providers: true,
+          providers: {
+            include: {
+              integrations: true,
+            },
+          },
         },
       });
 
@@ -549,7 +561,11 @@ export const serviceRouter = createTRPCRouter({
           },
         },
         include: {
-          providers: true,
+          providers: {
+            include: {
+              integrations: true,
+            },
+          },
         },
       });
 
@@ -576,7 +592,11 @@ export const serviceRouter = createTRPCRouter({
           },
         },
         include: {
-          providers: true,
+          providers: {
+            include: {
+              integrations: true,
+            },
+          },
         },
       });
 

@@ -1,9 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Grid, Step, StepButton, Stepper } from "@mui/material";
-import type { Cube, CubeHistory, Service, ServiceConfig } from "@prisma/client";
+import type {
+  Cube,
+  CubeHistory,
+  Provider,
+  Service,
+  ServiceConfig,
+} from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { buildJoinSql, fromSql } from "../../utils/dataset";
+
 import SqlBuilder from "../builder/sqlBuilder";
 import SqlPreview from "../builder/sqlPreview";
 import CustomLoadingButton from "../common/CustomLoadingButton";
@@ -11,19 +17,28 @@ import type { CubeSchemaType } from "../schema/cube";
 import { cubeSchema } from "../schema/cube";
 import type { DatasetSchemaType } from "../schema/dataset";
 import CubeHistoryForm from "./cubeHistoryForm";
+import { buildJoinSql, fromSql } from "../../utils/providers/awsS3DuckDB";
 
 function CubeForm({
   service,
   initialData,
   onSubmit,
 }: {
-  service: Service & { serviceConfig?: ServiceConfig | null };
+  service: Service & {
+    serviceConfig?: ServiceConfig | null;
+    providers: Provider[];
+  };
   initialData?: Cube & {
     serviceConfig?: ServiceConfig;
     cubeHistories: CubeHistory[];
   };
   onSubmit: (input: CubeSchemaType) => void;
 }) {
+  const providers = (service?.providers || []).filter(
+    ({ provide }) => provide === "CUBE"
+  );
+
+  const [provider, setProvider] = useState<Provider | undefined>(undefined);
   const [activeStep, setActiveStep] = useState(0);
 
   const methods = useForm<CubeSchemaType>({
@@ -39,6 +54,8 @@ function CubeForm({
     formState: { errors },
   } = methods;
 
+  console.log(errors);
+
   useEffect(() => {
     reset({
       ...(initialData ? initialData : {}),
@@ -50,30 +67,29 @@ function CubeForm({
     {
       label: "QueryBuilder",
       description: `QueryBuilder`,
-      component: service?.serviceConfig ? (
-        <SqlBuilder
-          serviceConfig={service.serviceConfig}
-          initialData={fromSql(initialData?.sql || undefined)}
-          onSubmit={(data: DatasetSchemaType) => {
-            setValue("sql", buildJoinSql(data));
-            setActiveStep((prev) => prev + 1);
-          }}
-        />
-      ) : (
-        <></>
-      ),
+      component:
+        provider?.provide === "CUBE" && provider?.name === "AWS_S3_DUCKDB" ? (
+          <SqlBuilder
+            provider={provider}
+            initialData={fromSql(initialData?.sql || undefined)}
+            onSubmit={(data: DatasetSchemaType) => {
+              setValue("sql", buildJoinSql({ provider, dataset: data }));
+              setActiveStep((prev) => prev + 1);
+            }}
+          />
+        ) : (
+          <>{`${provider?.provide}_${provider?.name} is not supported yet.`}</>
+        ),
     },
     {
       label: "Preview",
       description: `Preview`,
-      component: service?.serviceConfig ? (
-        <SqlPreview
-          serviceConfig={service?.serviceConfig}
-          sql={getValues("sql") || ""}
-        />
-      ) : (
-        <></>
-      ),
+      component:
+        provider?.provide === "CUBE" && provider?.name === "AWS_S3_DUCKDB" ? (
+          <SqlPreview provider={provider} sql={getValues("sql") || ""} />
+        ) : (
+          <></>
+        ),
     },
     {
       label: "Save",
@@ -88,6 +104,14 @@ function CubeForm({
       ),
     },
   ];
+  const handleProviderChange = (newProviderId: string) => {
+    const provider = providers.find(({ id }) => id === newProviderId);
+
+    setProvider(provider);
+    if (provider) {
+      setValue("providerId", provider.id);
+    }
+  };
   return (
     <FormProvider {...methods}>
       <form id="cubeConfig-form">
@@ -96,14 +120,32 @@ function CubeForm({
             <h3 className="text-lg font-medium leading-6 text-gray-900">
               Cube
             </h3>
-            <input
+            {/* <input
               type="hidden"
               {...register("serviceConfigId")}
               value={service?.serviceConfig?.id}
-            />
+            /> */}
           </div>
           <div className="border-t border-gray-200">
             <dl>
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Provider</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <select
+                    onChange={(e) => handleProviderChange(e.target.value)}
+                  >
+                    <option value="">Please select</option>
+                    {providers.map((provider) => (
+                      <option key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.providerId && (
+                    <p role="alert">{errors.providerId?.message}</p>
+                  )}
+                </dd>
+              </div>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Name</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">

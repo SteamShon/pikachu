@@ -39,26 +39,22 @@ export function buildServiceTree(
         })[];
       })[];
       contentType: ContentType | null;
-      integrations: Integration[];
+      integrations: (Integration & { provider: Provider })[];
     })[];
     contentTypes: (ContentType & {
       contentTypeInfo: ContentTypeInfo | null;
       contents: (Content & { creatives: Creative[] })[];
     })[];
     customsets: (Customset & { customsetInfo: CustomsetInfo })[];
-    serviceConfig:
-      | (ServiceConfig & {
-          cubes: (Cube & { cubeHistories: CubeHistory[] })[];
-        })
-      | null;
-    providers: Provider[];
+    integrations: (Integration & { provider: Provider })[];
+    providers: (Provider & { integrations: Integration[] })[];
   }
 ): Service & {
   placements: Record<string, ReturnType<typeof buildPlacementTree>>;
   contentTypes: Record<string, ReturnType<typeof buildContentTypeTree>>;
   customsets: Record<string, Customset & { customsetInfo: CustomsetInfo }>;
-  serviceConfig: ReturnType<typeof buildServiceConfigTree>;
-  providers: Record<string, Provider>;
+  integrations: ReturnType<typeof buildIntegraionTree>;
+  providers: ReturnType<typeof buildProviderTree>;
 } {
   const placements = arrayToRecord(
     service.placements.map((placement) => {
@@ -74,7 +70,7 @@ export function buildServiceTree(
 
   const customsets = buildCustomsetsTree(service.customsets);
 
-  const serviceConfig = buildServiceConfigTree(service.serviceConfig);
+  const integrations = buildIntegraionTree(service.integrations);
 
   const providers = buildProviderTree(service.providers);
 
@@ -83,7 +79,7 @@ export function buildServiceTree(
     placements,
     contentTypes,
     customsets,
-    serviceConfig,
+    integrations,
     providers,
   };
 }
@@ -98,13 +94,11 @@ export function buildPlacementTree(
       })[];
     })[];
     contentType: ContentType | null;
-    provider: Provider | null;
-    integrations: Integration[];
+    integrations: (Integration & { provider: Provider })[];
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
   contentType: ContentType | null;
-  provider: Provider | null;
   integrations: ReturnType<typeof buildIntegraionTree>;
 } {
   const campaigns = arrayToRecord(
@@ -199,8 +193,8 @@ export function buildCustomsetsTree(
 }
 
 export function buildCubeTree(
-  cube: Cube & { cubeHistories: CubeHistory[] }
-): Cube & { cubeHistories: Record<string, CubeHistory> } {
+  cube: Cube & { provider: Provider; cubeHistories: CubeHistory[] }
+): Cube & { provider: Provider; cubeHistories: Record<string, CubeHistory> } {
   const cubeHistories = arrayToRecord(cube.cubeHistories) as Record<
     string,
     CubeHistory
@@ -211,7 +205,7 @@ export function buildCubeTree(
 export function buildServiceConfigTree(
   serviceConfig:
     | (ServiceConfig & {
-        cubes: (Cube & { cubeHistories: CubeHistory[] })[];
+        cubes: (Cube & { provider: Provider; cubeHistories: CubeHistory[] })[];
       })
     | null
 ):
@@ -229,13 +223,24 @@ export function buildServiceConfigTree(
 }
 
 export function buildIntegraionTree(
-  integrations: Integration[]
-): Record<string, Integration> {
-  return arrayToRecord(integrations) as Record<string, Integration>;
+  integrations: (Integration & { provider: Provider })[]
+): Record<string, Integration & { provider: Provider }> {
+  return arrayToRecord(integrations) as Record<
+    string,
+    Integration & { provider: Provider }
+  >;
 }
 
 export function buildProviderTree(
-  providers: Provider[]
-): Record<string, Provider> {
-  return arrayToRecord(providers) as Record<string, Provider>;
+  providers: (Provider & { integrations: Integration[] })[]
+): Record<string, Provider & { integrations: Record<string, Integration> }> {
+  return arrayToRecord(
+    providers.map((provider) => {
+      const cubes = arrayToRecord(provider.integrations) as Record<
+        string,
+        Integration
+      >;
+      return { ...provider, cubes };
+    })
+  ) as Record<string, Provider & { integrations: Record<string, Integration> }>;
 }

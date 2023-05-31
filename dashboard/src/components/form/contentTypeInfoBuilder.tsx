@@ -18,12 +18,12 @@ import { jsonParseWithFallback } from "../../utils/json";
 import CodeEditor from "../builder/codeEditor";
 import { removeRenderFunction } from "../common/CodeTemplate";
 
-function DisplayContentTypeInfoBuilder({
+function ContentTypeInfoBuilder({
   contentType,
 }: {
   contentType?: ContentType & {
     contentTypeInfo?: ContentTypeInfo | null;
-    contents: Content[];
+    // contents: Content[];
   };
 }) {
   const [schema, setSchema] = useState<string | undefined>(undefined);
@@ -226,4 +226,4 @@ function DisplayContentTypeInfoBuilder({
   );
 }
 
-export default DisplayContentTypeInfoBuilder;
+export default ContentTypeInfoBuilder;

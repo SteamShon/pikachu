@@ -1,6 +1,13 @@
+import type { Provider } from "@prisma/client";
 import type { DatasetSchemaType } from "../components/schema/dataset";
 
-export function buildJoinSql(dataset: DatasetSchemaType) {
+export function buildJoinSql({
+  provider,
+  dataset,
+}: {
+  provider: Provider;
+  dataset: DatasetSchemaType;
+}) {
   console.log(dataset);
   const targets = dataset.tables.map((target, index) => {
     const read = target.files.map((file) => `'${file}'`).join(",");

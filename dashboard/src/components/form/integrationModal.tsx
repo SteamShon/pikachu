@@ -1,10 +1,9 @@
 import { Dialog, DialogContent } from "@mui/material";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import type { placementRouter } from "../../server/api/routers/placement";
+import type { integrationRouter } from "../../server/api/routers/integration";
 import { api } from "../../utils/api";
 import type { buildServiceTree } from "../../utils/tree";
-import { buildIntegraionTree } from "../../utils/tree";
 import type { IntegrationSchemaType } from "../schema/integration";
 import IntegrationForm from "./integrationForm";
 
@@ -23,33 +22,29 @@ function IntegrationModal({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  type RouterOutput = inferRouterOutputs<typeof placementRouter>;
-  type OutputType = RouterOutput["addIntegration"];
-
+  type RouterOutput = inferRouterOutputs<typeof integrationRouter>;
+  type OutputType = RouterOutput["create"];
   const handleSuccess = (created: OutputType): void => {
-    setServiceTree((prev) => {
-      if (!prev) return prev;
-      const placement = prev.placements[created.id];
-      if (!placement) return prev;
+    // setServiceTree((prev) => {
+    //   if (!prev) return prev;
+    //   if (!prev.serviceConfig?.cubes) return prev;
 
-      placement.integrations = buildIntegraionTree(created.integrations);
-
-      return prev;
-    });
+    //   prev.serviceConfig.cubes[created.id] = buildCubeTree(created);
+    //   return prev;
+    // });
+    console.log(created);
     setModalOpen(false);
   };
-
-  const { mutate: create } = api.placement.addIntegration.useMutation({
+  const { mutate: create } = api.integration.create.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
-  const { mutate: update } = api.placement.updateIntegration.useMutation({
-    onSuccess(updated) {
-      handleSuccess(updated);
+  const { mutate: update } = api.integration.update.useMutation({
+    onSuccess(created) {
+      handleSuccess(created);
     },
   });
-
   const onSubmit = (input: IntegrationSchemaType) => {
     if (initialData) update(input);
     else create(input);

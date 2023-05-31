@@ -9,6 +9,7 @@ import { serviceRouter } from "./routers/service";
 import { userRouter } from "./routers/user";
 import { usersOnServicesRouter } from "./routers/usersOnServices";
 import { createTRPCRouter } from "./trpc";
+import { integrationRouter } from "./routers/integration";
 
 /**
  * This is the primary router for your server.
@@ -26,6 +27,7 @@ export const appRouter = createTRPCRouter({
   usersOnServices: usersOnServicesRouter,
   serviceConfig: serviceConfigRouter,
   cube: cubeRouter,
+  integration: integrationRouter,
 });
 
 // export type definition of API

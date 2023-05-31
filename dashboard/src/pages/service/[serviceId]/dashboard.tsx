@@ -12,7 +12,7 @@ import CampaignTable from "./campaignTable";
 import ContentTable from "./contentTable";
 import ContentTypeTable from "./contentTypeTable";
 import CreativeTable from "./creativeTable";
-import CubeTable from "./cubeTable";
+// import CubeTable from "./cubeTable";
 import CustomsetTable from "./customsetTable";
 import AdGroupMenu from "../../../components/AdGroupMenu";
 import CampaignMenu from "../../../components/CampaignMenu";
@@ -314,18 +314,18 @@ function Dashboard() {
           />
         ) : null,
     },
-    {
-      label: "cubes",
-      description: `cubes`,
-      table: () =>
-        service ? (
-          <CubeTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
-        ) : null,
-    },
+    // {
+    //   label: "cubes",
+    //   description: `cubes`,
+    //   table: () =>
+    //     service ? (
+    //       <CubeTable
+    //         service={service}
+    //         setServiceTree={setTree}
+    //         serviceTree={tree}
+    //       />
+    //     ) : null,
+    // },
     {
       label: "renderPreview",
       description: `renderPreview`,

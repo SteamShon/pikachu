@@ -65,7 +65,7 @@ function PlacementTable({
     ? Object.values(serviceTree?.contentTypes)
     : [];
 
-  const cubes = Object.values(serviceTree?.serviceConfig?.cubes || {});
+  const integrations = Object.values(serviceTree?.integrations || {});
 
   const rows = placements;
 
@@ -213,7 +213,7 @@ function PlacementTable({
           setModalOpen={setModalOpen}
           service={service}
           contentTypes={contentTypes}
-          cubes={cubes}
+          integrations={integrations}
           initialData={placement}
           setServiceTree={setServiceTree}
         />

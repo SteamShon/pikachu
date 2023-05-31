@@ -1,8 +1,6 @@
-import type { UseFormReturn } from "react-hook-form";
-import { useFieldArray } from "react-hook-form";
-import { useFormContext } from "react-hook-form";
+import { useFieldArray, useFormContext } from "react-hook-form";
 
-function KeyValueEditor({ name }: { name: string }) {
+function KeyValueArrayEditor({ name }: { name: string }) {
   type KeyValueArray = { key: string; value: string }[];
   const { register, control } = useFormContext<{
     [name: string]: KeyValueArray;
@@ -65,4 +63,4 @@ function KeyValueEditor({ name }: { name: string }) {
     </>
   );
 }
-export default KeyValueEditor;
+export default KeyValueArrayEditor;

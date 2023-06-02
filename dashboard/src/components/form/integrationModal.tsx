@@ -25,14 +25,11 @@ function IntegrationModal({
   type RouterOutput = inferRouterOutputs<typeof integrationRouter>;
   type OutputType = RouterOutput["create"];
   const handleSuccess = (created: OutputType): void => {
-    // setServiceTree((prev) => {
-    //   if (!prev) return prev;
-    //   if (!prev.serviceConfig?.cubes) return prev;
-
-    //   prev.serviceConfig.cubes[created.id] = buildCubeTree(created);
-    //   return prev;
-    // });
-    console.log(created);
+    setServiceTree((prev) => {
+      if (!prev) return prev;
+      prev.integrations[created.id] = created;
+      return prev;
+    });
     setModalOpen(false);
   };
   const { mutate: create } = api.integration.create.useMutation({

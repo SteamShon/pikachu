@@ -8,7 +8,7 @@ export function buildJoinSql({
   provider: Provider;
   dataset: DatasetSchemaType;
 }) {
-  console.log(dataset);
+  
   const targets = dataset.tables.map((target, index) => {
     const read = target.files.map((file) => `'${file}'`).join(",");
     const conditions = target.conditions.map(

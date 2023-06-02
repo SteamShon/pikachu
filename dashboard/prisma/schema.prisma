@@ -171,6 +171,7 @@ model ContentType {
 
     placements Placement[]
     contents   Content[]
+    integrations Integration[]
 
     status    String   @default("CREATED")
     createdAt DateTime @default(now())
@@ -383,6 +384,8 @@ model Integration {
     serviceId String
     provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
     providerId String
+    contentType ContentType? @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+    contentTypeId String?
     // placement       Placement        @relation(fields: [placementId], references: [id])
     // placementId     String
     placements Placement[]

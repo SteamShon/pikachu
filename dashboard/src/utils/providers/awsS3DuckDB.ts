@@ -1,4 +1,5 @@
-import type { Cube, Provider } from "@prisma/client";
+// Client side
+import type { Cube, Prisma } from "@prisma/client";
 import { extractValue } from "../json";
 import S3 from "aws-sdk/clients/s3";
 import type { Buckets, Object as S3Object } from "aws-sdk/clients/s3";
@@ -9,70 +10,113 @@ import type { RuleGroupType } from "@react-querybuilder/ts";
 import { formatQuery } from "react-querybuilder";
 import type { DatasetSchemaType } from "../../components/schema/dataset";
 
-export function extractS3Region(provider?: Provider | null) {
-  if (!provider) return undefined;
+export function extractS3Region(details?: Prisma.JsonValue | null) {
+  if (!details) return undefined;
 
   return extractValue({
-    object: provider?.details,
+    object: details,
     paths: ["s3Region"],
   }) as string | undefined;
 }
 
-export function extractS3AccessKeyId(provider?: Provider | null) {
-  if (!provider) return undefined;
+export function extractS3AccessKeyId(details?: Prisma.JsonValue | null) {
+  if (!details) return undefined;
 
   return extractValue({
-    object: provider?.details,
+    object: details,
     paths: ["s3AccessKeyId"],
   }) as string | undefined;
 }
 
-export function extractS3SecretAccessKey(provider?: Provider | null) {
-  if (!provider) return undefined;
+export function extractS3SecretAccessKey(details?: Prisma.JsonValue | null) {
+  if (!details) return undefined;
 
   return extractValue({
-    object: provider?.details,
+    object: details,
     paths: ["s3SecretAccessKey"],
   }) as string | undefined;
 }
 
-export function extractS3Buckets(provider?: Provider | null) {
-  if (!provider) return undefined;
+export function extractS3Buckets(details?: Prisma.JsonValue | null) {
+  if (!details) return undefined;
 
   return extractValue({
-    object: provider?.details,
+    object: details,
     paths: ["s3Buckets"],
   }) as string | undefined;
 }
 
-export function extractBuilderPrivateKey(provider?: Provider | null) {
-  if (!provider) return undefined;
+export function extractBuilderPrivateKey(details?: Prisma.JsonValue | null) {
+  if (!details) return undefined;
 
   return extractValue({
-    object: provider?.details,
+    object: details,
     paths: ["privateKey"],
   }) as string | undefined;
 }
 
-export function extractBuilderPublicKey(provider?: Provider | null) {
-  if (!provider) return undefined;
+export function extractBuilderPublicKey(details?: Prisma.JsonValue | null) {
+  if (!details) return undefined;
 
   return extractValue({
-    object: provider?.details,
+    object: details,
     paths: ["publicKey"],
   }) as string | undefined;
 }
 
+export function extractConfigs(jsonObject?: Prisma.JsonValue | null) {
+  if (!jsonObject) return undefined;
+  const details = jsonObject as Prisma.JsonObject;
+
+  const s3 = loadS3(details);
+  const accessKeyId = extractS3AccessKeyId(details);
+  const secretAccessKey = extractS3SecretAccessKey(details);
+  const region = extractS3Region(details);
+  const buckets = extractS3Buckets(details);
+
+  if (!s3 || !accessKeyId || !secretAccessKey || !region || !buckets)
+    return undefined;
+  return { s3, accessKeyId, secretAccessKey, region, buckets };
+}
 export type TreeNode = {
   name: string;
   path: string;
   children: TreeNode[];
 };
+export function prependS3ConfigsOnQuery({
+  details,
+  query,
+}: {
+  details?: Prisma.JsonValue | null;
+  query: string;
+}) {
+  if (!details) return undefined;
 
-export function loadS3(provider: Provider): S3 {
-  const s3Region = extractS3Region(provider);
-  const s3AccessKeyId = extractS3AccessKeyId(provider);
-  const s3SecretAccessKey = extractS3SecretAccessKey(provider);
+  const configs = extractConfigs(details);
+  if (!configs) return undefined;
+  const { region, accessKeyId, secretAccessKey } = configs;
+
+  return `
+  INSTALL httpfs;
+  LOAD httpfs;
+  INSTALL json;
+  LOAD json;
+
+  SET s3_region='${region}';
+  SET s3_access_key_id='${accessKeyId}';
+  SET s3_secret_access_key='${secretAccessKey}';
+
+  ${query}
+  `;
+}
+export function loadS3(details?: Prisma.JsonValue | null): S3 | undefined {
+  if (!details) return undefined;
+
+  const s3Region = extractS3Region(details);
+  const s3AccessKeyId = extractS3AccessKeyId(details);
+  const s3SecretAccessKey = extractS3SecretAccessKey(details);
+
+  if (!s3Region || !s3AccessKeyId || !s3SecretAccessKey) return undefined;
 
   return new S3({
     region: s3Region,
@@ -177,12 +221,12 @@ export function partitionBucketPrefix(path: string) {
   return { bucket, prefix: tokens.join("/") };
 }
 
-const pool = new MyCache<Provider, AsyncDuckDB | undefined>({
+const pool = new MyCache<Prisma.JsonValue, AsyncDuckDB | undefined>({
   max: 3, // # of items
   ttl: 10 * 60 * 1000, // expiration in ms (10 min)
 });
 const queryCache = new MyCache<
-  { provider: Provider; query: string },
+  { details: Prisma.JsonValue; query: string },
   Record<string, unknown>[]
 >({
   max: 50, // # of items
@@ -190,7 +234,7 @@ const queryCache = new MyCache<
 });
 
 async function loadDuckDBInner(
-  provider: Provider
+  details?: Prisma.JsonValue | null
 ): Promise<AsyncDuckDB | undefined> {
   const allBundles = duckdb.getJsDelivrBundles();
   const bestBundle = await duckdb.selectBundle(allBundles);
@@ -206,9 +250,9 @@ async function loadDuckDBInner(
   const db = new duckdb.AsyncDuckDB(logger, worker);
   await db.instantiate(bestBundle.mainModule, bestBundle.pthreadWorker);
 
-  const s3Region = extractS3Region(provider);
-  const s3AccessKeyId = extractS3AccessKeyId(provider);
-  const s3SecretAccessKey = extractS3SecretAccessKey(provider);
+  const s3Region = extractS3Region(details);
+  const s3AccessKeyId = extractS3AccessKeyId(details);
+  const s3SecretAccessKey = extractS3SecretAccessKey(details);
   // set s3 config.
   const setQuery = `
 SET home_directory='~/';
@@ -224,20 +268,22 @@ SET s3_secret_access_key='${s3SecretAccessKey}';
   return db;
 }
 export async function loadDuckDB(
-  provider: Provider
+  details?: Prisma.JsonValue | null
 ): Promise<AsyncDuckDB | undefined> {
-  return pool.get(provider, loadDuckDBInner);
+  if (!details) return Promise.resolve(undefined);
+
+  return pool.get(details, loadDuckDBInner);
 }
 
 async function executeQueryInner({
-  provider,
+  details,
   query,
 }: {
-  provider: Provider;
+  details?: Prisma.JsonValue | null;
   query: string;
 }): Promise<Record<string, unknown>[]> {
   const startedAt = new Date().getTime();
-  const db = await loadDuckDB(provider);
+  const db = await loadDuckDB(details);
   if (!db) return Promise.reject(new Error("duckdb instance is not loaded."));
 
   const conn = await db.connect();
@@ -269,38 +315,58 @@ async function executeQueryInner({
   return buffer;
 }
 
-export async function executeQuery(
-  provider: Provider,
-  query: string
-): Promise<Record<string, unknown>[]> {
-  return queryCache.get({ provider, query }, executeQueryInner);
+export async function executeQuery({
+  query,
+  details,
+}: {
+  details?: Prisma.JsonValue | null;
+  query: string;
+}): Promise<Record<string, unknown>[]> {
+  if (!details) return Promise.resolve([]);
+
+  return queryCache.get(
+    { details: details as Prisma.JsonObject, query },
+    executeQueryInner
+  );
 }
-export async function describe(
-  provider: Provider,
-  cube: Cube
-): Promise<Record<string, unknown>[]> {
+export async function describe({
+  cube,
+  details,
+}: {
+  details?: Prisma.JsonValue | null;
+  cube: Cube;
+}): Promise<Record<string, unknown>[]> {
   const query = `DESCRIBE ${cube.sql}`;
 
-  return executeQuery(provider, query);
+  return executeQuery({ details, query });
 }
-export async function fetchParquetSchema(
-  provider: Provider,
-  path: string
-): Promise<Record<string, unknown>[]> {
+export async function fetchParquetSchema({
+  details,
+  path,
+}: {
+  details?: Prisma.JsonValue | null;
+  path: string;
+}): Promise<Record<string, unknown>[]> {
   const query = `
 SELECT * FROM parquet_schema('${path}');
   `;
 
-  return executeQuery(provider, query);
+  return executeQuery({ details, query });
 }
 
-export async function fetchValues(
-  provider: Provider,
-  sql: string,
-  fieldName: string,
-  columnType?: string,
-  value?: string
-): Promise<unknown[]> {
+export async function fetchValues({
+  sql,
+  fieldName,
+  columnType,
+  value,
+  details,
+}: {
+  details?: Prisma.JsonValue | null;
+  sql: string;
+  fieldName: string;
+  columnType?: string;
+  value?: string;
+}): Promise<unknown[]> {
   const column = columnType?.endsWith("[]")
     ? `unnest(${fieldName}) AS ${fieldName}`
     : `${fieldName}`;
@@ -309,20 +375,20 @@ export async function fetchValues(
 SELECT distinct ${column} FROM (${sql}) ${where};
   `;
 
-  const rows = await executeQuery(provider, query);
+  const rows = await executeQuery({ details, query });
   return rows.map((row) => {
     return row[`${fieldName}`];
   });
 }
 
 export async function countPopulation({
-  provider,
+  details,
   sql,
   where,
   idFieldName,
   distinct,
 }: {
-  provider: Provider;
+  details?: Prisma.JsonValue | null;
   sql: string;
   where?: string;
   idFieldName?: string;
@@ -336,7 +402,7 @@ export async function countPopulation({
 SELECT ${selectClause} FROM (${sql}) ${whereClause};
   `;
 
-  const rows = await executeQuery(provider, query);
+  const rows = await executeQuery({ details, query });
   return String(rows[0]?.popoulation);
 }
 
@@ -378,18 +444,18 @@ export function formatQueryCustom(query: RuleGroupType) {
   return jsonLogicToSql(jsonLogic as Record<string, unknown>);
 }
 
-export async function listFiles(provider: Provider) {
-  const sql = `
+export async function listFiles(details?: Prisma.JsonValue | null) {
+  const query = `
   .files;
   `;
-  return await executeQuery(provider, sql);
+  return await executeQuery({ details, query });
 }
 
 export function buildJoinSql({
-  provider,
+  details,
   dataset,
 }: {
-  provider: Provider;
+  details?: Prisma.JsonValue | null;
   dataset: DatasetSchemaType;
 }) {
   const targets = dataset.tables.map((target, index) => {

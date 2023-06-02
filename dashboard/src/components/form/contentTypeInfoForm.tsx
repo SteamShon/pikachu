@@ -30,13 +30,16 @@ function ContentTypeInfoForm({
       case "SMS":
         return (
           <>
-            <ContentTypeInfoBuilder contentType={contentType} />
+            <ContentTypeInfoBuilder details={contentType?.contentTypeInfo?.details} />
           </>
         );
       default:
         return (
           <>
-            <ContentTypeInfoBuilder contentType={contentType} />;
+            <ContentTypeInfoBuilder
+              details={contentType?.contentTypeInfo?.details}
+            />
+            ;
           </>
         );
     }

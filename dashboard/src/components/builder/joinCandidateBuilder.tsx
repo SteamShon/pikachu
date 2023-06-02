@@ -53,7 +53,9 @@ function JoinCandidateBuilder({
   const loadPaths = useMemo(
     () => async (bucketName: string, prefix?: string) => {
       setBucket(bucketName);
-      const s3 = loadS3(provider);
+      const s3 = loadS3(provider.details);
+      if (!s3) return;
+
       const folders = await listFoldersRecursively({
         s3,
         bucketName: bucketName,
@@ -70,7 +72,10 @@ function JoinCandidateBuilder({
   );
   const loadMetadata = useMemo(
     () => async (path: string) => {
-      const rows = await fetchParquetSchema(provider, path);
+      const rows = await fetchParquetSchema({
+        details: provider.details,
+        path,
+      });
       const columns = rows.map((row) => String(row.name));
       setTableColumns((prev) => {
         prev[`${index}`] = { columns };
@@ -90,7 +95,7 @@ function JoinCandidateBuilder({
   };
 
   const s3Buckets = () => {
-    const s3Buckets = extractS3Buckets(provider);
+    const s3Buckets = extractS3Buckets(provider.details);
 
     return s3Buckets?.split(",") || [];
   };

@@ -1,13 +1,13 @@
-import type { Provider } from "@prisma/client";
-import axios from "axios";
-import { useState } from "react";
+import type { ContentType, Provider } from "@prisma/client";
+import axios, { AxiosError } from "axios";
+import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { jsonParseWithFallback } from "../../../utils/json";
 import Badge from "../../common/Badge";
 import ContentTypeInfoBuilder from "../contentTypeInfoBuilder";
 import type IntegrationForm from "../integrationForm";
 
-function PikachuApiIntegration({
+function UserFeatureIntegration({
   service,
   initialData,
   provider,
@@ -19,33 +19,33 @@ function PikachuApiIntegration({
   name: string;
 }) {
   const [checked, setChecked] = useState<boolean | undefined>(undefined);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(
+    undefined
+  );
 
   const methods = useFormContext();
-  const { register, getValues, setValue, control, watch } = methods;
+  const { register, getValues, setValue } = methods;
 
   const validate = async () => {
-    const uri = getValues(`${name}.uri`) as string | undefined;
-    const values = getValues(`${name}.defaultValues`) as string | undefined;
-    if (!uri || !values) return;
+    const sql = getValues(`${name}.sql`) as string | undefined;
 
-    const payload = jsonParseWithFallback(values);
     try {
-      const result = await axios.post(
-        uri,
-        {
-          ...payload,
+      const result = await axios.post(`/api/integration/pg`, {
+        payload: {
+          sql,
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (result.status === 200) {
-        setValue("status", "PUBLISHED");
-      }
+        method: "executeQuery",
+        provider,
+      });
+
+      setErrorMessage(undefined);
+      setValue("status", "PUBLISHED");
       setChecked(result.status === 200);
     } catch (error) {
+      const err = error as AxiosError;
+      const errorMessage = (err?.response?.data as Record<string, unknown>)
+        ?.message as string;
+      setErrorMessage(errorMessage);
       setChecked(false);
     }
   };
@@ -55,30 +55,17 @@ function PikachuApiIntegration({
       <div className="border-t border-gray-200">
         <dl>
           <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Uri</dt>
+            <dt className="text-sm font-medium text-gray-500">SQL</dt>
             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
               <input
                 className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                {...register("details.uri")}
+                {...register("details.sql")}
               />
-            </dd>
-          </div>
-          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Payload</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-              {watch(`${name}.defaultValues`)}
             </dd>
           </div>
         </dl>
       </div>
-      <div className="border-t border-gray-200">
-        <ContentTypeInfoBuilder
-          title="Payload Schema"
-          hideCodeEditor={true}
-          fieldPrefix={name}
-          details={initialData?.details}
-        />
-      </div>
+
       <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
         <button
           className="inline-flex w-full justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
@@ -94,9 +81,10 @@ function PikachuApiIntegration({
         ) : (
           <Badge variant="error" label="not valid" />
         )}
+        {errorMessage}
       </div>
     </div>
   );
 }
 
-export default PikachuApiIntegration;
+export default UserFeatureIntegration;

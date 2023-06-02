@@ -6,11 +6,16 @@ import { buildJoinSql, fromSql } from "../../../utils/providers/awsS3DuckDB";
 import SqlBuilder from "../../builder/sqlBuilder";
 import SqlPreview from "../../builder/sqlPreview";
 import type { DatasetSchemaType } from "../../schema/dataset";
+import type IntegrationForm from "../integrationForm";
 
 function CubeIntegration({
+  service,
   provider,
+  initialData,
   name,
 }: {
+  service: Parameters<typeof IntegrationForm>[0]["service"];
+  initialData: Parameters<typeof IntegrationForm>[0]["initialData"];
   provider: Provider;
   name: string;
 }) {
@@ -23,8 +28,6 @@ function CubeIntegration({
     formState: { errors },
   } = methods;
 
-  console.log(errors);
-  console.log(getValues(name));
   const steps = [
     {
       label: "QueryBuilder",

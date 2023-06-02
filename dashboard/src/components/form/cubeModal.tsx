@@ -48,7 +48,6 @@ function CubeModal({
     },
   });
   const onSubmit = (input: CubeSchemaType) => {
-    console.log(input);
     if (initialData) update(input);
     else create(input);
   };

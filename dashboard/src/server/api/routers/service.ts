@@ -202,32 +202,32 @@ export const serviceRouter = createTRPCRouter({
       });
     }),
 
-  addPlacement: protectedProcedure
-    .input(placementSchema)
-    .mutation(async ({ input }) => {
-      const { serviceId, ...placement } = input;
-      const service = await prisma.service.update({
-        where: {
-          id: serviceId,
-        },
-        data: {
-          placements: {
-            connectOrCreate: {
-              where: {
-                serviceId_name: {
-                  serviceId: serviceId,
-                  name: placement.name,
-                },
-              },
-              create: placement,
-            },
-          },
-        },
-        include: getIncludes,
-      });
+  // addPlacement: protectedProcedure
+  //   .input(placementSchema)
+  //   .mutation(async ({ input }) => {
+  //     const { serviceId, ...placement } = input;
+  //     const service = await prisma.service.update({
+  //       where: {
+  //         id: serviceId,
+  //       },
+  //       data: {
+  //         placements: {
+  //           connectOrCreate: {
+  //             where: {
+  //               serviceId_name: {
+  //                 serviceId: serviceId,
+  //                 name: placement.name,
+  //               },
+  //             },
+  //             create: placement,
+  //           },
+  //         },
+  //       },
+  //       include: getIncludes,
+  //     });
 
-      return service;
-    }),
+  //     return service;
+  //   }),
   updatePlacement: protectedProcedure
     .input(placementSchema)
     .mutation(async ({ input }) => {

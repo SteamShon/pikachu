@@ -9,17 +9,18 @@ import {
   debounce,
   TextField,
 } from "@mui/material";
-import type { Cube, Placement, Service, ServiceConfig } from "@prisma/client";
+import type { Integration, Placement, Provider } from "@prisma/client";
 import type { Dispatch, SetStateAction } from "react";
-import { useEffect } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Controller,
   FormProvider,
   useFieldArray,
   useForm,
 } from "react-hook-form";
-import { executeQuery, fetchValues } from "../../utils/duckdb";
+
+import { extractValue } from "../../utils/json";
+import { executeQuery, fetchValues } from "../../utils/providers/awsS3DuckDB";
 import type { SearchResult } from "../../utils/search";
 import type { SearchRequestSchemaType } from "../schema/searchRequest";
 import { searchRequestSchema } from "../schema/searchRequest";
@@ -29,18 +30,15 @@ function SearchRequestForm({
   setMatchedAds,
   onSubmit,
 }: {
-  placements?: (Placement & {
-    cube: (Cube & { serviceConfig?: ServiceConfig | null }) | null;
+  placements: (Placement & {
+    integrations: (Integration & { provider: Provider })[];
   })[];
   setMatchedAds: Dispatch<SetStateAction<SearchResult[]>>;
   onSubmit: (input: SearchRequestSchemaType) => void;
 }) {
-  const [placement, setPlacement] = useState<
-    | (Placement & {
-        cube: (Cube & { serviceConfig?: ServiceConfig | null }) | null;
-      })
-    | undefined
-  >(undefined);
+  const [placement, setPlacement] = useState<typeof placements[0] | undefined>(
+    undefined
+  );
   const [metadata, setMetadata] = useState<Record<string, unknown>[]>([]);
   const [dimension, setDimension] = useState<string | undefined>(undefined);
   const [options, setOptions] = useState<string[]>([]);
@@ -57,31 +55,39 @@ function SearchRequestForm({
     control,
     name: "dimensionValues",
   });
-
+  const cubeIntegration = placement?.integrations.find(
+    ({ provider }) => provider.provide === "CUBE"
+  );
   useEffect(() => {
-    if (placement?.cube && placement?.cube?.serviceConfig) {
-      const serviceConfig = placement?.cube?.serviceConfig;
+    if (cubeIntegration) {
       const load = async () => {
-        const cube = placement?.cube;
-        if (!cube) return;
+        const cubeIntegrationSql = extractValue({
+          object: cubeIntegration.details,
+          paths: ["sql"],
+        }) as string | undefined;
+        if (!cubeIntegrationSql) return;
 
-        const sql = `DESCRIBE ${cube.sql}`;
-        const rows = await executeQuery(serviceConfig, sql);
+        const sql = `DESCRIBE ${cubeIntegrationSql}`;
+        const rows = await executeQuery({
+          details: cubeIntegration.details,
+          query: sql,
+        });
         setMetadata(rows);
       };
       load();
     }
-  }, [placement]);
+  }, [cubeIntegration, placement]);
 
   const fetchRemoteValues = useMemo(
     () =>
       debounce((index: number, field: string, prefix?: string) => {
         (async () => {
           if (!placement) return;
-          const { cube } = placement;
-          if (!cube || !cube?.sql || index !== selectedIndex) return;
-          const serviceConfig = cube?.serviceConfig;
-          if (!serviceConfig) return;
+          const cubeIntegrationSql = extractValue({
+            object: cubeIntegration?.details,
+            paths: ["sql"],
+          }) as string | undefined;
+          if (!cubeIntegrationSql || index !== selectedIndex) return;
 
           setMatchedAds([]);
           const columnType = metadata.find(
@@ -89,20 +95,22 @@ function SearchRequestForm({
           )?.column_type as string | undefined;
 
           const values = (
-            await fetchValues(
-              serviceConfig,
-              cube.sql,
-              field,
+            await fetchValues({
+              details: cubeIntegration?.details,
+              sql: cubeIntegrationSql,
+              fieldName: field,
               columnType,
-              prefix
-            )
+              value: prefix,
+            })
           ).map((value) => String(value));
 
           setOptions(values);
         })();
       }, 1000),
 
-    [placement, selectedIndex, setMatchedAds]
+    // [placement, selectedIndex, setMatchedAds]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cubeIntegration?.details, placement, selectedIndex, setMatchedAds]
   );
   return (
     <FormProvider {...methods}>

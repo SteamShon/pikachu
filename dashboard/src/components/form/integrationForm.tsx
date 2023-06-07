@@ -24,7 +24,7 @@ function IntegrationForm({
 }: {
   service: Service & {
     placements: Placement[];
-    contentTypes: (ContentType & { contentTypeInfo: ContentTypeInfo })[];
+    contentTypes: (ContentType & { contentTypeInfo: ContentTypeInfo | null })[];
     integrations: (Integration & { provider: Provider })[];
     providers: Provider[];
   };

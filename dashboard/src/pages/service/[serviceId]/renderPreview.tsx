@@ -60,7 +60,7 @@ function RenderPreview({
   return (
     <>
       <SearchRequestForm
-        placements={placements}
+        placements={placements || []}
         setMatchedAds={setMatchedAds}
         onSubmit={(data) => {
           searchMatchedAds(data);

@@ -43,6 +43,8 @@ function IntegrationModal({
     },
   });
   const onSubmit = (input: IntegrationSchemaType) => {
+    console.log(input);
+
     if (initialData) update(input);
     else create(input);
   };

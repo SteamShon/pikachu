@@ -4,6 +4,7 @@ import type { AdGroup, Campaign, Creative, Placement } from "@prisma/client";
 import { campaignWithPlacementSchema } from "../../../components/schema/campaign";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { placementSchema } from "../../../components/schema/placement";
 
 export const placementRouter = createTRPCRouter({
   list: protectedProcedure
@@ -30,6 +31,113 @@ export const placementRouter = createTRPCRouter({
       });
 
       return placements;
+    }),
+  create: protectedProcedure
+    .input(placementSchema)
+    .mutation(async ({ input }) => {
+      const { serviceId, contentTypeId, integrationIds, ...placement } = input;
+      return await prisma.placement.create({
+        data: {
+          ...placement,
+          contentType: {
+            connect: {
+              id: contentTypeId || "",
+            },
+          },
+          service: {
+            connect: {
+              id: serviceId || "",
+            },
+          },
+          integrations: {
+            connect: integrationIds.map((id) => {
+              return { id };
+            }),
+          },
+        },
+        include: {
+          contentType: true,
+          campaigns: {
+            include: {
+              adGroups: {
+                include: {
+                  creatives: {
+                    include: {
+                      content: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          integrations: {
+            include: {
+              provider: true,
+            },
+          },
+        },
+      });
+    }),
+  update: protectedProcedure
+    .input(placementSchema)
+    .mutation(async ({ input }) => {
+      const { serviceId, contentTypeId, integrationIds, ...placement } = input;
+      const removes = prisma.placement.update({
+        where: {
+          id: placement.id,
+        },
+        data: {
+          integrations: {
+            set: [],
+          },
+        },
+      });
+      const update = prisma.placement.update({
+        where: {
+          id: placement.id,
+        },
+        data: {
+          ...placement,
+          contentType: {
+            connect: {
+              id: contentTypeId || "",
+            },
+          },
+          service: {
+            connect: {
+              id: serviceId || "",
+            },
+          },
+          integrations: {
+            connect: integrationIds.map((id) => {
+              return { id };
+            }),
+          },
+        },
+        include: {
+          contentType: true,
+          campaigns: {
+            include: {
+              adGroups: {
+                include: {
+                  creatives: {
+                    include: {
+                      content: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          integrations: {
+            include: {
+              provider: true,
+            },
+          },
+        },
+      });
+      const [, updated] = await prisma.$transaction([removes, update]);
+      return updated;
     }),
   addCampaign: protectedProcedure
     .input(campaignWithPlacementSchema)

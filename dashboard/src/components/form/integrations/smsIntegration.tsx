@@ -2,7 +2,7 @@ import type { ContentType, Provider } from "@prisma/client";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { jsonParseWithFallback } from "../../../utils/json";
+import { extractValue, jsonParseWithFallback } from "../../../utils/json";
 import Badge from "../../common/Badge";
 import ContentTypeInfoBuilder from "../contentTypeInfoBuilder";
 import type IntegrationForm from "../integrationForm";
@@ -27,6 +27,7 @@ function SmsIntegration({
   const handleContentTypeChange = (contentTypeId: string | null) => {
     const contentType = contentTypes.find(({ id }) => id === contentTypeId);
     setContentType(contentType);
+    setValue(`${name}.contentTypeId`, contentType?.id);
   };
 
   const methods = useFormContext();
@@ -62,7 +63,13 @@ function SmsIntegration({
 
   useEffect(() => {
     if (initialData) {
-      handleContentTypeChange(initialData?.contentTypeId);
+      const contentTypeId = extractValue({
+        object: initialData?.details,
+        paths: ["contentTypeId"],
+      }) as string | undefined;
+      if (!contentTypeId) return;
+
+      handleContentTypeChange(contentTypeId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData]);
@@ -76,7 +83,7 @@ function SmsIntegration({
             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
               <input
                 className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                {...register("details.uri")}
+                {...register(`${name}.uri`)}
               />
             </dd>
           </div>
@@ -84,7 +91,7 @@ function SmsIntegration({
             <dt className="text-sm font-medium text-gray-500">ContentType</dt>
             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
               <select
-                {...register("contentTypeId")}
+                {...register(`${name}.contentTypeId`)}
                 onChange={(e) => handleContentTypeChange(e.target.value)}
               >
                 <option value="">Please choose</option>

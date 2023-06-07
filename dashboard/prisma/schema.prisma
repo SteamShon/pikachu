@@ -384,8 +384,8 @@ model Integration {
     serviceId String
     provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
     providerId String
-    contentType ContentType? @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
-    contentTypeId String?
+    // contentType ContentType? @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+    // contentTypeId String?
     // placement       Placement        @relation(fields: [placementId], references: [id])
     // placementId     String
     placements Placement[]

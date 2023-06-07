@@ -1,87 +1,182 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+// async/await
+import type { Prisma, Provider } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
-import LRU from "lru-cache";
+import { pipeline } from "node:stream/promises";
+import pg from "pg";
+import { from as copyFrom } from "pg-copy-streams";
+import { extractConfigs } from "../../../utils/providers/awsS3DuckDB";
 
-const pool = new LRU<string, PrismaClient>({
-  max: 1, // # of items
-  ttl: 10 * 60 * 1000, // expiration in ms (10 min)
-  disposeAfter: (value) => {
-    console.log("eviction: ", value);
-    value.$disconnect();
-  },
-});
-function getClient(databaseUrl: string): PrismaClient | undefined {
-  const client = pool.get(databaseUrl);
-  if (client) {
-    return client;
+function partitionBucketPrefix(path: string) {
+  const tokens = path.replace("s3://", "").split("/");
+  const bucket = tokens.shift();
+
+  return { bucket, prefix: tokens.join("/") };
+}
+function extractValue({
+  object,
+  paths,
+}: {
+  object?: Prisma.JsonValue;
+  paths: string[];
+}) {
+  return paths.reduce((prev, path) => {
+    const isObject = prev && typeof prev === "object" && !Array.isArray(prev);
+
+    if (isObject) {
+      return (prev as Prisma.JsonObject)?.[path];
+    } else return undefined;
+  }, object);
+}
+
+function toOutputPath(cubeHistoryId: string) {
+  return `s3://pikachu-dev/dashboard/user-feature/${cubeHistoryId}.csv`;
+}
+async function uploadAll({
+  cubeHistoryId,
+  databaseUrl,
+  cubeProviderDetails,
+}: {
+  databaseUrl: string;
+  cubeProviderDetails?: Prisma.JsonValue | null;
+  cubeHistoryId: string;
+}) {
+  try {
+    const sql = `
+    CREATE TABLE IF NOT EXISTS "UserFeature_${cubeHistoryId}" PARTITION OF "UserFeature" FOR VALUES IN ('${cubeHistoryId}')
+    `;
+    await executeQuery({ databaseUrl, query: sql });
+    return await upload({
+      cubeProviderDetails: cubeProviderDetails,
+      databaseUrl,
+      cubeHistoryId,
+    });
+  } catch (error) {
+    console.log(error);
   }
-  pool.set(
-    databaseUrl,
-    new PrismaClient({ datasources: { db: { url: databaseUrl } } })
-  );
-  return pool.get(databaseUrl);
 }
-export function removePlaceholder(s: string) {
-  return s.replace("{", "").replace("}", "");
-}
-export function extractParams(rawSql?: string) {
-  const params = [];
-  if (!rawSql) return [];
+async function upload({
+  cubeProviderDetails,
+  databaseUrl,
+  cubeHistoryId,
+}: {
+  databaseUrl: string;
+  cubeProviderDetails?: Prisma.JsonValue | null;
+  cubeHistoryId: string;
+}) {
+  let result = false;
+  console.log("uploading");
+  const configs = extractConfigs(cubeProviderDetails);
+  const client = new pg.Client(databaseUrl);
+  if (!configs) return false;
 
-  for (const param of rawSql.matchAll(/{.*}/gm)) {
-    params.push(param[0]);
-  }
-  return params;
-}
-//note that every key in data should be enclosed with {}
-export function escapeTabNewlineSpace(
-  rawSql: string,
-  data: Record<string, unknown>
-): string {
-  let sql = rawSql
-    .split("\n")
-    .filter((line) => line.indexOf("--") !== 0)
-    .join("\n")
-    .replace(/(\r\n|\n|\r)/gm, " ") // remove newlines
-    .replace(/\s+/g, " ") // excess white space
-    .replace(/\\"/gm, '"');
+  try {
+    const { s3 } = configs;
+    await client.connect();
 
-  const params = sql.matchAll(/{.*}/gm);
-  for (const param of params) {
-    const key = param[0];
-    const value = data[`${key}`] as string | undefined;
-
-    if (value) {
-      sql = sql.replace(key, value);
+    const ingestStream = client.query(
+      copyFrom(
+        `COPY "UserFeature_${cubeHistoryId}" FROM STDIN CSV HEADER DELIMITER ','`
+      )
+    );
+    const outputPath = toOutputPath(cubeHistoryId);
+    const { bucket, prefix } = partitionBucketPrefix(outputPath);
+    console.log(bucket);
+    console.log(prefix);
+    if (!bucket) {
+      return new Error(`bucket is not found: ${outputPath}`);
     }
+
+    const sourceStream = s3
+      .getObject({
+        Bucket: bucket,
+        Key: prefix,
+      })
+      .createReadStream();
+    await pipeline(sourceStream, ingestStream);
+    result = true;
+  } catch (error) {
+    console.log(error);
+    result = false;
+  } finally {
+    client.end();
   }
-  return sql;
+  return result;
+}
+
+async function executeQuery({
+  databaseUrl,
+  query,
+}: {
+  databaseUrl: string;
+  query: string;
+}) {
+  const client = new pg.Client(databaseUrl);
+
+  try {
+    await client.connect();
+    const result = await client.query(query);
+    console.log(result);
+    return result;
+  } finally {
+    client.end();
+  }
 }
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const config = req.body as Record<string, unknown>;
-  const DATABASE_URL = config["DATABASE_URL"] as string | undefined;
-  const RAW_SQL = config["SQL"] as string | undefined;
+  const provider = config["provider"] as Provider | undefined;
+  const cubeProvider = config["cubeProvider"] as Provider | undefined;
+  const method = config["method"] as string | undefined;
+  const payload = config["payload"] as Record<string, unknown> | undefined;
+  const databaseUrl = extractValue({
+    object: provider?.details,
+    paths: ["DATABASE_URL"],
+  }) as string | undefined;
 
-  if (!DATABASE_URL || !RAW_SQL) {
-    res.status(404).end();
+  if (!method || !databaseUrl) {
+    res.status(404);
   } else {
-    const client = getClient(DATABASE_URL);
-    if (!client) {
-      res.status(404).end();
-    } else {
-      try {
-        const SQL = escapeTabNewlineSpace(RAW_SQL, config);
+    try {
+      if (method === "executeQuery") {
+        const query = payload?.sql as string | undefined;
+        if (provider && query) {
+          const result = await executeQuery({ databaseUrl, query });
+          res.json(result);
+        }
+      } else if (method === "createPartition") {
+        const cubeHistoryId = payload?.cubeHistoryId as string | undefined;
+        if (cubeHistoryId) {
+          const sql = `CREATE TABLE IF NOT EXISTS "UserFeature_${cubeHistoryId}" PARTITION OF "UserFeature" FOR VALUES IN ('${cubeHistoryId}')`;
+          const result = await executeQuery({ databaseUrl, query: sql });
+          res.json(result);
+        }
+      } else if (method === "upload") {
+        const cubeHistoryId = payload?.cubeHistoryId as string | undefined;
 
-        const result = await client.$queryRaw(Prisma.sql([`${SQL}`]));
-        res.json(result);
-        res.status(200).end();
-      } catch (error) {
-        res.json(error);
-        res.status(500).end();
+        if (provider && cubeHistoryId) {
+          const result = await uploadAll({
+            cubeHistoryId,
+            databaseUrl,
+            cubeProviderDetails: cubeProvider?.details,
+          });
+          res.json(result);
+        }
       }
+
+      res.status(200);
+    } catch (error) {
+      console.log(error);
+
+      res.status(500).send({
+        message: (error as Error).message,
+      });
     }
+
+    //const result = await upload(serviceConfig, cubeHistory);
+    //if (result) res.status(200).end();
+    //else res.status(500).end();
   }
+  res.end();
 };
 
 export default handler;

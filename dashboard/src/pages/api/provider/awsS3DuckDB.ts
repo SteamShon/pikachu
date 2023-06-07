@@ -1,12 +1,11 @@
 // Server side
 // async/await
-import type { Prisma, Provider } from "@prisma/client";
-import type { NextApiRequest, NextApiResponse } from "next";
 import { Database } from "duckdb-async";
+import type { Provider } from "@prisma/client";
+import type { NextApiRequest, NextApiResponse } from "next";
 import {
   extractConfigs,
   listFoldersRecursively,
-  prependS3ConfigsOnQuery,
 } from "../../../utils/providers/awsS3DuckDB";
 
 async function checkConnection(configs: ReturnType<typeof extractConfigs>) {
@@ -28,72 +27,45 @@ async function checkConnection(configs: ReturnType<typeof extractConfigs>) {
 async function getDuckDB() {
   return await Database.create(":memory:");
 }
-
-async function getColumns({
-  details,
-  query,
-}: {
-  details?: Prisma.JsonValue | null;
-  query: string;
-}) {
-  const duckdb = await getDuckDB();
-
-  // describe
-  const describeSql = prependS3ConfigsOnQuery({
-    details,
-    query: `DESCRIBE ${query}`,
-  });
-  if (!describeSql) return [];
-
-  const rows = await duckdb.all(describeSql);
-
-  return rows.map((row) => row.column_name as string);
-}
-
-function toOutputPath(cubeHistoryId: string) {
-  return `s3://pikachu-dev/dashboard/user-feature/${cubeHistoryId}.csv`;
-}
-async function transform({
-  details,
-  query,
-  cubeHistoryId,
-}: {
-  details?: Prisma.JsonValue | null;
-  query: string;
-  cubeHistoryId: string;
-}) {
-  const columns = await getColumns({ details, query });
-  const duckdb = await getDuckDB();
-  const outputPath = toOutputPath(cubeHistoryId);
-  const transformSql = prependS3ConfigsOnQuery({
-    details,
-    query: `
-    DROP TABLE IF EXISTS download;
-    CREATE TABLE download AS (
-        SELECT  '${cubeHistoryId}' AS cubeHistoryId,
-                userId,
-                to_json((${columns.join(",")})) AS feature
-        FROM    (${query})
-    );
-    COPY (SELECT * FROM download) TO '${outputPath}' (HEADER, DELIMITER ',');
-    `,
-  });
-  if (!transformSql) return [];
-
-  const rows = await duckdb.all(transformSql);
-  return rows;
+async function executeDuckDBQuery(query?: string) {
+  console.log(query);
+  if (!query) return [];
+  try {
+    const duckdb = await getDuckDB();
+    const rows = await duckdb.all(query);
+    return rows;
+  } catch (error) {
+    console.log(error);
+  }
 }
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  const provider = req.body as Provider;
-  const configs = extractConfigs(provider.details);
+  const config = req.body as Record<string, unknown>;
+  const provider = config["provider"] as Provider | undefined;
+  const method = config["method"] as string | undefined;
+  const payload = config["payload"] as Record<string, unknown> | undefined;
 
-  if (!configs) {
+  console.log(config);
+
+  const configs = extractConfigs(provider?.details);
+
+  if (!configs || !method) {
+    console.log(configs);
     res.status(404).end();
   } else {
     try {
-      const result = await checkConnection(configs);
-      res.json(result);
-      res.status(200).end();
+      if (method === "checkConnection") {
+        const result = await checkConnection(configs);
+        res.json(result);
+        res.status(200).end();
+      } else if (method === "executeDuckDBQuery") {
+        const sql = payload?.sql as string | undefined;
+        const result = await executeDuckDBQuery(sql);
+        console.log(result);
+        res.json(result);
+        res.status(200).end();
+      } else {
+        res.status(404).end();
+      }
     } catch (error) {
       res.status(500).end();
     }

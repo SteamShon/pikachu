@@ -2,7 +2,6 @@ import { adGroupRouter } from "./routers/adGroup";
 import { campaignRouter } from "./routers/campaign";
 import { contentTypeRouter } from "./routers/contentType";
 import { cubeRouter } from "./routers/cube";
-import { serviceConfigRouter } from "./routers/serviceConfig";
 import { customsetRouter } from "./routers/customset";
 import { placementRouter } from "./routers/placement";
 import { serviceRouter } from "./routers/service";
@@ -25,7 +24,6 @@ export const appRouter = createTRPCRouter({
   placement: placementRouter,
   contentType: contentTypeRouter,
   usersOnServices: usersOnServicesRouter,
-  serviceConfig: serviceConfigRouter,
   cube: cubeRouter,
   integration: integrationRouter,
 });

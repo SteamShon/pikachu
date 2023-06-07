@@ -37,7 +37,10 @@ function CubeIntegration({
           provider={provider}
           initialData={fromSql(getValues(name) as string | undefined)}
           onSubmit={(data: DatasetSchemaType) => {
-            setValue(name, buildJoinSql({ provider, dataset: data }));
+            setValue(
+              name,
+              buildJoinSql({ details: provider.details, dataset: data })
+            );
             setActiveStep((prev) => prev + 1);
           }}
         />

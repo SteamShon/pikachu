@@ -3,9 +3,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type {
   AdGroup,
   Campaign,
-  Cube,
+  Integration,
   Placement,
-  ServiceConfig,
+  Provider,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
@@ -18,16 +18,22 @@ import SegmentQueryBuilder from "./segmentQueryBuilder";
 
 function AdGroupForm({
   campaigns,
-  cubes,
+  cubeIntegrations,
   onSubmit,
   initialData,
 }: {
-  campaigns: (Campaign & { placement: Placement })[];
-  cubes: (Cube & { serviceConfig: ServiceConfig })[];
+  campaigns: (Campaign & {
+    placement: Placement & {
+      integrations: (Integration & { provider: Provider })[];
+    };
+  })[];
+  cubeIntegrations: (Integration & { provider: Provider })[];
   onSubmit: (input: AdGroupWithCampaignSchemaType) => void;
   initialData?: AdGroup & { campaign: Campaign };
 }) {
-  const [cube, setCube] = useState<typeof cubes[0] | undefined>(undefined);
+  const [cubeIntegration, setCubeIntegration] = useState<
+    typeof cubeIntegrations[0] | undefined
+  >(undefined);
 
   const methods = useForm<AdGroupWithCampaignSchemaType>({
     resolver: zodResolver(adGroupWithCampaignSchema),
@@ -42,6 +48,13 @@ function AdGroupForm({
     formState: { errors },
   } = methods;
 
+  const handleCmapaignChange = (campaignId: string) => {
+    const campaign = campaigns.find((campaign) => campaign.id === campaignId);
+    const cubeIntegration = campaign?.placement.integrations.find(
+      (integration) => integration.provider.provide === "CUBE"
+    );
+    setCubeIntegration(cubeIntegration);
+  };
   useEffect(() => {
     reset({
       ...(initialData ? initialData : {}),
@@ -49,13 +62,10 @@ function AdGroupForm({
     });
 
     if (initialData?.campaignId) {
-      const campaign = campaigns.find(
-        (campaign) => campaign.id === initialData?.campaignId
-      );
-      const cube = cubes.find((c) => c.id === campaign?.placement.cubeId);
-      setCube(cube);
+      handleCmapaignChange(initialData?.campaignId);
     }
-  }, [reset, initialData, campaigns, cubes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reset, initialData, campaigns, cubeIntegrations]);
 
   return (
     <FormProvider {...methods}>
@@ -75,15 +85,7 @@ function AdGroupForm({
                     {...register("campaignId")}
                     defaultValue={initialData?.campaignId}
                     disabled={initialData ? true : false}
-                    onChange={(e) => {
-                      const campaign = campaigns.find(
-                        (campaign) => campaign.id === e.target.value
-                      );
-                      const cube = cubes.find(
-                        (c) => c.id === campaign?.placement?.cubeId
-                      );
-                      setCube(cube);
-                    }}
+                    onChange={(e) => handleCmapaignChange(e.target.value)}
                   >
                     <option value="">Please choose</option>
                     {campaigns.map((campaign) => {
@@ -152,13 +154,13 @@ function AdGroupForm({
                     rows={3}
                     {...register("filter")}
                   />
-                  {cube ? (
+                  {cubeIntegration ? (
                     <Controller
                       control={control}
                       name="filter"
                       render={({}) => (
                         <SegmentQueryBuilder
-                          cube={cube}
+                          details={cubeIntegration.details}
                           initialQuery={
                             initialData?.filter
                               ? parseJsonLogic(initialData?.filter)

@@ -283,10 +283,11 @@ async function executeQueryInner({
   query: string;
 }): Promise<Record<string, unknown>[]> {
   const startedAt = new Date().getTime();
-  const db = await loadDuckDB(details);
-  if (!db) return Promise.reject(new Error("duckdb instance is not loaded."));
+  const duckdb = await loadDuckDB(details);
+  if (!duckdb)
+    return Promise.reject(new Error("duckdb instance is not loaded."));
 
-  const conn = await db.connect();
+  const conn = await duckdb.connect();
   const result = await conn.query(query);
   const duration = new Date().getTime() - startedAt;
 
@@ -503,4 +504,64 @@ export function fromSql(sql?: string): DatasetSchemaType | undefined {
   }
 
   return { tables: datasets };
+}
+
+function toOutputPath(cubeHistoryId: string) {
+  return `s3://pikachu-dev/dashboard/user-feature/${cubeHistoryId}.csv`;
+}
+export async function getColumns({
+  details,
+  cubeSql,
+}: {
+  details?: Prisma.JsonValue | null;
+  cubeSql: string;
+}) {
+  const query = `DESCRIBE ${cubeSql}`;
+
+  const rows = await executeQuery({ details, query });
+  return rows.map((row) => row.column_name as string);
+}
+export async function generateTransformCubeSql({
+  cubeProviderDetails,
+  cubeDetails,
+  cubeHistoryId,
+}: {
+  cubeProviderDetails?: Prisma.JsonValue | null;
+  cubeDetails?: Prisma.JsonValue | null;
+  cubeHistoryId?: string;
+}) {
+  const cubeSql = extractValue({ object: cubeDetails, paths: ["SQL"] }) as
+    | string
+    | undefined;
+
+  if (!cubeProviderDetails || !cubeDetails || !cubeSql || !cubeHistoryId)
+    return;
+
+  const columns = await getColumns({ details: cubeProviderDetails, cubeSql });
+  const outputPath = toOutputPath(cubeHistoryId);
+
+  const transformSql = prependS3ConfigsOnQuery({
+    details: cubeProviderDetails,
+    query: `
+    DROP TABLE IF EXISTS download;
+    CREATE TABLE download AS (
+        SELECT  '${cubeHistoryId}' AS cubeHistoryId,
+                userId,
+                to_json((${columns.join(",")})) AS feature
+        FROM    (${cubeSql})
+    );
+    COPY (SELECT * FROM download) TO '${outputPath}' (HEADER, DELIMITER ',');
+    `,
+  });
+
+  return transformSql;
+}
+export function extractParams(rawSql?: string) {
+  const params = [];
+  if (!rawSql) return [];
+
+  for (const param of rawSql.matchAll(/{.*}/gm)) {
+    params.push(param[0]);
+  }
+  return params;
 }

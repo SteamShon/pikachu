@@ -50,9 +50,15 @@ function PlacementTable({
     },
   });
 
-  const allPlacements = serviceTree
-    ? Object.values(serviceTree?.placements)
-    : [];
+  const allPlacements = Object.values(serviceTree?.placements || {}).map(
+    ({ integrations, campaigns, ...placement }) => {
+      return {
+        ...placement,
+        campaigns,
+        integrations: Object.values(integrations),
+      };
+    }
+  );
 
   const placements =
     selectedIds.length === 0
@@ -78,12 +84,20 @@ function PlacementTable({
     {
       field: "description",
       headerName: "Description",
-      flex: 2,
+      flex: 1,
     },
     {
       field: "status",
       headerName: "Status",
       flex: 1,
+    },
+    {
+      field: "integrations",
+      headerName: "Integrations",
+      flex: 2,
+      valueGetter: (params) => {
+        return params.row.integrations?.length || 0;
+      },
     },
     {
       field: "contentType.name",

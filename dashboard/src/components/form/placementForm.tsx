@@ -1,5 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ContentType, Integration, Placement } from "@prisma/client";
+import type {
+  ContentType,
+  Integration,
+  Placement,
+  Provider,
+} from "@prisma/client";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import type ContentPreview from "../builder/contentPreview";
@@ -17,7 +22,9 @@ function PlacementForm({
   service: Parameters<typeof ContentPreview>[0]["service"];
   contentTypes: ContentType[];
   integrations: Integration[];
-  initialData?: Placement;
+  initialData?: Placement & {
+    integrations: (Integration & { provider: Provider })[];
+  };
   onSubmit: (input: PlacementSchemaType) => void;
 }) {
   const methods = useForm<PlacementSchemaType>({
@@ -32,9 +39,11 @@ function PlacementForm({
   } = methods;
 
   useEffect(() => {
+    console.log(initialData);
     reset({
       ...(initialData ? initialData : {}),
       serviceId: initialData?.serviceId || undefined,
+      integrationIds: (initialData?.integrations || []).map(({ id }) => id),
     });
   }, [reset, initialData]);
 
@@ -132,6 +141,7 @@ function PlacementForm({
                     multiple
                     {...register("integrationIds")}
                     // defaultValue={initialData?.integrations || undefined}
+                    className="mt-1.5 w-full rounded-lg border-gray-300 text-gray-700 sm:text-sm"
                   >
                     <option value="">Please choose</option>
                     {integrations.map((integration) => {

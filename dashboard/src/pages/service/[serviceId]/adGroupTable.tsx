@@ -4,18 +4,18 @@ import NorthIcon from "@mui/icons-material/North";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Prisma, Service } from "@prisma/client";
+import type { Service } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
+import Stat from "../../../components/chart/Stat";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type AdGroupForm from "../../../components/form/adGroupForm";
 import AdGroupModal from "../../../components/form/adGroupModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildCampaignTree } from "../../../utils/tree";
-import Stat from "../../../components/chart/Stat";
 
 function AdGroupTable({
   service,
@@ -49,33 +49,18 @@ function AdGroupTable({
       setModalOpen(false);
     },
   });
-
-  const allCubes = Object.values(serviceTree?.serviceConfig?.cubes || {}).map(
-    (cube) => {
-      return {
-        ...cube,
-        serviceConfig: {
-          id: serviceTree.serviceConfig?.id || "",
-          serviceId: serviceTree.id,
-          s3Config: serviceTree?.serviceConfig?.s3Config as Prisma.JsonValue,
-          builderConfig: serviceTree?.serviceConfig?.builderConfig || null,
-          createdAt: serviceTree?.serviceConfig?.createdAt as Date,
-          updatedAt: serviceTree?.serviceConfig?.updatedAt as Date,
-        },
-      };
-    }
-  );
+  const cubeIntegrations = Object.values(
+    serviceTree?.integrations || {}
+  ).filter((integration) => integration.provider.provide === "CUBE");
   const allCampaigns = Object.values(serviceTree?.placements || {}).flatMap(
     ({ campaigns, ...placement }) => {
-      const cube = allCubes.find((cube) => cube.id === placement.cubeId);
-
       return Object.values(campaigns).map(({ adGroups, ...campaign }) => {
         return {
           ...campaign,
           adGroups,
           placement: {
             ...placement,
-            cube,
+            integrations: Object.values(placement.integrations),
           },
         };
       });
@@ -232,7 +217,7 @@ function AdGroupTable({
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
           campaigns={campaigns}
-          cubes={allCubes}
+          cubeIntegrations={cubeIntegrations}
           initialData={adGroup}
           setServiceTree={setServiceTree}
         />

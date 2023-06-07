@@ -13,7 +13,10 @@ function AWSS3DuckDB() {
     const provider = watch();
 
     try {
-      const result = await axios.post(`/api/provider/awsS3DuckDB`, provider);
+      const result = await axios.post(`/api/provider/awsS3DuckDB`, {
+        provider,
+        method: "checkConnection",
+      });
       if (result.status === 200) {
         setValue("status", "PUBLISHED");
       }

@@ -1,32 +1,34 @@
 import SendIcon from "@mui/icons-material/Send";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { debounce, Grid } from "@mui/material";
-import type { Cube, ServiceConfig } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { useSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
 import type { RuleGroupType } from "react-querybuilder";
 import QueryBuilder, { formatQuery } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
+
+import { QueryBuilderDnD } from "@react-querybuilder/dnd";
+import * as ReactDnD from "react-dnd";
+import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
+import { extractValue } from "../../utils/json";
 import {
   countPopulation,
   executeQuery,
   formatQueryCustom,
-} from "../../utils/duckdb";
+} from "../../utils/providers/awsS3DuckDB";
 import AsyncValueEditor from "../common/AsyncValueEditor";
-import { QueryBuilderDnD } from "@react-querybuilder/dnd";
-import * as ReactDnD from "react-dnd";
-import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
 
 const emptyQuery: RuleGroupType = { combinator: "and", rules: [] };
 
 function SegmentQueryBuilder({
-  cube,
+  details,
   initialQuery,
   onQueryChange,
   onPopulationChange,
 }: {
-  cube: Cube & { serviceConfig: ServiceConfig };
   initialQuery?: RuleGroupType;
+  details?: Prisma.JsonValue;
   population?: string;
   onQueryChange: (newQuery: RuleGroupType) => void;
   onPopulationChange: (population: string) => void;
@@ -45,13 +47,13 @@ function SegmentQueryBuilder({
       }
 
       const sql = `DESCRIBE ${inputSql}`;
-      const rows = await executeQuery(cube.serviceConfig, sql);
+      const rows = await executeQuery({ query: sql, details });
       enqueueSnackbar("finished loading metadata", { variant: "success" });
       setMetadata(rows);
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cube.serviceConfig]
+    [details]
   );
 
   const fetchPopulation = useMemo(
@@ -59,13 +61,17 @@ function SegmentQueryBuilder({
       debounce((q?: RuleGroupType) => {
         (async () => {
           try {
-            if (!q || !cube?.serviceConfig) return;
+            if (!q || !details) return;
+            const cubeIntegrationSql = extractValue({
+              object: details,
+              paths: ["sql"],
+            }) as string | undefined;
             const sql = formatQueryCustom(q);
-            if (!sql) return;
+            if (!sql || !cubeIntegrationSql) return;
 
             const count = await countPopulation({
-              serviceConfig: cube.serviceConfig,
-              sql: cube.sql || "",
+              details,
+              sql: cubeIntegrationSql,
               where: sql,
             });
 
@@ -86,11 +92,16 @@ function SegmentQueryBuilder({
   );
 
   useEffect(() => {
-    if (cube.sql) {
-      loadMetadata(cube.sql);
+    const cubeIntegrationSql = extractValue({
+      object: details,
+      paths: ["sql"],
+    }) as string | undefined;
+
+    if (cubeIntegrationSql) {
+      loadMetadata(cubeIntegrationSql);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cube.serviceConfig, cube.sql]);
+  }, [details]);
 
   const fields = (metadata || []).map((row) => {
     const name = row.column_name as string;
@@ -137,7 +148,6 @@ function SegmentQueryBuilder({
           <Grid item xs={12}>
             <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
               <QueryBuilder
-                key={cube.id}
                 fields={fields}
                 query={query}
                 onQueryChange={(newQuery) => {
@@ -147,7 +157,7 @@ function SegmentQueryBuilder({
                 controlElements={{
                   valueEditor: AsyncValueEditor,
                 }}
-                context={{ fields, cube }}
+                context={{ fields, details }}
                 controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
                 operators={operators}
               />

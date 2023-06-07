@@ -38,7 +38,6 @@ ADD COLUMN     "providerId" TEXT NOT NULL;
 -- AlterTable
 ALTER TABLE "Integration" DROP COLUMN "placementId",
 DROP COLUMN "type",
-ADD COLUMN     "contentTypeId" TEXT,
 ADD COLUMN     "details" JSONB NOT NULL DEFAULT '{}',
 ADD COLUMN     "providerId" TEXT NOT NULL,
 ADD COLUMN     "serviceId" TEXT NOT NULL;
@@ -96,9 +95,6 @@ ALTER TABLE "Integration" ADD CONSTRAINT "Integration_serviceId_fkey" FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE "Integration" ADD CONSTRAINT "Integration_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "Provider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Integration" ADD CONSTRAINT "Integration_contentTypeId_fkey" FOREIGN KEY ("contentTypeId") REFERENCES "ContentType"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Provider" ADD CONSTRAINT "Provider_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE CASCADE ON UPDATE CASCADE;

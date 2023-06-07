@@ -14,7 +14,10 @@ function SqlPreview({ provider, sql }: { provider: Provider; sql: string }) {
   const runQuery = async () => {
     setLoading(true);
     const withLimit = `${sql} LIMIT 100`;
-    const result = await executeQuery(provider, withLimit);
+    const result = await executeQuery({
+      details: provider.details,
+      query: withLimit,
+    });
     setRows(result);
     setLoading(false);
   };

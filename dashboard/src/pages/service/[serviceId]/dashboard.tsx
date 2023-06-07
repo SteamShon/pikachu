@@ -32,9 +32,14 @@ function Dashboard() {
     ReturnType<typeof buildServiceTree> | undefined
   >(undefined);
 
-  const { data: service, isLoading } = api.service.get.useQuery({
-    id: serviceId as string,
-  });
+  const { data: service, isLoading } = api.service.get.useQuery(
+    {
+      id: serviceId as string,
+    }
+    // {
+    //   refetchOnWindowFocus: false,
+    // }
+  );
 
   useEffect(() => {
     if (service) {

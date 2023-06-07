@@ -4,9 +4,10 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { serviceRouter } from "../../server/api/routers/service";
 import { api } from "../../utils/api";
-import { buildServiceTree } from "../../utils/tree";
+import { buildPlacementTree, buildServiceTree } from "../../utils/tree";
 import type { PlacementSchemaType } from "../schema/placement";
 import PlacementForm from "./placementForm";
+import { placementRouter } from "../../server/api/routers/placement";
 
 function PlacementModal({
   service,
@@ -27,23 +28,24 @@ function PlacementModal({
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  type RouterOutput = inferRouterOutputs<typeof serviceRouter>;
-  type OutputType = RouterOutput["addPlacement"];
+  type RouterOutput = inferRouterOutputs<typeof placementRouter>;
+  type OutputType = RouterOutput["create"];
 
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
       if (!prev) return prev;
-      return buildServiceTree(created);
+      prev.placements[`${created.id}`] = buildPlacementTree(created);
+      return prev;
     });
     setModalOpen(false);
   };
 
-  const { mutate: create } = api.service.addPlacement.useMutation({
+  const { mutate: create } = api.placement.create.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
-  const { mutate: update } = api.service.updatePlacement.useMutation({
+  const { mutate: update } = api.placement.update.useMutation({
     onSuccess(updated) {
       handleSuccess(updated);
     },

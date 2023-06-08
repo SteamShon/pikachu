@@ -365,17 +365,17 @@ export async function fetchValues({
   details?: Prisma.JsonValue | null;
   sql: string;
   fieldName: string;
-  columnType?: string;
+  columnType: string;
   value?: string;
 }): Promise<unknown[]> {
-  const column = columnType?.endsWith("[]")
+  const column = columnType.endsWith("[]")
     ? `unnest(${fieldName}) AS ${fieldName}`
     : `${fieldName}`;
   const where = value ? ` WHERE ${fieldName} like '%${value}%'` : ``;
   const query = `
 SELECT distinct ${column} FROM (${sql}) ${where};
   `;
-
+  console.log(query);
   const rows = await executeQuery({ details, query });
   return rows.map((row) => {
     return row[`${fieldName}`];
@@ -402,12 +402,15 @@ export async function countPopulation({
   const query = `
 SELECT ${selectClause} FROM (${sql}) ${whereClause};
   `;
-
+  console.log(query);
   const rows = await executeQuery({ details, query });
   return String(rows[0]?.popoulation);
 }
 
-export function formatQueryCustom(query: RuleGroupType) {
+export function formatQueryCustom(
+  metadata: Record<string, unknown>[],
+  query: RuleGroupType
+) {
   const jsonLogicToSql = (
     node: Record<string, unknown>
   ): string | undefined => {
@@ -430,10 +433,15 @@ export function formatQueryCustom(query: RuleGroupType) {
     if (node.in) {
       const kvs = node.in as unknown[];
       const key = (kvs[0] as { var: string }).var;
+      const meta = metadata.find((meta) => meta.column_name === key)
+        ?.column_type as string;
+      const isArray = meta.endsWith("[]");
       const values = kvs[1] as string[];
       // check if key is list type.
       const ls = values.map((value) => {
-        return `array_contains(${key}, '${value}')`;
+        return isArray
+          ? `array_contains(${key}, '${value}')`
+          : `${key} = '${value}'`;
       });
       return ls.join(" OR ");
     }

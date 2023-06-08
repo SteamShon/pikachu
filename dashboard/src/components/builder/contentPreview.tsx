@@ -49,13 +49,13 @@ function ContentPreview({
     } else {
       return (
         <>
-          <div className="mx-auto max-w-screen-xl px-4 py-16 sm:px-6 lg:px-8">
+          {/* <div className="mx-auto max-w-screen-xl px-4 py-16 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-lg text-center">
               <h1 className="text-2xl font-bold sm:text-3xl">
                 {contentType?.type} Preview
               </h1>
             </div>
-          </div>
+          </div> */}
           <div className="mx-auto mt-8 mb-0 space-y-4 ">
             <LiveProvider code={newCode} noInline={true}>
               {showEditor ? <LiveEditor disabled /> : null}

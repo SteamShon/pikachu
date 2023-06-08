@@ -9,7 +9,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Provider, Service, ServiceConfig } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -181,7 +180,7 @@ function ContentTypeTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Contents",
+                    step: "contents",
                     contentTypeId: params.row.id,
                   },
                 });

@@ -53,6 +53,7 @@ function AdGroupForm({
     const cubeIntegration = campaign?.placement.integrations.find(
       (integration) => integration.provider.provide === "CUBE"
     );
+
     setCubeIntegration(cubeIntegration);
   };
   useEffect(() => {
@@ -154,13 +155,15 @@ function AdGroupForm({
                     rows={3}
                     {...register("filter")}
                   />
-                  {cubeIntegration ? (
+
+                  {cubeIntegration && (
                     <Controller
                       control={control}
                       name="filter"
                       render={({}) => (
                         <SegmentQueryBuilder
-                          details={cubeIntegration.details}
+                          providerDetails={cubeIntegration.provider.details}
+                          integrationDetails={cubeIntegration.details}
                           initialQuery={
                             initialData?.filter
                               ? parseJsonLogic(initialData?.filter)
@@ -178,7 +181,7 @@ function AdGroupForm({
                         />
                       )}
                     />
-                  ) : null}
+                  )}
                   {errors.filter && (
                     <p role="alert">{errors.filter?.message}</p>
                   )}

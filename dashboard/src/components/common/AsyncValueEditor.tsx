@@ -12,17 +12,18 @@ import { fetchValues } from "../../utils/providers/awsS3DuckDB";
 import { extractValue } from "../../utils/json";
 
 const AsyncValueEditor = (props: ValueEditorProps) => {
+  const { providerDetails, integrationDetails } = props.context;
   const columnType = props.fieldData?.columnType;
   const useSearch = props.fieldData?.useSearch || false;
-  const { details } = props.context;
   const [inputValue, setInputValue] = useState<string | undefined>(undefined);
   const [options, setOptions] = useState<string[] | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const loading = open && !options;
   const cubeIntegrationSql = extractValue({
-    object: details,
-    paths: ["sql"],
+    object: integrationDetails,
+    paths: ["SQL"],
   }) as string | undefined;
+
   const fetch = useMemo(
     () =>
       debounce((prefix?: string) => {
@@ -31,7 +32,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
 
           const values = (
             await fetchValues({
-              details,
+              details: providerDetails,
               sql: cubeIntegrationSql,
               fieldName: props.field,
               columnType,
@@ -43,7 +44,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
         })();
       }, 1000),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [details, props.field]
+    [providerDetails, integrationDetails, props.field]
   );
 
   useEffect(() => {
@@ -57,7 +58,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, inputValue, details]);
+  }, [loading, inputValue, providerDetails, integrationDetails]);
 
   const filterOptions = createFilterOptions({
     matchFrom: "any",

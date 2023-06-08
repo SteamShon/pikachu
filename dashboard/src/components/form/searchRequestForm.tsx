@@ -63,16 +63,20 @@ function SearchRequestForm({
       const load = async () => {
         const cubeIntegrationSql = extractValue({
           object: cubeIntegration.details,
-          paths: ["sql"],
+          paths: ["SQL"],
         }) as string | undefined;
         if (!cubeIntegrationSql) return;
 
         const sql = `DESCRIBE ${cubeIntegrationSql}`;
-        const rows = await executeQuery({
-          details: cubeIntegration.details,
-          query: sql,
-        });
-        setMetadata(rows);
+        try {
+          const rows = await executeQuery({
+            details: cubeIntegration.provider.details,
+            query: sql,
+          });
+          setMetadata(rows);
+        } catch (error) {
+          console.log(error);
+        }
       };
       load();
     }
@@ -85,26 +89,29 @@ function SearchRequestForm({
           if (!placement) return;
           const cubeIntegrationSql = extractValue({
             object: cubeIntegration?.details,
-            paths: ["sql"],
+            paths: ["SQL"],
           }) as string | undefined;
           if (!cubeIntegrationSql || index !== selectedIndex) return;
 
           setMatchedAds([]);
           const columnType = metadata.find(
             (row) => (row.column_name as string) === field
-          )?.column_type as string | undefined;
+          )?.column_type as string;
+          try {
+            const values = (
+              await fetchValues({
+                details: cubeIntegration?.provider.details,
+                sql: cubeIntegrationSql,
+                fieldName: field,
+                columnType,
+                value: prefix,
+              })
+            ).map((value) => String(value));
 
-          const values = (
-            await fetchValues({
-              details: cubeIntegration?.details,
-              sql: cubeIntegrationSql,
-              fieldName: field,
-              columnType,
-              value: prefix,
-            })
-          ).map((value) => String(value));
-
-          setOptions(values);
+            setOptions(values);
+          } catch (error) {
+            console.log(error);
+          }
         })();
       }, 1000),
 

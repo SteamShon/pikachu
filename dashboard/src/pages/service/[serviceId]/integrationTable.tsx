@@ -141,7 +141,7 @@ function IntegrationTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Campaigns",
+                    step: "campaigns",
                     placementId: params.row.id,
                   },
                 });

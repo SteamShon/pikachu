@@ -4,12 +4,12 @@ import NorthIcon from "@mui/icons-material/North";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Provider, Service, ServiceConfig } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import ContentPreview from "../../../components/builder/contentPreview";
+import Stat from "../../../components/chart/Stat";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type CreativeForm from "../../../components/form/creativeForm";
 import CreativeModal from "../../../components/form/creativeModal";
@@ -17,7 +17,6 @@ import { api } from "../../../utils/api";
 import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildAdGroupTree } from "../../../utils/tree";
-import Stat from "../../../components/chart/Stat";
 function CreativeTable({
   service,
   serviceTree,
@@ -183,12 +182,12 @@ function CreativeTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Contents",
+                    step: "contents",
                   },
                 });
               }}
@@ -198,12 +197,12 @@ function CreativeTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "AdGroups",
+                    step: "adGroups",
                   },
                 });
               }}

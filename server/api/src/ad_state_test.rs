@@ -1,6 +1,6 @@
 use super::AdState;
 
-use crate::db::{ad_group, campaign, content, content_type, creative, placement, service};
+use crate::{db::{ad_group, campaign, content, content_type, creative, placement, service}, ad_state_builder::{update_contents, update_creatives, update_ad_groups, update_campaigns, update_placements, update_services}, util::parse_user_info};
 use lazy_static::lazy_static;
 use prisma_client_rust::chrono::FixedOffset;
 use serde_json::json;
@@ -20,6 +20,8 @@ lazy_static! {
         content_types: None,
         service_config: None,
         customsets: None,
+        integrations: None,
+        providers: None,
         created_at: *NOW,
         updated_at: *NOW,
     };
@@ -32,8 +34,6 @@ lazy_static! {
         campaigns: None,
         content_type: None,
         content_type_id: Some(CONTENT_TYPE.id.clone()),
-        cube: None,
-        cube_id: None,
         service: None,
         service_id: Some(SERVICE.id.clone()),
         integrations: None,
@@ -83,6 +83,7 @@ lazy_static! {
     pub static ref CONTENT_TYPE: content_type::Data = content_type::Data {
         id: String::from("content_type_1"),
         name: String::from("ct1"),
+        r#type: String::from("DISPLAY"),
         service_id: Some(SERVICE.id.clone()),
         service: None,
         description: None,
@@ -118,12 +119,12 @@ lazy_static! {
     };
 }
 fn init_test_ad_state(ad_state: &mut AdState) {
-    ad_state.update_services(&vec![SERVICE.clone()]);
-    ad_state.update_placements(&vec![PLACEMENT.clone()]);
-    ad_state.update_campaigns(&vec![CAMPAIGN.clone()]);
-    ad_state.update_ad_groups(&vec![AD_GROUP.clone()]);
-    ad_state.update_creatives(&vec![CREATIVE.clone()]);
-    ad_state.update_contents(&vec![CONTENT.clone()]);
+    update_services(ad_state, &vec![SERVICE.clone()]);
+    update_placements(ad_state, &vec![PLACEMENT.clone()]);
+    update_campaigns(ad_state, &vec![CAMPAIGN.clone()]);
+    update_ad_groups(ad_state, &vec![AD_GROUP.clone()]);
+    update_creatives(ad_state, &vec![CREATIVE.clone()]);
+    update_contents(ad_state, &vec![CONTENT.clone()]);
 }
 
 #[test]
@@ -143,7 +144,7 @@ fn test_ad_state_and_search_result_after_update() {
     });
     let mut ad_state = AdState::default();
     init_test_ad_state(&mut ad_state);
-    let user_info = AdState::parse_user_info(&user_info_json).unwrap();
+    let user_info = parse_user_info(&user_info_json).unwrap();
     let ad_group_id = String::from(AD_GROUP.id.clone());
     let placement_id = PLACEMENT.id.clone();
     let campaign_id = CAMPAIGN.id.clone();
@@ -187,8 +188,8 @@ fn test_ad_state_and_search_result_after_update() {
         ..CREATIVE.clone()
     };
     // after update
-    ad_state.update_ad_groups(&vec![new_ad_group]);
-    ad_state.update_creatives(&vec![new_creative]);
+    update_ad_groups(&mut ad_state, &vec![new_ad_group]);
+    update_creatives(&mut ad_state, &vec![new_creative]);
     println!("{:?}", ad_state.filter_index);
 
     let new_placement_ids = 
@@ -237,7 +238,7 @@ fn test_update_ad_group_filter_and_status_change() {
         ..AD_GROUP.clone()
     };
 
-    ad_state.update_ad_groups(&vec![new_ad_group]);
+    update_ad_groups(&mut ad_state, &vec![new_ad_group]);
     // after update, AD_GROUP should be excluded from result since
     // our index suppose to exlude filters_to_delete.
     let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None);
@@ -250,7 +251,7 @@ fn test_update_ad_group_filter_and_status_change() {
         status: String::from("published"),
         ..AD_GROUP.clone()
     };
-    ad_state.update_ad_groups(&vec![new_ad_group]);
+    update_ad_groups(&mut ad_state, &vec![new_ad_group]);
     // after update, AD_GROUP should be included in result.
     // since ad_group's status has been change back to published.
     let search_result = ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None);

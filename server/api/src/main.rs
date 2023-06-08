@@ -1,4 +1,6 @@
 pub mod ad_state;
+pub mod ad_state_builder;
+pub mod util;
 use crate::ad_state::AdState;
 use actix_cors::Cors;
 use actix_web::{
@@ -9,6 +11,7 @@ use actix_web::{
     App, HttpResponse, HttpServer, Responder,
 };
 use ad_state::CreativeFeedback;
+use ad_state_builder::load;
 use arc_swap::ArcSwap;
 use common::db::{self, PrismaClient};
 use dotenv::dotenv;
@@ -35,7 +38,7 @@ async fn load_ad_meta(data: web::Data<ArcSwap<Arc<AdState>>>, client: web::Data<
     let mut new_ad_state = AdState {
         ..prev.as_ref().as_ref().clone()
     };
-    new_ad_state.load(client.clone().into_inner()).await;
+    load(&mut new_ad_state, client.clone().into_inner()).await;
     data.store(Arc::new(Arc::new(new_ad_state)));
 }
 

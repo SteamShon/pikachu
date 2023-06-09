@@ -1,7 +1,4 @@
-pub mod ad_state;
-pub mod ad_state_builder;
-pub mod util;
-use crate::ad_state::AdState;
+
 use actix_cors::Cors;
 use actix_web::{
     get,
@@ -10,8 +7,7 @@ use actix_web::{
     web::{self},
     App, HttpResponse, HttpServer, Responder,
 };
-use ad_state::CreativeFeedback;
-use ad_state_builder::load;
+use ad_state::{ad_state::{AdState, CreativeFeedback}, ad_state_builder::load};
 use arc_swap::ArcSwap;
 use common::db::{self, PrismaClient};
 use dotenv::dotenv;
@@ -86,7 +82,7 @@ async fn user_info(
 ) -> impl Responder {
     let user_info = data
         .load()
-        .fetch_user_info(client.into_inner(), &request.placement_id, &request.user_id)
+        .fetch_user_info(&request.placement_id, &request.user_id)
         .await;
 
     HttpResponse::Ok().json(user_info)

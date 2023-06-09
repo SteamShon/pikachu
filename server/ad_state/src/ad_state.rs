@@ -1,15 +1,17 @@
-use crate::db::{
-    ad_group, campaign, content, content_type, creative, integration, placement, service,
-    PrismaClient,
+use common::types::UserInfo;
+use common::db::{
+    ad_group, campaign, content, content_type, creative, placement, service,
+    PrismaClient, integration,
 };
-use crate::util::{is_active_content_type, is_active_ad_group, is_active_creative, is_active_content, is_active_campaign, is_active_placement, parse_user_info, is_active_integration};
+use common::util::{parse_user_info, is_active_content_type, is_active_ad_group, is_active_creative, is_active_content, is_active_placement, is_active_campaign};
+use integrations::Integrations;
 use common::db::{user_feature, provider};
-use filter::filter::{TargetFilter, UserInfo};
+use filter::filter::{TargetFilter};
 use filter::filterable::Filterable;
 use filter::index::FilterIndex;
 use futures::future::join_all;
 use prisma_client_rust::chrono::{DateTime, FixedOffset};
-use prisma_client_rust::{raw, Direction, QueryError};
+use prisma_client_rust::{raw,  QueryError};
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -67,7 +69,6 @@ pub struct UpdateInfo {
     pub contents: DateTime<FixedOffset>,
     pub content_types: DateTime<FixedOffset>,
     pub integrations: DateTime<FixedOffset>,
-    pub providers: DateTime<FixedOffset>,
 }
 impl Default for UpdateInfo {
     fn default() -> Self {
@@ -80,7 +81,6 @@ impl Default for UpdateInfo {
             contents: Default::default(),
             content_types: Default::default(),
             integrations: Default::default(),
-            providers: Default::default(),
         }
     }
 }
@@ -94,12 +94,11 @@ pub struct AdState {
     pub creatives: HashMap<String, HashMap<String, creative::Data>>,
     pub contents: HashMap<String, content::Data>,
     pub content_types: HashMap<String, content_type::Data>,
-    pub integrations: HashMap<String, HashMap<String, integration::Data>>,
-    pub providers: HashMap<String, provider::Data>,
     pub update_info: UpdateInfo,
     pub filter_index: HashMap<String, FilterIndex>,
     //TODO: Make Different implementation for Ranker trait per placement.
     pub ranker: DefaultRanker<Creative>,
+    pub integrations: Integrations,
 }
 impl Default for AdState {
     fn default() -> Self {
@@ -111,11 +110,12 @@ impl Default for AdState {
             creatives: Default::default(),
             contents: Default::default(),
             content_types: Default::default(),
-            integrations: Default::default(),
-            providers: Default::default(),
             update_info: Default::default(),
             filter_index: Default::default(),
             ranker: Default::default(),
+            integrations: Integrations::default(),
+            // clients: Default::default(),
+            // functions: Default::default(),
         }
     }
 }
@@ -134,76 +134,41 @@ impl AdState {
         self.placements
             .get(&self.get_campaign(ad_group)?.placement_id)
     }
-    pub fn get_provider(&self, integration: &integration::Data) -> Option<&provider::Data> {
-        self.providers.get(&integration.provider_id)
-    }
+    
 
     pub fn init() -> AdState {
         AdState::default()
     }
     
-    pub async fn fetch_user_info(
-        &self,
-        client: Arc<PrismaClient>,
-        placement_id: &str,
-        user_id: &str,
-    ) -> Option<UserInfo> {
-        let placement = self.placements.get(placement_id)?;
+    // pub async fn fetch_user_info(
+    //     &self,
+    //     placement_id: &str,
+    //     user_id: &str,
+    // ) -> Option<UserInfo> {
+    //     let integrations = self.integrations.get(placement_id)?;
+    //     let (integration, provider) = self.get_user_feature_integration(integrations)?;
+        
+    // }
 
-        let queries = self.generate_user_feature_sqls(placement_id, user_id)?;
-        let futures = join_all(queries.into_iter().map(|query| {
-            let client = &client;
-            async move {
-                let user_features: Result<Vec<user_feature::Data>, QueryError> =
-                    client._query_raw(query).exec().await;
-
-                user_features
-            }
-        }))
-        .await;
-
-        let mut user_info = UserInfo::new();
-        for future in futures {
-            match future {
-                Ok(user_features) => {
-                    for user_feature in user_features {
-                        if let Some(kvs) = parse_user_info(&user_feature.feature) {
-                            for (k, v) in kvs {
-                                user_info.insert(k, v);
-                            }
-                        }
-                    }
-                }
-                Err(e) => println!("Got an error: {}", e),
-            }
-        }
-        Some(user_info)
-    }
-
-    fn generate_user_feature_sqls(
-        &self,
-        placement_id: &str,
-        user_id: &str,
-    ) -> Option<Vec<prisma_client_rust::Raw>> {
-        let mut queries = Vec::new();
-        let integrations = self.integrations.get(placement_id)?;
-        for (_integration_id, integration) in integrations {
-            if is_active_integration(integration) {
-                if let Some(provider) = self.get_provider(integration) {
-                    if provider.provide == "USER_FEATURE" {
-                        if let Some(stored_sql) = integration.details.get("SQL") {
-                            if let Some(sql) = stored_sql.as_str() {
-                                let sql_with_param = sql.replace("{userId}", user_id);
-                                let query = raw!(&sql_with_param);
-                                queries.push(query);
-                            }
-                        }   
-                    }
-                }              
-            }
-        }
-        Some(queries)
-    }
+    // fn generate_user_feature_sqls(
+    //     &self,
+    //     integration: &integration::Data,
+    //     user_id: &str,
+    // ) -> Option<Vec<prisma_client_rust::Raw>> {
+    //     let mut queries = Vec::new();
+    //     if let Some(version) = integration.details.get("cubeHistoryId").map(|v| v.as_str().unwrap()) {
+    //         let sql = format!(r#"
+    //             SELECT  *
+    //             FROM    "UserFeature"
+    //             WHERE   "cubeHistoryId" = '{}'
+    //             AND     "userId" = '{}'
+    //         "#, version, user_id);
+    //         println!("{:?}", sql);
+    //         let query = raw!(&sql);
+    //         queries.push(query);
+    //     }   
+    //     Some(queries)
+    // }
     pub fn search(
         &self,
         _service_id: &str,
@@ -395,6 +360,22 @@ impl AdState {
         
         self.ranker.update(&feedbacks);
     }
+
+    pub async fn fetch_user_info(
+        &self,
+        placement_id: &str,
+        user_id: &str,
+    ) -> Option<UserInfo> {
+        self.integrations.user_features(placement_id, user_id).await
+    }
+
+    // pub async fn send_sms(
+    //     &self,
+    //     placement_id: &str,
+
+    // ) -> reqwest::Response {
+
+    // }
 }
 
 #[cfg(test)]

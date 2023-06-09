@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
-use common::db::{placement, integration, content_type, content, creative, ad_group, campaign};
-use filter::filter::UserInfo;
+use crate::{db::{placement, integration, content_type, content, creative, ad_group, campaign, provider}, types::UserInfo};
+
+pub const USER_FEATURE_SQL_TEMPLATE: &str = r#"SELECT * FROM "UserFeature" WHERE "cubeHistoryId" = '{}' AND "userId" = '{}'"#;
 
 fn json_value_to_string(value: &serde_json::Value) -> Option<String> {
     match value {
@@ -58,4 +59,7 @@ pub fn is_active_content_type(content_type: &content_type::Data) -> bool {
 }
 pub fn is_active_integration(integration: &integration::Data) -> bool {
     integration.status.to_lowercase() == "published"
+}
+pub fn is_active_provider(provider: &provider::Data) -> bool {
+    provider.status.to_lowercase() == "published"
 }

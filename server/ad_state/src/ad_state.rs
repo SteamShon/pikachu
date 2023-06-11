@@ -369,13 +369,13 @@ impl AdState {
         self.integrations.user_features(placement_id, user_id).await
     }
 
-    // pub async fn send_sms(
-    //     &self,
-    //     placement_id: &str,
-
-    // ) -> reqwest::Response {
-
-    // }
+    pub async fn send_sms(
+        &self,
+        placement_id: &str,
+        payload: &serde_json::Value,
+    ) -> Option<reqwest::Response> {
+        self.integrations.send_sms(placement_id, payload).await
+    }
 }
 
 #[cfg(test)]

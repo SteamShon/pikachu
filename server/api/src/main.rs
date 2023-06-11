@@ -12,7 +12,7 @@ use arc_swap::ArcSwap;
 use common::db::{self, PrismaClient};
 use dotenv::dotenv;
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::{collections::HashSet, env, sync::Arc, time::Duration};
 use tokio::{runtime::Builder, time};
 
@@ -28,6 +28,13 @@ struct Request {
     user_info: Value,
     top_k: Option<usize>
 }
+
+#[derive(Deserialize)]
+struct SMSRequest{
+    placement_id: String, 
+    payload: Value
+}
+
 // copy prev shared state into new struct on heap. then atomically replace Arc using ArcSwap
 async fn load_ad_meta(data: web::Data<ArcSwap<Arc<AdState>>>, client: web::Data<PrismaClient>) {
     let prev = data.load();
@@ -119,6 +126,19 @@ async fn update_feedback(
     data.store(Arc::new(Arc::new(new_ad_state)));
     HttpResponse::Ok().json(true)
 }
+#[post("/send_sms")]
+async fn send_sms(
+    data: web::Data<ArcSwap<Arc<AdState>>>,
+    request: web::Json<SMSRequest>,
+) -> impl Responder {
+    let placement_id = &request.placement_id;
+    let payload = &request.payload;
+    let ad_state = data.load();
+    let response = ad_state.send_sms(placement_id, payload).await;
+    println!("{:?}", response.map(|r| r.status()));
+
+    HttpResponse::Ok().json(true)
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -159,6 +179,7 @@ async fn main() -> std::io::Result<()> {
             .service(update_ad_meta)
             .service(all_dimensions)
             .service(update_feedback)
+            .service(send_sms)
             .wrap(cors)
             .wrap(logger)
     })

@@ -1,8 +1,11 @@
 pub mod user_feature;
+pub mod function;
+pub mod sms_sender;
 
 use std::{collections::HashMap, sync::Arc};
 use common::{db::{integration, provider, placement, self, PrismaClient}, util::is_active_provider, types::UserInfo};
 use async_trait::async_trait;
+use function::Function;
 use prisma_client_rust::{raw, QueryError};
 use serde::Deserialize;
 use futures::future::join_all;
@@ -94,31 +97,38 @@ impl Integrations {
         }
     }
     
-}
+    pub fn is_sms_sender_integration(integration: &integration::Data) -> bool {
+        integration
+            .provider()
+            .map(|provider| 
+                integration.details.get("uri").is_some() &&
+                provider.provide == "SMS" &&
+                provider.details.get("apiKey").is_some() && 
+                provider.details.get("apiSecret").is_some()
+        )
+            .unwrap_or(false)
+    }
+    fn get_sms_sender_function(&self, placement_id: &str) -> Option<&Function> {
+        let integrations = self.integrations.get(placement_id)?;
+        println!("[Total Integrations]: {:?}", integrations.len());
 
-#[derive(Debug, Clone)]
-pub enum Function {
-    UserFeature { function: UserFeatureDatabase },
-}
-impl Function {
-    pub async fn new(integration: &integration::Data) -> Option<Self> {
-        let is_user_feature_integration = 
-            Integrations::is_user_feature_integration(integration);
+        let integration = 
+            integrations.values().find(|i| {
+                let is_valid = Self::is_sms_sender_integration(*i);
+                println!("{:?}: {:?}", i, is_valid);
+                is_valid
+        })?;
 
-        if !is_user_feature_integration {
-            return None
-        } else {
-            let database_url = integration.provider().unwrap().details.get("DATABASE_URL").map(|v| v.as_str().unwrap())?;
-            let table_partition = integration.details.get("cubeHistoryId").map(|v| v.as_str().unwrap())?;
-            let client = Arc::new(db::new_client_with_url(database_url).await.ok()?);
-            let function = UserFeatureDatabase {
-                integration: integration.clone(),
-                client: client,
-                database_url: database_url.to_string(),
-                table_partition: table_partition.to_string()
-            };
-            println!("Function: {:?}", function);
-            return Some(Function::UserFeature { function })
+        println!("[Integration]: {:?}", integration);
+        self.functions.get(&integration.id)        
+    }
+
+    pub async fn send_sms(&self, placement_id: &str, payload: &serde_json::Value) -> Option<reqwest::Response> {
+        match self.get_sms_sender_function(placement_id)? {
+            Function::SMSSender { function } => {
+                function.apply(payload).await.ok()
+            },
+            _ => None
         }
     }
 }

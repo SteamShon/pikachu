@@ -18,7 +18,7 @@ impl Function {
         let is_user_feature_integration = Integrations::is_user_feature_integration(integration);
         let is_sms_sender_integration = Integrations::is_sms_sender_integration(integration);
         let is_creative_fetcher = Integrations::is_creative_fetcher(integration);
-
+        
         if is_user_feature_integration {
             let database_url = integration
                 .provider()

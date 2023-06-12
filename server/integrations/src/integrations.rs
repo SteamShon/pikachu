@@ -132,7 +132,12 @@ impl Integrations {
         }
     }
     pub fn is_creative_fetcher(integration: &integration::Data) -> bool {
-        true
+        integration
+            .provider()
+            .map(|provider| {
+                    provider.provide == "API"
+            })
+            .unwrap_or(false)
     }
     fn get_creative_fetcher_function(&self, placement_id: &str) -> Option<&Function> {
         self.get_integration(placement_id, Self::is_creative_fetcher)
@@ -157,18 +162,10 @@ impl Integrations {
         placement_id: &str, 
         user_info: &UserInfo,
     ) -> Option<HashMap<String, &'a HashMap<String, creative::Data>> > {
-        let function = LocalCreativeFetcher {};
-
-        function.apply(
-            filter_index, 
-            ad_group_creatives, 
-            placement_id, 
-            user_info
-        ).await
-        // match self.get_creative_fetcher_function(placement_id)? {
-        //     Function::LocalCreativeFetcher { function } => 
-        //         function.apply(filter_index, ad_group_creatives, placement_id, user_info).await,
-        //     _ => None,
-        // }
+        match self.get_creative_fetcher_function(placement_id)? {
+            Function::LocalCreativeFetcher { function } => 
+                function.apply(filter_index, ad_group_creatives, placement_id, user_info).await,
+            _ => None,
+        }
     }
 }

@@ -75,7 +75,8 @@ async fn search(
     data: web::Data<ArcSwap<Arc<AdState>>>,
     request: web::Json<Request>,
 ) -> impl Responder {
-    let matched_ad_groups = data.load().search(
+    let ad_state = data.load();
+    let matched_ad_groups = ad_state.search(
         &request.service_id,
         &request.placement_id,
         &request.user_info,

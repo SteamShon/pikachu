@@ -3,7 +3,7 @@ use common::{db::{
     ad_group, campaign, content, content_type, creative, placement, service,
     PrismaClient, integration,
 }, util::is_active_ad_group};
-use integrations::Integrations;
+use integrations::integrations::Integrations;
 use crate::{ad_state::{AdState, AdGroup, Creative}};
 use common::db::{provider, self};
 use filter::index::FilterIndex;
@@ -100,7 +100,7 @@ async fn fetch_content_types(
         .await
         .unwrap()
 }
-async fn fetch_providers(
+pub async fn fetch_providers(
     client: Arc<PrismaClient>,
     last_updated_at: DateTime<FixedOffset>,
 ) -> Vec<provider::Data> {
@@ -298,7 +298,7 @@ pub fn update_content_types(ad_state: &mut AdState, new_content_types: &Vec<cont
 //             .insert(provider.id.clone(), provider.clone());
 //     }
 // }
-async fn fetch_and_update_services(
+pub async fn fetch_and_update_services(
     ad_state: &mut AdState,
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
@@ -309,7 +309,7 @@ async fn fetch_and_update_services(
     println!("[new_services]: {:?}", new_services.len());
     update_services(ad_state, &new_services);
 }
-async fn fetch_and_update_placements(
+pub async fn fetch_and_update_placements(
     ad_state: &mut AdState,
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
@@ -323,7 +323,7 @@ async fn fetch_and_update_placements(
     new_placements
 }
 
-async fn fetch_and_update_campaigns(
+pub async fn fetch_and_update_campaigns(
     ad_state: &mut AdState,
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
@@ -334,7 +334,7 @@ async fn fetch_and_update_campaigns(
     println!("[new_campaigns]: {:?}", new_campaigns.len());
     update_campaigns(ad_state, &new_campaigns);
 }
-async fn fetch_and_update_ad_groups(
+pub async fn fetch_and_update_ad_groups(
     ad_state: &mut AdState,
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
@@ -345,7 +345,7 @@ async fn fetch_and_update_ad_groups(
     println!("[new_ad_groups]: {:?}", new_ad_groups.len());
     update_ad_groups(ad_state, &new_ad_groups);
 }
-async fn fetch_and_update_creatives(
+pub async fn fetch_and_update_creatives(
     ad_state: &mut AdState,
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
@@ -356,7 +356,7 @@ async fn fetch_and_update_creatives(
     println!("[new_creatives]: {:?}", new_creatives.len());
     update_creatives(ad_state, &new_creatives);
 }
-async fn fetch_and_update_contents(
+pub async fn fetch_and_update_contents(
     ad_state: &mut AdState,
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
@@ -367,7 +367,7 @@ async fn fetch_and_update_contents(
     println!("[new_contents]: {:?}", new_contents.len());
     update_contents(ad_state, &new_contents);
 }
-async fn fetch_and_update_content_types(
+pub async fn fetch_and_update_content_types(
     ad_state: &mut AdState,
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
@@ -401,7 +401,10 @@ async fn fetch_and_update_content_types(
 //     self.update_integrations(new_integrations);
 // }
 
-pub async fn load(ad_state: &mut AdState, client: Arc<PrismaClient>) -> () {
+pub async fn load(
+    ad_state: &mut AdState, 
+    client: Arc<PrismaClient>
+) {
     fetch_and_update_services(ad_state, client.clone(), None).await;
     let placements = fetch_and_update_placements(ad_state, client.clone(), None).await;
     fetch_and_update_campaigns(ad_state, client.clone(), None).await;
@@ -411,11 +414,14 @@ pub async fn load(ad_state: &mut AdState, client: Arc<PrismaClient>) -> () {
     fetch_and_update_content_types(ad_state, client.clone(), None)
         .await;
     
+    
     // integrations 
     let last_updated_at_value = 
         ad_state.update_info.integrations;
     let providers = fetch_providers(client, last_updated_at_value).await;
-    ad_state.integrations = Integrations::new(&placements, &providers).await;
+    let integrations = Integrations::new(&placements, &providers).await;
+    ad_state.set_integrations(integrations);
+    
 
     println!("{:?}", ad_state);
 }

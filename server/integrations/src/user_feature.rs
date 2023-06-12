@@ -1,17 +1,17 @@
+use std::sync::Arc;
 
-
-use std::{collections::HashMap, sync::Arc};
-
-use async_trait::async_trait;
 use prisma_client_rust::{raw, QueryError};
 
-use common::{db::{integration, user_feature, provider, PrismaClient}, util::parse_user_info, types::UserInfo};
+use common::{
+    db::{integration, user_feature, PrismaClient},
+    types::UserInfo,
+    util::parse_user_info,
+};
 use futures::future::join_all;
-use serde::Deserialize;
 
 #[derive(Debug, Clone)]
 pub struct UserFeatureDatabase {
-    pub integration: integration::Data,
+    // pub integration: integration::Data,
     pub client: Arc<PrismaClient>,
     pub database_url: String,
     pub table_partition: String,
@@ -21,22 +21,17 @@ pub struct UserFeatureDatabase {
 // impl Integration<UserInfo> for UserFeatureDatabase {
 
 impl UserFeatureDatabase {
-    pub async fn apply(
-        &self, 
-        user_id: &str
-    ) -> Option<UserInfo> {
+    pub async fn apply(&self, user_id: &str) -> Option<UserInfo> {
         let client = &self.client;
         let queries = self.generate_user_feature_sqls(user_id)?;
-        let futures = join_all(queries.into_iter().map(|query| {                
-            async move {
-                let user_features: Result<Vec<user_feature::Data>, QueryError> =
-                    client._query_raw(query).exec().await;
+        let futures = join_all(queries.into_iter().map(|query| async move {
+            let user_features: Result<Vec<user_feature::Data>, QueryError> =
+                client._query_raw(query).exec().await;
 
-                user_features
-            }
+            user_features
         }))
         .await;
-            
+
         let mut user_info = UserInfo::new();
         for future in futures {
             match future {
@@ -54,23 +49,23 @@ impl UserFeatureDatabase {
         }
         Some(user_info)
     }
-   
-    fn generate_user_feature_sqls(
-        &self,
-        user_id: &str,
-    ) -> Option<Vec<prisma_client_rust::Raw>> {
+
+    fn generate_user_feature_sqls(&self, user_id: &str) -> Option<Vec<prisma_client_rust::Raw>> {
         let mut queries = Vec::new();
         let version = &self.table_partition;
-        let sql = format!(r#"
+        let sql = format!(
+            r#"
             SELECT  *
             FROM    "UserFeature"
             WHERE   "cubeHistoryId" = '{}'
             AND     "userId" = '{}'
-        "#, version, user_id);
+        "#,
+            version, user_id
+        );
         println!("{:?}", sql);
         let query = raw!(&sql);
         queries.push(query);
-        
+
         Some(queries)
     }
 }

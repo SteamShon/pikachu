@@ -34,15 +34,19 @@ struct SMSRequest{
     placement_id: String, 
     payload: Value
 }
-
 // copy prev shared state into new struct on heap. then atomically replace Arc using ArcSwap
-async fn load_ad_meta(data: web::Data<ArcSwap<Arc<AdState>>>, client: web::Data<PrismaClient>) {
+async fn load_ad_meta(
+    data: web::Data<ArcSwap<Arc<AdState>>>, 
+    client: web::Data<PrismaClient>
+) -> () {
     let prev = data.load();
     let mut new_ad_state = AdState {
         ..prev.as_ref().as_ref().clone()
     };
+    
     load(&mut new_ad_state, client.clone().into_inner()).await;
-    data.store(Arc::new(Arc::new(new_ad_state)));
+    let new_ad_state_arc = Arc::new(Arc::new(new_ad_state));
+    data.store(new_ad_state_arc);
 }
 
 pub async fn load_ad_meta_periodic(
@@ -76,7 +80,7 @@ async fn search(
         &request.placement_id,
         &request.user_info,
         request.top_k,
-    );
+    ).await;
 
     HttpResponse::Ok().json(matched_ad_groups)
 }

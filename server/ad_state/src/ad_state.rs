@@ -6,20 +6,14 @@ use common::db::{
 };
 use common::util::{parse_user_info, is_active_content_type, is_active_ad_group, is_active_creative, is_active_content, is_active_placement, is_active_campaign};
 
-use common::db::{user_feature, provider};
-use filter::filter::{TargetFilter};
+use filter::filter::TargetFilter;
 use filter::filterable::Filterable;
 use filter::index::FilterIndex;
-use futures::future::join_all;
 use integrations::integrations::Integrations;
 use prisma_client_rust::chrono::{DateTime, FixedOffset};
-use prisma_client_rust::{raw,  QueryError};
 use serde::{Serialize, Deserialize};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::collections::HashMap;
 use ranker::ranker::{Rankable, Ranker, DefaultRanker, Feedback, Stat};
-
-use crate::ad_state_builder::load;
 
 pub struct AdGroup {
     pub data: ad_group::Data,

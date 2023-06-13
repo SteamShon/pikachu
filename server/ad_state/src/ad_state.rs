@@ -52,6 +52,27 @@ impl Rankable for Creative {
         self.data.id.to_string()
     }
 }
+
+#[derive(Serialize, Debug)]
+pub struct CreativeWithContent<'a> {
+    creative: &'a creative::Data, 
+    content: &'a content::Data
+}
+#[derive(Serialize, Debug)]
+pub struct AdGroupCreatives<'a> {
+    ad_group: &'a ad_group::Data, 
+    creatives: Vec<CreativeWithContent<'a>>
+}
+#[derive(Serialize, Debug)]
+pub struct CampaignAdGroups<'a> {
+    campaign: &'a campaign::Data, 
+    ad_groups: Vec<AdGroupCreatives<'a>>
+}
+#[derive(Serialize, Debug)]
+pub struct PlacementCampaigns<'a> {
+    placement: &'a placement::Data, 
+    campaigns: Vec<CampaignAdGroups<'a>>
+}
 #[derive(Serialize)]
 pub struct SearchResult<'a> {
     pub matched_ads: Vec<PlacementCampaigns<'a>>,
@@ -89,26 +110,6 @@ impl Default for UpdateInfo {
         }
     }
 }
-#[derive(Serialize, Debug)]
-pub struct CreativeWithContent<'a> {
-    creative: &'a creative::Data, 
-    content: &'a content::Data
-}
-#[derive(Serialize, Debug)]
-pub struct AdGroupCreatives<'a> {
-    ad_group: &'a ad_group::Data, 
-    creatives: Vec<CreativeWithContent<'a>>
-}
-#[derive(Serialize, Debug)]
-pub struct CampaignAdGroups<'a> {
-    campaign: &'a campaign::Data, 
-    ad_groups: Vec<AdGroupCreatives<'a>>
-}
-#[derive(Serialize, Debug)]
-pub struct PlacementCampaigns<'a> {
-    placement: &'a placement::Data, 
-    campaigns: Vec<CampaignAdGroups<'a>>
-}
 #[derive(Debug, Clone)]
 pub struct AdState {
     pub services: HashMap<String, service::Data>,
@@ -121,7 +122,8 @@ pub struct AdState {
     pub update_info: UpdateInfo,
     pub filter_index: HashMap<String, FilterIndex>,
     //TODO: Make Different implementation for Ranker trait per placement.
-    pub ranker: DefaultRanker<Creative>,
+    // pub ranker: DefaultRanker<Creative>,
+    pub creatives_stat: HashMap<String, Stat>,
     pub integrations: Integrations,
 }
 impl Default for AdState {
@@ -136,7 +138,8 @@ impl Default for AdState {
             content_types: Default::default(),
             update_info: Default::default(),
             filter_index: Default::default(),
-            ranker: Default::default(),
+            // ranker: Default::default(),
+            creatives_stat: Default::default(),
             integrations: Integrations::default(),
             // clients: Default::default(),
             // functions: Default::default(),
@@ -383,23 +386,17 @@ impl AdState {
         &mut self, 
         creative_feedbacks: &Vec<CreativeFeedback>
     ) {
+        let creatives_stat = &mut self.creatives_stat;
         let creatives = &self.creatives;
-        let mut feedbacks = Vec::<Feedback<Creative>>::new();
-
+        
         for CreativeFeedback { ad_group_id, creative_id, stat } in creative_feedbacks {
-            if let Some(creatives_in_ad_group) = creatives.get(ad_group_id) {
-                if let Some(creative) = creatives_in_ad_group.get(creative_id) {
-                    let feedback = Feedback { 
-                        arm: Creative { data: creative.clone() }, 
-                        reward: stat.clone() 
-                    };
-
-                    feedbacks.push(feedback);
-                }
+            if creatives.contains_key(ad_group_id) {
+                creatives_stat
+                    .entry(creative_id.clone())
+                    .or_insert_with(|| Stat::default())
+                    .merge(stat);
             }
         }
-        
-        self.ranker.update(&feedbacks);
     }
 
     pub async fn fetch_user_info(

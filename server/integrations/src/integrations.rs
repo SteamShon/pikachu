@@ -184,9 +184,9 @@ impl Integrations {
         &'a self,
         placement_id: &str,
         creatives_stat: &'a HashMap<String, Stat>,
-        candidates: &'a Vec<CreativeWithContent<'a>>,
+        candidates: Vec<CreativeWithContent<'a>>,
         k: usize,
-    ) -> Vec<(&CreativeWithContent<'a>, f32)> {
+    ) -> Vec<(CreativeWithContent<'a>, f32)> {
         match self.get_ranker_function(placement_id) {
             Some(Function::ThompsonSamplingRanker { function }) => {
                 function.apply(creatives_stat, candidates, k)

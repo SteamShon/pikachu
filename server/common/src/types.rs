@@ -80,7 +80,7 @@ pub struct CreativeWithContent<'a> {
 #[derive(Serialize, Debug)]
 pub struct AdGroupCreatives<'a> {
     pub ad_group: &'a ad_group::Data, 
-    pub creatives: Vec<&'a CreativeWithContent<'a>>
+    pub creatives: Vec<CreativeWithContent<'a>>
 }
 #[derive(Serialize, Debug)]
 pub struct CampaignAdGroups<'a> {

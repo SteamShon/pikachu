@@ -18,9 +18,9 @@ impl ThompsonSamplingRanker {
     pub fn apply<'a>(
         &self, 
         creatives_stat: &'a HashMap<String, Stat>,
-        candidates: &'a Vec<CreativeWithContent<'a>>, 
+        candidates: Vec<CreativeWithContent<'a>>, 
         k: usize,
-    ) -> Vec<(&CreativeWithContent<'a>, f32)> {
+    ) -> Vec<(CreativeWithContent<'a>, f32)> {
         let mut top_candidates = Vec::new();
 
         for candidate in candidates {

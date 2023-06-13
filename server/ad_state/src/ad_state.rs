@@ -44,7 +44,6 @@ pub struct CreativeFeedback {
 #[derive(Serialize)]
 pub struct SearchResult<'a> {
     pub matched_ads: Vec<PlacementCampaigns<'a>>,
-    // pub grouped: HashMap<String, HashMap<String, HashMap<String, ad_group::Data>>>,
     pub non_filter_ads: Vec<PlacementCampaigns<'a>>,
 }
 
@@ -182,10 +181,18 @@ impl AdState {
             placement_id, 
             &user_info
         ).await.unwrap_or(HashMap::new());
-        let creatives = self.ad_group_ids_to_creatives_with_contents(creatives_map);
-        let creatives_meta = self.merge_ids_with_ad_metas(placement_id, &user_info, &creatives, top_k);
-        let matched_ads = self.build_placement_tree(creatives_meta);
-
+        let creatives = 
+            self.ad_group_ids_to_creatives_with_contents(creatives_map);
+        println!("creatives: [{:?}]", creatives.len());
+        let ad_group_creatives = 
+            self.ad_group_creatives(placement_id, &user_info, creatives, top_k);
+        println!("ad_groups: [{:?}]", ad_group_creatives.len());
+        let campaign_ad_groups = 
+            self.campaign_ad_groups(ad_group_creatives);
+        println!("campaigns: [{:?}]", campaign_ad_groups.len());
+        let matched_ads = 
+            self.placement_campaigns(campaign_ad_groups);
+        println!("placements: [{:?}]", matched_ads.len());
         // let non_filter_creatives_map = self.integrations.fetch_non_filter_creatives(
         //     &self.filter_index, 
         //     &self.creatives, 
@@ -195,12 +202,10 @@ impl AdState {
         // let non_filter_creatives_meta = self.merge_ids_with_ad_metas(placement_id, &user_info, &non_filter_creatives, top_k);
         // let non_filter_ads = self.build_placement_tree(non_filter_creatives_meta);
         
-        println!("{:?}", matched_ads);
-        // SearchResult {
-        //     matched_ads,
-        //     non_filter_ads
-        // }
-        SearchResult::default()
+        SearchResult {
+            matched_ads,
+            non_filter_ads: Vec::new()
+        }
         
         // let matched_ads = self.build_placement_tree(creatives_meta);
         
@@ -219,42 +224,6 @@ impl AdState {
         // }
     }
 
-    fn build_placement_tree<'a>(
-        &'a self,
-        meta_tree: HashMap<String, HashMap<String, Vec<AdGroupCreatives<'a>>>>,
-    ) -> Vec<PlacementCampaigns<'a>> {
-        let mut ads = Vec::new();
-        let placements = &self.placements;
-        let campaigns = &self.campaigns;
-        let content_types = &self.content_types;
-
-        for (placement_id, campaign_tree) in meta_tree {
-            if let Some(placement) = placements.get(&placement_id) {
-                if let Some(content_type_id) = &placement.content_type_id {
-                    if let Some(content_type) = content_types.get(content_type_id) {
-                        if is_active_content_type(&content_type) {
-                            let mut new_campaigns = Vec::new();
-                            for (campaign_id, ad_groups) in campaign_tree {
-                                if let Some(campaign) = campaigns.get(&campaign_id) {
-                                    let campaign_ad_groups = CampaignAdGroups {
-                                        campaign,
-                                        ad_groups: ad_groups
-                                    };
-                                    new_campaigns.push(campaign_ad_groups);
-                                }
-                            }
-                            let new_placement = PlacementCampaigns {
-                                placement,
-                                campaigns: new_campaigns
-                            };
-                            ads.push(new_placement);
-                        }
-                    }
-                }
-            }
-        }
-        ads
-    }
     fn ad_group_ids_to_creatives_with_contents<'a>(
         &'a self,
         ad_group_id_creatives: HashMap<String, &'a HashMap<String, creative::Data>>,
@@ -289,14 +258,15 @@ impl AdState {
         creatives
     }
     
-    fn merge_ids_with_ad_metas<'a>(
+    fn ad_group_creatives<'a>(
         &'a self,
         placement_id: &str,
         user_info: &UserInfo,
-        creatives: &'a Vec<CreativeWithContent<'a>>,
+        creatives: Vec<CreativeWithContent<'a>>,
         top_k: Option<usize>,
-    ) -> HashMap<String, HashMap<String, Vec<AdGroupCreatives<'a>>>>
+    ) -> Vec<AdGroupCreatives<'a>>
     {
+        let mut aggr = Vec::new();
         let mut ad_group_id_creatives = HashMap::new();
         // let creatives = self.ad_group_ids_to_creatives_with_contents(result);
         let top_creatives = self.integrations.rank(
@@ -312,40 +282,68 @@ impl AdState {
                 .or_insert_with(|| Vec::new())
                 .push(creative_with_content);
         }
-
-        self.group_by_ad_groups_by_id(ad_group_id_creatives)
+        for (ad_group_id, creatives) in ad_group_id_creatives {
+            if let Some(ad_group) = self.get_ad_group(&ad_group_id) {
+                if is_active_ad_group(ad_group) {
+                    aggr.push(
+                        AdGroupCreatives {
+                            ad_group,
+                            creatives
+                        }
+                    );
+                }
+            }
+        }   
+        aggr
     }
 
-    fn group_by_ad_groups_by_id<'a>(
+    fn campaign_ad_groups<'a>(
         &'a self, 
-        ad_group_id_creatives: HashMap<String, Vec<&'a CreativeWithContent<'a>>>, 
-    ) -> HashMap<String, HashMap<String, Vec<AdGroupCreatives<'a>>>> {
-        let mut tree = HashMap::new();
-        for (ad_group_id, creative_with_contents) in ad_group_id_creatives {
-            if let Some(ad_group) = self.get_ad_group(&ad_group_id) {
-                if let Some(campaign) = self.get_campaign(ad_group) {
-                    if let Some(placement) = self.get_placement(ad_group) {
-                        if is_active_campaign(campaign)
-                            && is_active_placement(placement)
-                            && placement.content_type_id.is_some()
-                        {
-                            tree.entry(placement.id.clone())
-                                .or_insert_with(|| HashMap::new())
-                                .entry(campaign.id.clone())
-                                .or_insert_with(|| Vec::new())
-                                .push(
-                                    AdGroupCreatives {
-                                        ad_group,
-                                        creatives: creative_with_contents
-                                    }
-                                )
-                        }
-                    }
+        ad_group_creatives_ls: Vec<AdGroupCreatives<'a>>
+    ) -> Vec<CampaignAdGroups<'a>> {
+        let mut aggr = Vec::new();
+        let mut campaign_id_ad_groups = HashMap::new();
+
+        for ad_group_creatives in ad_group_creatives_ls {            
+            campaign_id_ad_groups
+                .entry(ad_group_creatives.ad_group.campaign_id.clone())
+                .or_insert_with(|| Vec::new())
+                .push(ad_group_creatives);            
+        }
+        for (campaign_id, ad_groups) in campaign_id_ad_groups {
+            if let Some(campaign) = self.campaigns.get(&campaign_id) {
+                if is_active_campaign(campaign) {
+                    aggr.push(
+                        CampaignAdGroups { campaign, ad_groups }
+                    );
                 }
             }
         }
+        aggr
+    }
+    fn placement_campaigns<'a>(
+        &'a self, 
+        campaign_ad_groups_ls: Vec<CampaignAdGroups<'a>>
+    ) -> Vec<PlacementCampaigns<'a>> {
+        let mut aggr = Vec::new();
+        let mut placement_id_campaigns = HashMap::new();
 
-        tree
+        for campaign_ad_groups in campaign_ad_groups_ls {            
+            placement_id_campaigns
+                .entry(campaign_ad_groups.campaign.placement_id.clone())
+                .or_insert_with(|| Vec::new())
+                .push(campaign_ad_groups);            
+        }
+        for (placement_id, campaigns) in placement_id_campaigns {
+            if let Some(placement) = self.placements.get(&placement_id) {
+                if is_active_placement(placement) {
+                    aggr.push(
+                        PlacementCampaigns { placement, campaigns }
+                    );
+                }
+            }
+        }
+        aggr
     }
 
     pub fn update_creative_feedback(

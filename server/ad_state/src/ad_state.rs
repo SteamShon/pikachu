@@ -1,10 +1,8 @@
-use arc_swap::Guard;
-use common::types::UserInfo;
+use common::types::*;
 use common::db::{
     ad_group, campaign, content, content_type, creative, placement, service,
-    PrismaClient, integration,
 };
-use common::util::{parse_user_info, is_active_content_type, is_active_ad_group, is_active_creative, is_active_content, is_active_placement, is_active_campaign};
+use common::util::*;
 
 use filter::filter::TargetFilter;
 use filter::filterable::Filterable;
@@ -14,7 +12,6 @@ use integrations::integrations::Integrations;
 use prisma_client_rust::chrono::{DateTime, FixedOffset};
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
-use ranker::ranker::{Rankable, Ranker, DefaultRanker, Feedback, Stat};
 
 pub struct AdGroup {
     pub data: ad_group::Data,
@@ -43,36 +40,7 @@ pub struct CreativeFeedback {
     stat: Stat,
 }
 
-#[derive(Debug, Clone)]
-pub struct Creative {
-    pub data: creative::Data,
-}
-impl Rankable for Creative {
-    fn ident(&self) -> String {
-        self.data.id.to_string()
-    }
-}
 
-#[derive(Serialize, Debug)]
-pub struct CreativeWithContent<'a> {
-    creative: &'a creative::Data, 
-    content: &'a content::Data
-}
-#[derive(Serialize, Debug)]
-pub struct AdGroupCreatives<'a> {
-    ad_group: &'a ad_group::Data, 
-    creatives: Vec<CreativeWithContent<'a>>
-}
-#[derive(Serialize, Debug)]
-pub struct CampaignAdGroups<'a> {
-    campaign: &'a campaign::Data, 
-    ad_groups: Vec<AdGroupCreatives<'a>>
-}
-#[derive(Serialize, Debug)]
-pub struct PlacementCampaigns<'a> {
-    placement: &'a placement::Data, 
-    campaigns: Vec<CampaignAdGroups<'a>>
-}
 #[derive(Serialize)]
 pub struct SearchResult<'a> {
     pub matched_ads: Vec<PlacementCampaigns<'a>>,
@@ -215,22 +183,24 @@ impl AdState {
             &user_info
         ).await.unwrap_or(HashMap::new());
         let creatives = self.ad_group_ids_to_creatives_with_contents(creatives_map);
-        let creatives_meta = self.merge_ids_with_ad_metas(&user_info, creatives, top_k);
+        let creatives_meta = self.merge_ids_with_ad_metas(placement_id, &user_info, &creatives, top_k);
         let matched_ads = self.build_placement_tree(creatives_meta);
 
-        let non_filter_creatives_map = self.integrations.fetch_non_filter_creatives(
-            &self.filter_index, 
-            &self.creatives, 
-            placement_id
-        ).await.unwrap_or(HashMap::new());
-        let non_filter_creatives = self.ad_group_ids_to_creatives_with_contents(non_filter_creatives_map);
-        let non_filter_creatives_meta = self.merge_ids_with_ad_metas(&user_info, non_filter_creatives, top_k);
-        let non_filter_ads = self.build_placement_tree(non_filter_creatives_meta);
+        // let non_filter_creatives_map = self.integrations.fetch_non_filter_creatives(
+        //     &self.filter_index, 
+        //     &self.creatives, 
+        //     placement_id
+        // ).await.unwrap_or(HashMap::new());
+        // let non_filter_creatives = self.ad_group_ids_to_creatives_with_contents(non_filter_creatives_map);
+        // let non_filter_creatives_meta = self.merge_ids_with_ad_metas(placement_id, &user_info, &non_filter_creatives, top_k);
+        // let non_filter_ads = self.build_placement_tree(non_filter_creatives_meta);
         
-        SearchResult {
-            matched_ads,
-            non_filter_ads
-        }
+        println!("{:?}", matched_ads);
+        // SearchResult {
+        //     matched_ads,
+        //     non_filter_ads
+        // }
+        SearchResult::default()
         
         // let matched_ads = self.build_placement_tree(creatives_meta);
         
@@ -321,26 +291,22 @@ impl AdState {
     
     fn merge_ids_with_ad_metas<'a>(
         &'a self,
+        placement_id: &str,
         user_info: &UserInfo,
-        creatives: Vec<CreativeWithContent<'a>>,
+        creatives: &'a Vec<CreativeWithContent<'a>>,
         top_k: Option<usize>,
     ) -> HashMap<String, HashMap<String, Vec<AdGroupCreatives<'a>>>>
     {
         let mut ad_group_id_creatives = HashMap::new();
         // let creatives = self.ad_group_ids_to_creatives_with_contents(result);
-        let top_creatives = creatives;
-        // let top_creatives = match top_k {
-        //     Some(k) if creatives.len() < k => 
-        //         self
-        //         .ranker
-        //         .rank(user_info, &creatives, k)
-        //         .iter()
-        //         .map(|(c, _s)| c.clone())
-        //         .collect(),
-        //     _ => creatives
-        // };
+        let top_creatives = self.integrations.rank(
+                placement_id, 
+                &self.creatives_stat, 
+                creatives, 
+                top_k.unwrap_or(1),
+            );
         
-        for creative_with_content in top_creatives {
+        for (creative_with_content, _score) in top_creatives {
             ad_group_id_creatives
                 .entry(creative_with_content.creative.ad_group_id.clone())
                 .or_insert_with(|| Vec::new())
@@ -352,7 +318,7 @@ impl AdState {
 
     fn group_by_ad_groups_by_id<'a>(
         &'a self, 
-        ad_group_id_creatives: HashMap<String, Vec<CreativeWithContent<'a>>>, 
+        ad_group_id_creatives: HashMap<String, Vec<&'a CreativeWithContent<'a>>>, 
     ) -> HashMap<String, HashMap<String, Vec<AdGroupCreatives<'a>>>> {
         let mut tree = HashMap::new();
         for (ad_group_id, creative_with_contents) in ad_group_id_creatives {

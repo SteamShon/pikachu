@@ -1,6 +1,6 @@
 use common::{
-    db::{self, integration, placement, provider, PrismaClient, creative},
-    types::UserInfo,
+    db::{integration, placement, provider, creative},
+    types::{UserInfo, Stat, CreativeWithContent},
     util::is_active_provider,
 };
 use filter::index::FilterIndex;
@@ -166,6 +166,38 @@ impl Integrations {
             Function::LocalCreativeFetcher { function } => 
                 function.apply(filter_index, ad_group_creatives, placement_id, user_info).await,
             _ => None,
+        }
+    }
+    pub fn is_ranker_integration(integration: &integration::Data) -> bool {
+        integration
+            .provider()
+            .map(|provider| {
+                provider.provide == "RANKER"
+            })
+            .unwrap_or(false)
+    }
+    fn get_ranker_function(&self, placement_id: &str) -> Option<&Function> {
+        self.get_integration(placement_id, Self::is_ranker_integration)
+    }
+
+    pub fn rank<'a>(
+        &'a self,
+        placement_id: &str,
+        creatives_stat: &'a HashMap<String, Stat>,
+        candidates: &'a Vec<CreativeWithContent<'a>>,
+        k: usize,
+    ) -> Vec<(&CreativeWithContent<'a>, f32)> {
+        match self.get_ranker_function(placement_id) {
+            Some(Function::ThompsonSamplingRanker { function }) => {
+                function.apply(creatives_stat, candidates, k)
+            }
+            _ => {
+                let mut top_candidates = Vec::new();
+                for candidate in candidates {
+                    top_candidates.push((candidate, 0.0));
+                }
+                top_candidates
+            }
         }
     }
 }

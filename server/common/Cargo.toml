@@ -11,3 +11,6 @@ prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust
 ] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.93"
+rand_distr = "0.4.3"
+rand = "0.8.5"
+rand_chacha = "0.3.1"

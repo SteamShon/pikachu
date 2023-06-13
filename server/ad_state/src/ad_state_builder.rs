@@ -4,7 +4,7 @@ use common::{db::{
     PrismaClient, integration,
 }, util::is_active_ad_group};
 use integrations::integrations::Integrations;
-use crate::{ad_state::{AdState, AdGroup, Creative}};
+use crate::{ad_state::{AdState, AdGroup}};
 use common::db::{provider, self};
 use filter::index::FilterIndex;
 use prisma_client_rust::{chrono::{DateTime, FixedOffset}, Direction};
@@ -225,7 +225,8 @@ pub fn update_creatives(ad_state: &mut AdState, new_creatives: &Vec<creative::Da
         update_info.creatives = latest_updated_creative.updated_at;
     }
     for creative in new_creatives {
-        ad_state.ranker.add_arm(&Creative { data: creative.clone() });
+        //TODO
+        // ad_state.ranker.add_arm(&Creative { data: creative.clone() });
 
         creatives
             .entry(creative.ad_group_id.clone())

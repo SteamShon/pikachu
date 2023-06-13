@@ -12,7 +12,6 @@ prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust
 serde = { version = "1.0", features = ["derive"] }
 filter = { path = "../filter" }
 common = { path = "../common" }
-ranker = { path = "../ranker" }
 integrations = { path = "../integrations" }
 serde_json = "1.0.93"
 itertools = "0.10.5"

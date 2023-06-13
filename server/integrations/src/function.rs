@@ -3,13 +3,14 @@ use std::{sync::Arc, collections::HashMap};
 use common::db::{self, integration};
 
 
-use crate::{sms_sender::SmsSender, user_feature::UserFeatureDatabase, local_creative_fetcher::LocalCreativeFetcher, integrations::Integrations};
+use crate::{sms_sender::SmsSender, user_feature::UserFeatureDatabase, local_creative_fetcher::LocalCreativeFetcher, integrations::Integrations, thompson_sampling_ranker::ThompsonSamplingRanker};
 
 #[derive(Debug, Clone)]
 pub enum Function {
     UserFeature { function: UserFeatureDatabase },
     SMSSender { function: SmsSender },
     LocalCreativeFetcher { function: LocalCreativeFetcher },
+    ThompsonSamplingRanker { function: ThompsonSamplingRanker },
 }
 impl Function {
     pub async fn new(
@@ -18,7 +19,8 @@ impl Function {
         let is_user_feature_integration = Integrations::is_user_feature_integration(integration);
         let is_sms_sender_integration = Integrations::is_sms_sender_integration(integration);
         let is_creative_fetcher = Integrations::is_creative_fetcher(integration);
-        
+        let is_ranker_integration = Integrations::is_ranker_integration(integration);
+
         if is_user_feature_integration {
             let database_url = integration
                 .provider()
@@ -68,6 +70,9 @@ impl Function {
             let function = LocalCreativeFetcher {};
 
             return Some(Function::LocalCreativeFetcher { function })
+        } else if is_ranker_integration {
+            let function = ThompsonSamplingRanker::default();
+            return Some(Function::ThompsonSamplingRanker { function })
         } else {
             return None;
         }

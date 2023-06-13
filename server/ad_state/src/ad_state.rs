@@ -9,6 +9,7 @@ use common::util::{parse_user_info, is_active_content_type, is_active_ad_group, 
 use filter::filter::TargetFilter;
 use filter::filterable::Filterable;
 use filter::index::FilterIndex;
+use filter::{serde as TargetFilterSerde};
 use integrations::integrations::Integrations;
 use prisma_client_rust::chrono::{DateTime, FixedOffset};
 use serde::{Serialize, Deserialize};
@@ -29,8 +30,8 @@ impl Filterable for AdGroup {
             None => None,
             Some(s) => {
                 let value: serde_json::Value = serde_json::from_str(&s).ok()?;
-                //TargetFilter::from(&value)
-                TargetFilter::from_jsonlogic(&value)
+                
+                TargetFilterSerde::from_jsonlogic(&value)
             }
         }
     }

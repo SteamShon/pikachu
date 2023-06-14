@@ -3,7 +3,7 @@ use std::sync::Arc;
 use prisma_client_rust::{raw, QueryError};
 
 use common::{
-    db::{integration, user_feature, PrismaClient},
+    db::{user_feature, PrismaClient},
     types::UserInfo,
     util::parse_user_info,
 };

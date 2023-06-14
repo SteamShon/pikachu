@@ -12,7 +12,7 @@ use arc_swap::ArcSwap;
 use common::db::{self, PrismaClient};
 use dotenv::dotenv;
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::Value;
 use std::{collections::HashSet, env, sync::Arc, time::Duration};
 use tokio::{runtime::Builder, time};
 
@@ -89,7 +89,6 @@ async fn search(
 #[post("/user_info")]
 async fn user_info(
     data: web::Data<ArcSwap<Arc<AdState>>>,
-    client: web::Data<PrismaClient>,
     request: web::Json<UserFeatureRequest>,
 ) -> impl Responder {
     let user_info = data

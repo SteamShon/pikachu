@@ -1,11 +1,9 @@
 use actix_web::web::Bytes;
 use apache_avro::Writer;
 use apache_avro::{types::Value, Schema};
-use rdkafka::error::KafkaResult;
 use rdkafka::{
     client::DefaultClientContext,
     producer::{FutureProducer, FutureRecord},
-    ClientConfig,
 };
 use schema_registry_converter::async_impl::avro::AvroEncoder;
 use schema_registry_converter::error::SRCError;
@@ -74,7 +72,7 @@ pub enum PublishError {
 pub struct Publisher<'a> {
     encoder: Option<AvroEncoder<'a>>,
     producer: Option<FutureProducer<DefaultClientContext>>,
-    default_avro_schema: apache_avro::Schema,
+    // default_avro_schema: apache_avro::Schema,
 }
 impl<'a> Publisher<'a> {
     pub fn new(
@@ -95,12 +93,12 @@ impl<'a> Publisher<'a> {
             },
         };
         let encoder = schema_registry_settings.map(|config| AvroEncoder::new(config));
-        let default_avro_schema: Schema = Schema::parse_str(EVENT_SCHEMA_RAW).unwrap();
+        // let default_avro_schema: Schema = Schema::parse_str(EVENT_SCHEMA_RAW).unwrap();
 
         Publisher {
             encoder,
             producer,
-            default_avro_schema,
+            // default_avro_schema,
         }
     }
 

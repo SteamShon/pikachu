@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 
-use common::{db::creative, types::{Stat, CreativeWithContent}};
+use common::types::{Stat, CreativeWithContent};
 
 #[derive(Debug, Clone)]
 pub struct ThompsonSamplingRanker {

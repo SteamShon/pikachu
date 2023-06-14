@@ -185,7 +185,7 @@ impl AdState {
             self.ad_group_ids_to_creatives_with_contents(creatives_map);
         println!("creatives: [{:?}]", creatives.len());
         let ad_group_creatives = 
-            self.ad_group_creatives(placement_id, &user_info, creatives, top_k);
+            self.ad_group_creatives(placement_id, creatives, top_k);
         println!("ad_groups: [{:?}]", ad_group_creatives.len());
         let campaign_ad_groups = 
             self.campaign_ad_groups(ad_group_creatives);
@@ -261,7 +261,6 @@ impl AdState {
     fn ad_group_creatives<'a>(
         &'a self,
         placement_id: &str,
-        user_info: &UserInfo,
         creatives: Vec<CreativeWithContent<'a>>,
         top_k: Option<usize>,
     ) -> Vec<AdGroupCreatives<'a>>

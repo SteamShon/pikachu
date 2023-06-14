@@ -5,7 +5,7 @@ use common::{db::{
 }, util::is_active_ad_group};
 use integrations::integrations::Integrations;
 use crate::{ad_state::{AdState, AdGroup}};
-use common::db::{provider, self};
+use common::db::provider;
 use filter::index::FilterIndex;
 use prisma_client_rust::{chrono::{DateTime, FixedOffset}, Direction};
 
@@ -112,19 +112,19 @@ pub async fn fetch_providers(
         .await
         .unwrap()
 }
-async fn fetch_integrations(
-    client: Arc<PrismaClient>,
-    last_updated_at: DateTime<FixedOffset>,
-) -> Vec<integration::Data> {
-    client
-        .integration()
-        .find_many(vec![integration::updated_at::gt(last_updated_at)])
-        .with(integration::provider::fetch())
-        .order_by(integration::updated_at::order(Direction::Desc))
-        .exec()
-        .await
-        .unwrap()
-}
+// async fn fetch_integrations(
+//     client: Arc<PrismaClient>,
+//     last_updated_at: DateTime<FixedOffset>,
+// ) -> Vec<integration::Data> {
+//     client
+//         .integration()
+//         .find_many(vec![integration::updated_at::gt(last_updated_at)])
+//         .with(integration::provider::fetch())
+//         .order_by(integration::updated_at::order(Direction::Desc))
+//         .exec()
+//         .await
+//         .unwrap()
+// }
 // async fn fetch_providers(
 //     client: Arc<PrismaClient>,
 //     last_updated_at: DateTime<FixedOffset>,

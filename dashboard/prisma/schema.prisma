@@ -83,6 +83,7 @@ model Service {
     id            String            @id @default(cuid())
     name          String
     description   String?
+    details Json @default("{}")
     // placementGroups PlacementGroup[]
     placements    Placement[]
     contentTypes  ContentType[]
@@ -159,13 +160,12 @@ model ContentType {
     name        String
     description String?
     source      String   @default("local")
-    type String @default("DISPLAY") // INAPP_PUSH/SMS
+    type        String @default("DISPLAY") // INAPP_PUSH/SMS
+    details     Json        @default("{}")
     service     Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
     serviceId   String?
 
-    contentTypeInfo ContentTypeInfo?
-    // createdBy   User        @relation("createdContentTypes", fields: [creatorId], references: [id], onDelete: Cascade)
-    // creatorId   String
+    
 
     placements Placement[]
     contents   Content[]
@@ -175,22 +175,6 @@ model ContentType {
     updatedAt DateTime @updatedAt
 
     @@unique([serviceId, name])
-    @@index(fields: [updatedAt])
-}
-
-model ContentTypeInfo {
-    id            String      @id @default(cuid())
-    contentType   ContentType @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
-    contentTypeId String      @unique
-    // source        String      @default("local")
-    details       Json        @default("{}")
-    // schema        String?
-    // uiSchema      String?
-    // defaultValues String?
-    //status        String      @default("CREATED")
-    createdAt     DateTime    @default(now())
-    updatedAt     DateTime    @updatedAt
-
     @@index(fields: [updatedAt])
 }
 
@@ -293,8 +277,7 @@ model Customset {
     // ownerId         String
     createdBy       User          @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
     creatorId       String
-    customsetInfo   CustomsetInfo @relation(fields: [customsetInfoId], references: [id], onDelete: Cascade)
-    customsetInfoId String        @unique
+    details Json @default("{}")
     status          String        @default("CREATED")
     createdAt       DateTime      @default(now())
     updatedAt       DateTime      @updatedAt
@@ -303,12 +286,6 @@ model Customset {
     @@unique([serviceId, name])
 }
 
-model CustomsetInfo {
-    id        String     @id @default(cuid())
-    customset Customset?
-    filePath  String
-    config    String
-}
 
 model UserFeature {
     version String

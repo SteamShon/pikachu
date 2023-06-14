@@ -1,16 +1,19 @@
-import { Provider } from "@prisma/client";
+import type { Integration, Service } from "@prisma/client";
 import axios from "axios";
 import { useState } from "react";
-import ContentPreview from "./contentPreview";
+import type ContentPreview from "./contentPreview";
+import type { ServiceIntegrations } from "../schema/service";
 
 function SMSPlayground({
   service,
   values,
 }: {
-  service: Parameters<typeof ContentPreview>[0]["service"];
+  service: ServiceIntegrations;
   values: Record<string, unknown>;
 }) {
-  const [provider, setProvider] = useState<Provider | undefined>(undefined);
+  const [integration, setIntegration] = useState<Integration | undefined>(
+    undefined
+  );
   const [tos, setTos] = useState<string[]>([]);
 
   const [response, setResponse] = useState<
@@ -18,11 +21,7 @@ function SMSPlayground({
     | undefined
   >(undefined);
 
-  const providers: Provider[] = [];
-  service?.providers?.forEach((provider) => {
-    if (!provider) return;
-    providers.push(provider);
-  });
+  const integrations = service.integrations;
 
   const validate = async (method: string) => {
     if (tos.length === 0) return;
@@ -34,7 +33,7 @@ function SMSPlayground({
     };
 
     const result = await axios.post(`/api/provider/solapi`, {
-      provider,
+      integration,
       method,
       payload,
     });
@@ -45,9 +44,9 @@ function SMSPlayground({
       data: result.data,
     });
   };
-  const handleProviderChange = async (providerId: string) => {
-    const provider = providers.find((p) => p.id === providerId);
-    setProvider(provider);
+  const handleProviderChange = async (id: string) => {
+    const integration = integrations.find((p) => p.id === id);
+    setIntegration(integration);
   };
   return (
     <>
@@ -64,9 +63,9 @@ function SMSPlayground({
               <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                 <select onChange={(e) => handleProviderChange(e.target.value)}>
                   <option value="">Please select</option>
-                  {providers.map((provider) => (
-                    <option key={provider.id} value={provider.id}>
-                      {provider.name}
+                  {integrations.map((integration) => (
+                    <option key={integration.id} value={integration.id}>
+                      {integration.name}
                     </option>
                   ))}
                 </select>
@@ -85,7 +84,7 @@ function SMSPlayground({
           </dl>
         </div>
 
-        {provider && (
+        {integration && (
           <>
             <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
               <button

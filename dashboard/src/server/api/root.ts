@@ -1,7 +1,6 @@
 import { adGroupRouter } from "./routers/adGroup";
 import { campaignRouter } from "./routers/campaign";
 import { contentTypeRouter } from "./routers/contentType";
-import { cubeRouter } from "./routers/cube";
 import { customsetRouter } from "./routers/customset";
 import { placementRouter } from "./routers/placement";
 import { serviceRouter } from "./routers/service";
@@ -9,6 +8,7 @@ import { userRouter } from "./routers/user";
 import { usersOnServicesRouter } from "./routers/usersOnServices";
 import { createTRPCRouter } from "./trpc";
 import { integrationRouter } from "./routers/integration";
+import { contentRouter } from "./routers/content";
 
 /**
  * This is the primary router for your server.
@@ -24,7 +24,7 @@ export const appRouter = createTRPCRouter({
   placement: placementRouter,
   contentType: contentTypeRouter,
   usersOnServices: usersOnServicesRouter,
-  cube: cubeRouter,
+  content: contentRouter,
   integration: integrationRouter,
 });
 

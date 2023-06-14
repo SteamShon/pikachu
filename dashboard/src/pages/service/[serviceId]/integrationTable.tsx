@@ -8,10 +8,11 @@ import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type IntegrationForm from "../../../components/form/integrationForm";
-import IntegrationModal from "../../../components/form/integrationModal";
+import type IntegrationForm from "../../../components/form/integration/integrationForm";
+
 import type { buildServiceTree } from "../../../utils/tree";
 import { api } from "../../../utils/api";
+import IntegrationModal from "../../../components/form/integration/integrationModal";
 
 function IntegrationTable({
   service,

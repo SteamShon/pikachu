@@ -5,9 +5,11 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const usersOnServicesRouter = createTRPCRouter({
   getAll: protectedProcedure
-    .input(z.object({ userId: z.string().min(1) }))
+    .input(z.object({ userId: z.string().optional() }))
     .query(async ({ input }) => {
       const { userId } = input;
+      if (!userId) return [];
+
       const usersOnServices = await prisma.usersOnServices.findMany({
         where: {
           userId,

@@ -2,105 +2,121 @@ import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { prisma } from "../../db";
-import { customsetSchema } from "../../../components/schema/customset";
+import { customsetWithServiceSchema } from "../../../components/schema/customset";
+import type { Prisma } from "@prisma/client";
 
 export const customsetRouter = createTRPCRouter({
   create: protectedProcedure
-    .input(customsetSchema)
+    .input(customsetWithServiceSchema)
     .mutation(async ({ input, ctx }) => {
-      const customset = await prisma.customset.create({
+      const detailsJson = input.details as Prisma.JsonObject;
+      const { serviceId, ...customset } = input;
+      const service = await prisma.service.update({
+        where: {
+          id: serviceId,
+        },
         data: {
-          name: input.name,
-          description: input.description,
-          createdBy: {
-            connect: {
-              id: ctx.session?.user?.id,
-            },
-          },
-          customsetInfo: {
-            create: {
-              ...input.customsetInfo,
+          customsets: {
+            connectOrCreate: {
+              where: {
+                serviceId_name: {
+                  serviceId: serviceId,
+                  name: customset.name,
+                },
+              },
+              create: {
+                ...customset,
+                createdBy: {
+                  connect: {
+                    id: ctx.session?.user?.id,
+                  },
+                },
+                details: detailsJson,
+              },
             },
           },
         },
         include: {
-          customsetInfo: true,
-          createdBy: true,
+          customsets: {
+            include: {
+              createdBy: true,
+            },
+          },
         },
       });
 
-      return customset;
-    }),
-  getAll: protectedProcedure.query(({}) => {
-    return prisma.customset.findMany({
-      include: {
-        customsetInfo: true,
-        createdBy: true,
-      },
-    });
-  }),
-  get: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-      })
-    )
-    .query(({ input }) => {
-      return prisma.customset.findFirst({
-        where: {
-          id: input.id,
-        },
-        include: {
-          customsetInfo: true,
-          createdBy: true,
-        },
-      });
+      return service;
     }),
   update: protectedProcedure
-    .input(customsetSchema)
+    .input(customsetWithServiceSchema)
     .mutation(async ({ input, ctx }) => {
-      const customset = await prisma.customset.update({
+      const detailsJson = input.details as Prisma.JsonObject;
+      const { serviceId, ...customset } = input;
+      const service = await prisma.service.update({
         where: {
-          id: input?.id,
+          id: serviceId,
         },
         data: {
-          name: input.name,
-          description: input.description,
-          createdBy: {
+          customsets: {
             update: {
-              id: ctx.session?.user?.id,
-            },
-          },
-          customsetInfo: {
-            update: {
-              ...input.customsetInfo,
+              where: {
+                id: customset.id || "",
+              },
+              data: {
+                ...customset,
+                details: detailsJson,
+                createdBy: {
+                  connect: {
+                    id: ctx.session?.user?.id,
+                  },
+                },
+              },
             },
           },
         },
         include: {
-          customsetInfo: true,
-          createdBy: true,
+          customsets: {
+            include: {
+              createdBy: true,
+            },
+          },
         },
       });
 
-      return customset;
+      return service;
     }),
-  deleteMany: protectedProcedure
-    .input(z.array(z.string()))
+  remove: protectedProcedure
+    .input(
+      z.object({
+        serviceId: z.string(),
+        name: z.string(),
+      })
+    )
     .mutation(async ({ input }) => {
-      //TODO: prisma deleteMany do not return delete rows.
-      //Once https://github.com/prisma/prisma/issues/8131 has been resolved, then
-      //we can change this into deleteMany
-      const customsets = await prisma.$transaction(
-        input.map((id) =>
-          prisma.customset.delete({
-            where: {
-              id: id,
+      const { serviceId, name } = input;
+      const service = await prisma.service.update({
+        where: {
+          id: serviceId,
+        },
+        data: {
+          customsets: {
+            delete: {
+              serviceId_name: {
+                serviceId,
+                name,
+              },
             },
-          })
-        )
-      );
+          },
+        },
+        include: {
+          customsets: {
+            include: {
+              createdBy: true,
+            },
+          },
+        },
+      });
 
-      return customsets;
+      return service;
     }),
 });

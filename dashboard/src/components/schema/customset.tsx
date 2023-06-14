@@ -1,12 +1,11 @@
 import { z } from "zod";
-import { customsetInfoSchema } from "./customsetInfo";
 
 export const customsetSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
   description: z.string().optional().nullable().default(null),
   status: z.string().optional().default("CREATED"),
-  customsetInfo: customsetInfoSchema,
+  details: z.optional(z.record(z.unknown())),
 });
 
 export type CustomsetSchemaType = z.infer<typeof customsetSchema>;

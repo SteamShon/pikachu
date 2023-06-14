@@ -3,20 +3,19 @@ import EditIcon from "@mui/icons-material/Edit";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Provider, Service } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type PlacementForm from "../../../components/form/placementForm";
-import PlacementModal from "../../../components/form/placementModal";
+import type PlacementForm from "../../../components/form/placement/placementForm";
 import { api } from "../../../utils/api";
 import { buildServiceTree } from "../../../utils/tree";
 
-import RenderPreview from "./renderPreview";
-import Stat from "../../../components/chart/Stat";
 import type ContentPreview from "../../../components/builder/contentPreview";
+import Stat from "../../../components/chart/Stat";
+import RenderPreview from "./renderPreview";
+import PlacementModal from "../../../components/form/placement/placementModal";
 
 function PlacementTable({
   service,
@@ -40,7 +39,7 @@ function PlacementTable({
 
   const selectedIds = (placementIds || []) as string[];
 
-  const { mutate: deletePlacement } = api.service.removePlacement.useMutation({
+  const { mutate: deletePlacement } = api.placement.remove.useMutation({
     onSuccess(deleted) {
       setServiceTree((prev) => {
         if (!prev) return undefined;

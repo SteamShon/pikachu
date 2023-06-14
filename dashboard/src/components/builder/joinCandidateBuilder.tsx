@@ -6,7 +6,6 @@ import {
   CircularProgress,
   TextField,
 } from "@mui/material";
-import type { Provider } from "@prisma/client";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
@@ -18,20 +17,20 @@ import {
   loadS3,
   partitionBucketPrefix,
   extractS3Buckets,
-} from "../../utils/providers/awsS3DuckDB";
+} from "../../utils/awsS3DuckDB";
 import type { DatasetSchemaType } from "../schema/dataset";
 import JoinConditionBuilder from "./joinConditionBuilder";
 import type { TableMetadata } from "./sqlBuilder";
 
 function JoinCandidateBuilder({
-  provider,
+  details,
   initialData,
   index,
   methods,
   tableColumns,
   setTableColumns,
 }: {
-  provider: Provider;
+  details?: Prisma.JsonValue;
   index: number;
   initialData?: DatasetSchemaType;
   methods: UseFormReturn<DatasetSchemaType, unknown>;
@@ -49,11 +48,10 @@ function JoinCandidateBuilder({
     control,
     name: `tables.${index}.conditions`,
   });
-
   const loadPaths = useMemo(
     () => async (bucketName: string, prefix?: string) => {
       setBucket(bucketName);
-      const s3 = loadS3(provider.details);
+      const s3 = loadS3(details);
       if (!s3) return;
 
       const folders = await listFoldersRecursively({
@@ -68,12 +66,12 @@ function JoinCandidateBuilder({
 
       setPaths(newPaths);
     },
-    [provider]
+    [details]
   );
   const loadMetadata = useMemo(
     () => async (path: string) => {
       const rows = await fetchParquetSchema({
-        details: provider.details,
+        details,
         path,
       });
       const columns = rows.map((row) => String(row.name));
@@ -84,7 +82,7 @@ function JoinCandidateBuilder({
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [provider]
+    [details]
   );
 
   const getBucket = () => {
@@ -95,7 +93,7 @@ function JoinCandidateBuilder({
   };
 
   const s3Buckets = () => {
-    const s3Buckets = extractS3Buckets(provider.details);
+    const s3Buckets = extractS3Buckets(details);
 
     return s3Buckets?.split(",") || [];
   };

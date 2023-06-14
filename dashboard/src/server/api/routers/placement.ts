@@ -5,6 +5,7 @@ import { campaignWithPlacementSchema } from "../../../components/schema/campaign
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { placementSchema } from "../../../components/schema/placement";
+import { getIncludes } from "./service";
 
 export const placementRouter = createTRPCRouter({
   list: protectedProcedure
@@ -16,14 +17,9 @@ export const placementRouter = createTRPCRouter({
           serviceId,
         },
         include: {
-          integrations: {
-            include: {
-              provider: true,
-            },
-          },
+          integrations: true,
           contentType: {
             include: {
-              contentTypeInfo: true,
               contents: true,
             },
           },
@@ -70,11 +66,7 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: {
-            include: {
-              provider: true,
-            },
-          },
+          integrations: true,
         },
       });
     }),
@@ -129,15 +121,36 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: {
-            include: {
-              provider: true,
-            },
-          },
+          integrations: true,
         },
       });
       const [, updated] = await prisma.$transaction([removes, update]);
       return updated;
+    }),
+  remove: protectedProcedure
+    .input(
+      z.object({
+        serviceId: z.string(),
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { serviceId, id } = input;
+      const service = await prisma.service.update({
+        where: {
+          id: serviceId,
+        },
+        data: {
+          placements: {
+            delete: {
+              id,
+            },
+          },
+        },
+        include: getIncludes,
+      });
+
+      return service;
     }),
   addCampaign: protectedProcedure
     .input(campaignWithPlacementSchema)
@@ -180,11 +193,7 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: {
-            include: {
-              provider: true,
-            },
-          },
+          integrations: true,
         },
       });
 
@@ -228,11 +237,7 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: {
-            include: {
-              provider: true,
-            },
-          },
+          integrations: true,
         },
       });
 
@@ -281,11 +286,7 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: {
-            include: {
-              provider: true,
-            },
-          },
+          integrations: true,
         },
       });
 

@@ -20,7 +20,6 @@ import ContentTypeMenu from "../../../components/ContentTypeMenu";
 import PlacementMenu from "../../../components/PlacementMenu";
 import IntegrationTable from "./integrationTable";
 import PlacementTable from "./placementTable";
-import ProviderTable from "./providerTable";
 import RenderPreview from "./renderPreview";
 
 function Dashboard() {
@@ -358,18 +357,6 @@ function Dashboard() {
       table: () =>
         service ? (
           <IntegrationTable
-            service={service}
-            setServiceTree={setTree}
-            serviceTree={tree}
-          />
-        ) : null,
-    },
-    {
-      label: "providers",
-      description: `providers`,
-      table: () =>
-        service ? (
-          <ProviderTable
             service={service}
             setServiceTree={setTree}
             serviceTree={tree}

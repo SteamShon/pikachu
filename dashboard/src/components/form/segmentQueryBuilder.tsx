@@ -16,21 +16,19 @@ import {
   countPopulation,
   executeQuery,
   formatQueryCustom,
-} from "../../utils/providers/awsS3DuckDB";
+} from "../../utils/awsS3DuckDB";
 import AsyncValueEditor from "../common/AsyncValueEditor";
 
 const emptyQuery: RuleGroupType = { combinator: "and", rules: [] };
 
 function SegmentQueryBuilder({
   integrationDetails,
-  providerDetails,
   initialQuery,
   onQueryChange,
   onPopulationChange,
 }: {
   initialQuery?: RuleGroupType;
   integrationDetails?: Prisma.JsonValue;
-  providerDetails?: Prisma.JsonValue;
   population?: string;
   onQueryChange: (newQuery: RuleGroupType) => void;
   onPopulationChange: (population: string) => void;
@@ -50,13 +48,16 @@ function SegmentQueryBuilder({
 
       const sql = `DESCRIBE ${inputSql}`;
       //TODO: abstract executeQuery not to coupled with awsS3DuckDB integration
-      const rows = await executeQuery({ query: sql, details: providerDetails });
+      const rows = await executeQuery({
+        query: sql,
+        details: integrationDetails,
+      });
       enqueueSnackbar("finished loading metadata", { variant: "success" });
       setMetadata(rows);
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [providerDetails, integrationDetails]
+    [integrationDetails]
   );
 
   const fetchPopulation = useMemo(
@@ -64,7 +65,7 @@ function SegmentQueryBuilder({
       debounce((q?: RuleGroupType) => {
         (async () => {
           try {
-            if (!q || !providerDetails || !integrationDetails) return;
+            if (!q || !integrationDetails) return;
             const cubeIntegrationSql = extractValue({
               object: integrationDetails,
               paths: ["SQL"],
@@ -74,7 +75,7 @@ function SegmentQueryBuilder({
 
             //TODO: abstract countPopulation not to coupled with awsS3DuckDB integration
             const count = await countPopulation({
-              details: providerDetails,
+              details: integrationDetails,
               sql: cubeIntegrationSql,
               where: sql,
             });
@@ -160,7 +161,7 @@ function SegmentQueryBuilder({
                 controlElements={{
                   valueEditor: AsyncValueEditor,
                 }}
-                context={{ fields, providerDetails, integrationDetails }}
+                context={{ fields, integrationDetails }}
                 controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
                 operators={operators}
               />

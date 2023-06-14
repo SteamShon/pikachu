@@ -1,24 +1,14 @@
 import { z } from "zod";
 
-export const integrationSchema = z
-  .object({
-    id: z.string().optional(),
-    name: z.string().min(1),
-    description: z.string().optional().nullable().default(null),
-    // type: z.string().min(1),
-    //enum(["DB", "HTTP"]),
-    status: z.string().min(1),
-    serviceId: z.string().min(1),
-    providerId: z.string().min(1),
-    contentTypeId: z.string().optional().nullable().default(null),
-    details: z.optional(z.record(z.unknown())),
-  })
-  .transform((o) => {
-    return {
-      ...o,
-      contentTypeId: o.contentTypeId === "" ? null : o.contentTypeId,
-    };
-  });
+export const integrationSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1),
+  description: z.string().optional().nullable().default(null),
+  provide: z.string().min(1),
+  details: z.optional(z.record(z.unknown())),
+  status: z.string().min(1),
+  serviceId: z.string().min(1),
+});
 
 export type IntegrationSchemaType = z.infer<typeof integrationSchema>;
 

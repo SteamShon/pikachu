@@ -8,11 +8,11 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import type { ValueEditorProps } from "react-querybuilder";
 import { ValueEditor } from "react-querybuilder";
-import { fetchValues } from "../../utils/providers/awsS3DuckDB";
+import { fetchValues } from "../../utils/awsS3DuckDB";
 import { extractValue } from "../../utils/json";
 
 const AsyncValueEditor = (props: ValueEditorProps) => {
-  const { providerDetails, integrationDetails } = props.context;
+  const { integrationDetails } = props.context;
   const columnType = props.fieldData?.columnType;
   const useSearch = props.fieldData?.useSearch || false;
   const [inputValue, setInputValue] = useState<string | undefined>(undefined);
@@ -32,7 +32,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
 
           const values = (
             await fetchValues({
-              details: providerDetails,
+              details: integrationDetails,
               sql: cubeIntegrationSql,
               fieldName: props.field,
               columnType,
@@ -44,7 +44,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
         })();
       }, 1000),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [providerDetails, integrationDetails, props.field]
+    [integrationDetails, props.field]
   );
 
   useEffect(() => {
@@ -58,7 +58,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, inputValue, providerDetails, integrationDetails]);
+  }, [loading, inputValue, integrationDetails]);
 
   const filterOptions = createFilterOptions({
     matchFrom: "any",

@@ -9,11 +9,12 @@ import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type CustomsetForm from "../../../components/form/customsetForm";
-import CustomsetModal from "../../../components/form/customsetModal";
+import type CustomsetForm from "../../../components/form/customset/customsetForm";
+
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildCustomsetsTree } from "../../../utils/tree";
+import CustomsetModal from "../../../components/form/customset/customsetModal";
 
 function CustomsetTable({
   service,
@@ -34,7 +35,7 @@ function CustomsetTable({
     Parameters<typeof CustomsetForm>[0]["initialData"] | undefined
   >(undefined);
 
-  const { mutate: deleteCustomset } = api.service.removeCustomset.useMutation({
+  const { mutate: deleteCustomset } = api.customset.remove.useMutation({
     onSuccess(deleted) {
       setServiceTree((prev) => {
         if (!prev) return prev;

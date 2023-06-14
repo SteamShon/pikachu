@@ -1,9 +1,10 @@
-import type { Provider } from "@prisma/client";
+import type { Integration, Prisma } from "@prisma/client";
 import axios from "axios";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { extractValue, jsonParseWithFallback } from "../../../utils/json";
 import { createHmac } from "crypto";
-function getAuthHeader(provider?: Provider) {
+
+function getAuthHeader(details?: Prisma.JsonValue) {
   const now = new Date().toISOString();
 
   const genRanHex = (size: number) =>
@@ -13,11 +14,11 @@ function getAuthHeader(provider?: Provider) {
   const salt = genRanHex(64);
   const message = now + salt;
   const apiKey = extractValue({
-    object: provider?.details,
+    object: details,
     paths: ["apiKey"],
   }) as string | undefined;
   const apiSecret = extractValue({
-    object: provider?.details,
+    object: details,
     paths: ["apiSecret"],
   }) as string | undefined;
 
@@ -31,9 +32,9 @@ function getAuthHeader(provider?: Provider) {
     Authorization: `HMAC-SHA256 apiKey=${apiKey}, date=${now}, salt=${salt}, signature=${signature}`,
   };
 }
-async function getSenderList({ provider }: { provider?: Provider }) {
+async function getSenderList({ details }: { details?: Prisma.JsonValue }) {
   const uri = `https://api.solapi.com/messages/v4/list?limit=1`;
-  const headers = getAuthHeader(provider);
+  const headers = getAuthHeader(details);
   try {
     const { data } = await axios.get(uri, {
       headers,
@@ -45,19 +46,19 @@ async function getSenderList({ provider }: { provider?: Provider }) {
   }
 }
 async function sendMessages({
-  provider,
+  details,
   payload,
 }: {
-  provider?: Provider;
+  details?: Prisma.JsonValue;
   payload?: Record<string, unknown>;
 }) {
   const uri = extractValue({
-    object: provider?.details,
+    object: details,
     paths: ["uri"],
   }) as string | undefined;
   const headers = jsonParseWithFallback(
     extractValue({
-      object: provider?.details,
+      object: details,
       paths: ["headers"],
     }) as string | undefined
   ) as Record<string, string>;
@@ -74,20 +75,25 @@ async function sendMessages({
 }
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const config = req.body as Record<string, unknown>;
-  const provider = config["provider"] as Provider | undefined;
+  const integration = config["integration"] as Integration | undefined;
   const method = config["method"] as string | undefined;
   const payload = config["payload"] as Record<string, unknown> | undefined;
   console.log(config);
 
-  if (!provider) {
+  if (!integration) {
     res.status(404).end();
   } else {
     try {
       if (method === "getSenderList") {
-        const senderList = await getSenderList({ provider });
+        const senderList = await getSenderList({
+          details: integration.details,
+        });
         res.json(senderList);
       } else if (method === "sendMessages") {
-        const sendResult = await sendMessages({ provider, payload });
+        const sendResult = await sendMessages({
+          details: integration.details,
+          payload,
+        });
         res.json(sendResult);
       }
       res.status(200).end();

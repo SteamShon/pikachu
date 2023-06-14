@@ -3,17 +3,11 @@ import type {
   Campaign,
   Content,
   ContentType,
-  ContentTypeInfo,
   Creative,
-  Cube,
-  CubeHistory,
   Customset,
-  CustomsetInfo,
   Integration,
   Placement,
-  Provider,
   Service,
-  ServiceConfig,
 } from "@prisma/client";
 
 type Item = {
@@ -39,22 +33,19 @@ export function buildServiceTree(
         })[];
       })[];
       contentType: ContentType | null;
-      integrations: (Integration & { provider: Provider })[];
+      integrations: Integration[];
     })[];
     contentTypes: (ContentType & {
-      contentTypeInfo: ContentTypeInfo | null;
       contents: (Content & { creatives: Creative[] })[];
     })[];
-    customsets: (Customset & { customsetInfo: CustomsetInfo })[];
-    integrations: (Integration & { provider: Provider })[];
-    providers: (Provider & { integrations: Integration[] })[];
+    customsets: Customset[];
+    integrations: Integration[];
   }
 ): Service & {
   placements: Record<string, ReturnType<typeof buildPlacementTree>>;
   contentTypes: Record<string, ReturnType<typeof buildContentTypeTree>>;
-  customsets: Record<string, Customset & { customsetInfo: CustomsetInfo }>;
+  customsets: Record<string, Customset>;
   integrations: ReturnType<typeof buildIntegraionTree>;
-  providers: ReturnType<typeof buildProviderTree>;
 } {
   const placements = arrayToRecord(
     service.placements.map((placement) => {
@@ -72,15 +63,12 @@ export function buildServiceTree(
 
   const integrations = buildIntegraionTree(service.integrations);
 
-  const providers = buildProviderTree(service.providers);
-
   return {
     ...service,
     placements,
     contentTypes,
     customsets,
     integrations,
-    providers,
   };
 }
 
@@ -94,7 +82,7 @@ export function buildPlacementTree(
       })[];
     })[];
     contentType: ContentType | null;
-    integrations: (Integration & { provider: Provider })[];
+    integrations: Integration[];
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
@@ -155,7 +143,6 @@ export function buildAdGroupTree(
 }
 export function buildContentTypesTree(
   contentTypes: (ContentType & {
-    contentTypeInfo: ContentTypeInfo | null;
     contents: (Content & { creatives: Creative[] })[];
   })[]
 ): Record<string, ReturnType<typeof buildContentTypeTree>> {
@@ -168,11 +155,9 @@ export function buildContentTypesTree(
 
 export function buildContentTypeTree(
   contentType: ContentType & {
-    contentTypeInfo: ContentTypeInfo | null;
     contents: (Content & { creatives: Creative[] })[];
   }
 ): ContentType & {
-  contentTypeInfo: ContentTypeInfo | null;
   contents: Record<string, Content & { creatives: Creative[] }>;
 } {
   const contents = arrayToRecord(contentType.contents) as Record<
@@ -184,63 +169,13 @@ export function buildContentTypeTree(
 }
 
 export function buildCustomsetsTree(
-  customsets: (Customset & { customsetInfo: CustomsetInfo })[]
-): Record<string, Customset & { customsetInfo: CustomsetInfo }> {
-  return arrayToRecord(customsets) as Record<
-    string,
-    Customset & { customsetInfo: CustomsetInfo }
-  >;
-}
-
-export function buildCubeTree(
-  cube: Cube & { provider: Provider; cubeHistories: CubeHistory[] }
-): Cube & { provider: Provider; cubeHistories: Record<string, CubeHistory> } {
-  const cubeHistories = arrayToRecord(cube.cubeHistories) as Record<
-    string,
-    CubeHistory
-  >;
-  return { ...cube, cubeHistories };
-}
-
-export function buildServiceConfigTree(
-  serviceConfig:
-    | (ServiceConfig & {
-        cubes: (Cube & { provider: Provider; cubeHistories: CubeHistory[] })[];
-      })
-    | null
-):
-  | (ServiceConfig & {
-      cubes: Record<string, ReturnType<typeof buildCubeTree>>;
-    })
-  | null {
-  const cubes = arrayToRecord(
-    serviceConfig?.cubes.map((cube) => {
-      return buildCubeTree(cube);
-    })
-  ) as Record<string, ReturnType<typeof buildCubeTree>>;
-
-  return serviceConfig ? { ...serviceConfig, cubes } : null;
+  customsets: Customset[]
+): Record<string, Customset> {
+  return arrayToRecord(customsets) as Record<string, Customset>;
 }
 
 export function buildIntegraionTree(
-  integrations: (Integration & { provider: Provider })[]
-): Record<string, Integration & { provider: Provider }> {
-  return arrayToRecord(integrations) as Record<
-    string,
-    Integration & { provider: Provider }
-  >;
-}
-
-export function buildProviderTree(
-  providers: (Provider & { integrations: Integration[] })[]
-): Record<string, Provider & { integrations: Record<string, Integration> }> {
-  return arrayToRecord(
-    providers.map((provider) => {
-      const cubes = arrayToRecord(provider.integrations) as Record<
-        string,
-        Integration
-      >;
-      return { ...provider, cubes };
-    })
-  ) as Record<string, Provider & { integrations: Record<string, Integration> }>;
+  integrations: Integration[]
+): Record<string, Integration> {
+  return arrayToRecord(integrations) as Record<string, Integration>;
 }

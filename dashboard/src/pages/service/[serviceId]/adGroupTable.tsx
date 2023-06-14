@@ -11,11 +11,11 @@ import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import Stat from "../../../components/chart/Stat";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type AdGroupForm from "../../../components/form/adGroupForm";
-import AdGroupModal from "../../../components/form/adGroupModal";
+import type AdGroupForm from "../../../components/form/adGroup/adGroupForm";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildCampaignTree } from "../../../utils/tree";
+import AdGroupModal from "../../../components/form/adGroup/adGroupModal";
 
 function AdGroupTable({
   service,
@@ -51,7 +51,7 @@ function AdGroupTable({
   });
   const cubeIntegrations = Object.values(
     serviceTree?.integrations || {}
-  ).filter((integration) => integration.provider.provide === "CUBE");
+  ).filter(({ provide }) => provide === "CUBE");
   const allCampaigns = Object.values(serviceTree?.placements || {}).flatMap(
     ({ campaigns, ...placement }) => {
       return Object.values(campaigns).map(({ adGroups, ...campaign }) => {

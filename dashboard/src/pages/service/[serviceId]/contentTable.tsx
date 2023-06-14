@@ -9,16 +9,14 @@ import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import ContentPreview from "../../../components/builder/contentPreview";
-import ContentSync from "../../../components/builder/contentSync";
-
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type ContentForm from "../../../components/form/contentForm";
-import ContentModal from "../../../components/form/contentModal";
+import type ContentForm from "../../../components/form/content/contentForm";
+import ContentModal from "../../../components/form/content/contentModal";
 import { api } from "../../../utils/api";
-import { toNewCreative } from "../../../utils/contentTypeInfo";
-import { jsonParseWithFallback } from "../../../utils/json";
+import { toNewCreative } from "../../../utils/contentType";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypeTree } from "../../../utils/tree";
+
 function ContentTable({
   service,
   serviceTree,
@@ -38,7 +36,7 @@ function ContentTable({
     Parameters<typeof ContentForm>[0]["initialData"] | undefined
   >(undefined);
 
-  const { mutate: deleteContent } = api.contentType.removeContent.useMutation({
+  const { mutate: deleteContent } = api.content.remove.useMutation({
     onSuccess(deleted) {
       setServiceTree((prev) => {
         if (!prev) return prev;
@@ -88,20 +86,20 @@ function ContentTable({
         return <>{params.row.contentType?.type}</>;
       },
     },
-    {
-      field: "update",
-      headerName: "Update",
-      flex: 1,
-      renderCell: (params: GridRenderCellParams<Date>) => {
-        return (
-          <ContentSync
-            serviceConfig={service?.serviceConfig || undefined}
-            contentType={params.row?.contentType}
-            contents={[jsonParseWithFallback(params.row.values)]}
-          />
-        );
-      },
-    },
+    // {
+    //   field: "update",
+    //   headerName: "Update",
+    //   flex: 1,
+    //   renderCell: (params: GridRenderCellParams<Date>) => {
+    //     return (
+    //       <ContentSync
+    //         serviceConfig={service?.serviceConfig || undefined}
+    //         contentType={params.row?.contentType}
+    //         contents={[jsonParseWithFallback(params.row.values)]}
+    //       />
+    //     );
+    //   },
+    // },
     {
       field: "preview",
       headerName: "Preview",
@@ -176,7 +174,7 @@ function ContentTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {
@@ -191,7 +189,7 @@ function ContentTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {

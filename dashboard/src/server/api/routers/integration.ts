@@ -14,9 +14,6 @@ export const integrationRouter = createTRPCRouter({
           ...input,
           details: detailsJson,
         },
-        include: {
-          provider: true,
-        },
       });
 
       return integration;
@@ -33,9 +30,6 @@ export const integrationRouter = createTRPCRouter({
         data: {
           ...integration,
           details: detailsJson,
-        },
-        include: {
-          provider: true,
         },
       });
     }),

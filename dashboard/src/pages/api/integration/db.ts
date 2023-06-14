@@ -1,10 +1,24 @@
 // async/await
-import type { Prisma, Provider } from "@prisma/client";
+import type { Prisma, Integration } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { pipeline } from "node:stream/promises";
 import pg from "pg";
 import { from as copyFrom } from "pg-copy-streams";
-import { extractConfigs } from "../../../utils/providers/awsS3DuckDB";
+import { extractConfigs } from "../../../utils/awsS3DuckDB";
+
+async function checkConnection(databaseUrl: string) {
+  const client = new pg.Client(databaseUrl);
+
+  try {
+    await client.connect();
+    return true;
+  } catch (e) {
+    console.log(e);
+    return false;
+  } finally {
+    client.end();
+  }
+}
 
 function partitionBucketPrefix(path: string) {
   const tokens = path.replace("s3://", "").split("/");
@@ -124,12 +138,11 @@ async function executeQuery({
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const config = req.body as Record<string, unknown>;
-  const provider = config["provider"] as Provider | undefined;
-  const cubeProvider = config["cubeProvider"] as Provider | undefined;
+  const integration = config["integration"] as Integration | undefined;
   const method = config["method"] as string | undefined;
   const payload = config["payload"] as Record<string, unknown> | undefined;
   const databaseUrl = extractValue({
-    object: provider?.details,
+    object: integration?.details,
     paths: ["DATABASE_URL"],
   }) as string | undefined;
 
@@ -137,9 +150,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(404);
   } else {
     try {
-      if (method === "executeQuery") {
+      if (method === "checkConnection") {
+        const valid = await checkConnection(databaseUrl);
+        res.json(valid);
+      } else if (method === "executeQuery") {
         const query = payload?.sql as string | undefined;
-        if (provider && query) {
+        if (integration && query) {
           const result = await executeQuery({ databaseUrl, query });
           res.json(result);
         }
@@ -153,11 +169,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       } else if (method === "upload") {
         const cubeHistoryId = payload?.cubeHistoryId as string | undefined;
 
-        if (provider && cubeHistoryId) {
+        if (integration && cubeHistoryId) {
           const result = await uploadAll({
             cubeHistoryId,
             databaseUrl,
-            cubeProviderDetails: cubeProvider?.details,
+            cubeProviderDetails: integration?.details,
           });
           res.json(result);
         }

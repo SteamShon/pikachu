@@ -9,8 +9,8 @@ import {
 import { useSnackbar } from "notistack";
 import { useState } from "react";
 import type ContentPreview from "../../../components/builder/contentPreview";
-import PlacementData from "../../../components/form/placementData";
-import SearchRequestForm from "../../../components/form/searchRequestForm";
+import PlacementData from "../../../components/form/placement/placementData";
+import SearchRequestForm from "../../../components/form/placement/searchRequestForm";
 import type { SearchRequestSchemaType } from "../../../components/schema/searchRequest";
 import { api } from "../../../utils/api";
 import type { SearchResult } from "../../../utils/search";

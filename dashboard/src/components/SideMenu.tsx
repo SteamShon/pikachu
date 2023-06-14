@@ -3,21 +3,13 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import {
   AiFillEnvironment,
-  AiOutlinePicture,
   AiOutlineApi,
-  AiOutlineUsergroupAdd,
+  AiOutlinePicture,
 } from "react-icons/ai";
 import { BiSitemap } from "react-icons/bi";
-import {
-  BsArrowLeftShort,
-  BsChevronDown,
-  BsDatabase,
-  BsTable,
-} from "react-icons/bs";
-import { CiBullhorn } from "react-icons/ci";
+import { BsArrowLeftShort, BsChevronDown, BsDatabase } from "react-icons/bs";
 import { GiBullseye } from "react-icons/gi";
 import { GrGroup, GrResources } from "react-icons/gr";
-import { HiTemplate } from "react-icons/hi";
 function SideMenu() {
   const router = useRouter();
   const { serviceId, step } = router.query;
@@ -69,16 +61,9 @@ function SideMenu() {
       ],
     },
     {
-      title: "providers",
+      title: "integration",
       icon: <AiOutlineApi />,
-      link: `/service/${serviceId}/dashboard?step=providers`,
-      subMenus: [
-        {
-          title: "integration",
-          icon: <AiOutlineApi />,
-          link: `/service/${serviceId}/dashboard?step=integrations`,
-        },
-      ],
+      link: `/service/${serviceId}/dashboard?step=integrations`,
     },
   ];
 
@@ -113,10 +98,10 @@ function SideMenu() {
       </div>
 
       <ul className={`pt-2`}>
-        {menus.map((menu, index) => (
+        {menus.map((menu) => (
           <>
             <li
-              key={index}
+              key={menu.title}
               className={`mt-2 flex cursor-pointer items-center gap-x-4 rounded-md p-2 text-sm text-gray-700 hover:bg-slate-50 ${"mt-2"}`}
             >
               <Link href={menu.link}>

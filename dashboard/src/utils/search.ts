@@ -3,7 +3,6 @@ import type {
   Campaign,
   Content,
   ContentType,
-  ContentTypeInfo,
   Creative,
   Placement,
 } from "@prisma/client";
@@ -11,7 +10,7 @@ import axios from "axios";
 import type { SearchRequestSchemaType } from "../components/schema/searchRequest";
 
 export type SearchResult = Placement & {
-  contentType: ContentType & { contentTypeInfo: ContentTypeInfo };
+  contentType: ContentType;
   campaigns: (Campaign & {
     adGroups: (AdGroup & {
       creatives: (Creative & { content: Content })[];

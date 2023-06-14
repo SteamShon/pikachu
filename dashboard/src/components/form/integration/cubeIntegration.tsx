@@ -7,6 +7,8 @@ import SqlBuilder from "../../builder/sqlBuilder";
 import SqlPreview from "../../builder/sqlPreview";
 import type { DatasetSchemaType } from "../../schema/dataset";
 import type IntegrationForm from "./integrationForm";
+import Badge from "../../common/Badge";
+import AWSS3Details from "./awsS3Details";
 
 function CubeIntegration({
   initialData,
@@ -16,15 +18,10 @@ function CubeIntegration({
   name: string;
 }) {
   const [activeStep, setActiveStep] = useState(0);
+  const [checked, setChecked] = useState<boolean | undefined>(undefined);
 
   const methods = useFormContext();
-  const {
-    reset,
-    watch,
-    setValue,
-    getValues,
-    formState: { errors },
-  } = methods;
+  const { register, reset, watch, setValue, getValues } = methods;
 
   useEffect(() => {
     if (initialData) {
@@ -35,8 +32,13 @@ function CubeIntegration({
   }, [initialData, reset]);
 
   const details = watch("details");
-  console.log(details);
+
   const steps = [
+    {
+      label: "Configure",
+      description: `Configure`,
+      component: <AWSS3Details prefix="details" />,
+    },
     {
       label: "QueryBuilder",
       description: `QueryBuilder`,
@@ -46,10 +48,7 @@ function CubeIntegration({
             details={details}
             initialData={fromSql(getValues(name) as string | undefined)}
             onSubmit={(data: DatasetSchemaType) => {
-              setValue(
-                name,
-                buildJoinSql({ details: initialData.details, dataset: data })
-              );
+              setValue(name, buildJoinSql({ details, dataset: data }));
               setActiveStep((prev) => prev + 1);
             }}
           />
@@ -83,11 +82,6 @@ function CubeIntegration({
 
   return (
     <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-      <div className="px-4 py-5 sm:px-6">
-        <h3 className="text-lg font-medium leading-6 text-gray-900">
-          AWS S3 + DuckDB Cube
-        </h3>
-      </div>
       <div>
         <Grid container spacing={2}>
           <Grid item xs={12}>

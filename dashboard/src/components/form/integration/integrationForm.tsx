@@ -107,17 +107,7 @@ function IntegrationForm({
         return {
           SQL: (
             <>
-              <textarea
-                className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                rows={3}
-                {...register("details.SQL")}
-              />
-
-              <CubeIntegration
-                service={service}
-                initialData={initialData}
-                name="details.SQL"
-              />
+              <CubeIntegration initialData={initialData} name="details.SQL" />
             </>
           ),
         };
@@ -215,12 +205,13 @@ function IntegrationForm({
           {Object.entries(components()).map(([key, component]) => {
             return (
               <>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                {component}
+                {/* <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">{key}</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                     {component}
                   </dd>
-                </div>
+                </div> */}
               </>
             );
           })}

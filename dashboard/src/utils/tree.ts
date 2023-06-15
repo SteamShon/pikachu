@@ -7,6 +7,7 @@ import type {
   Customset,
   Integration,
   Placement,
+  Provider,
   Service,
 } from "@prisma/client";
 
@@ -39,12 +40,14 @@ export function buildServiceTree(
       contents: (Content & { creatives: Creative[] })[];
     })[];
     customsets: Customset[];
+    providers: Provider[];
     integrations: Integration[];
   }
 ): Service & {
   placements: Record<string, ReturnType<typeof buildPlacementTree>>;
   contentTypes: Record<string, ReturnType<typeof buildContentTypeTree>>;
   customsets: Record<string, Customset>;
+  providers: Record<string, Provider>;
   integrations: ReturnType<typeof buildIntegraionTree>;
 } {
   const placements = arrayToRecord(
@@ -61,6 +64,10 @@ export function buildServiceTree(
 
   const customsets = buildCustomsetsTree(service.customsets);
 
+  const providers = arrayToRecord(service.providers) as Record<
+    string,
+    Provider
+  >;
   const integrations = buildIntegraionTree(service.integrations);
 
   return {
@@ -68,6 +75,7 @@ export function buildServiceTree(
     placements,
     contentTypes,
     customsets,
+    providers,
     integrations,
   };
 }

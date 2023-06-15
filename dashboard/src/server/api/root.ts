@@ -9,6 +9,7 @@ import { usersOnServicesRouter } from "./routers/usersOnServices";
 import { createTRPCRouter } from "./trpc";
 import { integrationRouter } from "./routers/integration";
 import { contentRouter } from "./routers/content";
+import { providerRouter } from "./routers/provider";
 
 /**
  * This is the primary router for your server.
@@ -25,6 +26,7 @@ export const appRouter = createTRPCRouter({
   contentType: contentTypeRouter,
   usersOnServices: usersOnServicesRouter,
   content: contentRouter,
+  provider: providerRouter,
   integration: integrationRouter,
 });
 

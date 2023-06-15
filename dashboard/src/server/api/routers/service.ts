@@ -1,6 +1,5 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { placementSchema } from "../../../components/schema/placement";
 import { serviceSchema } from "../../../components/schema/service";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -39,6 +38,7 @@ export const getIncludes = {
       createdBy: true,
     },
   },
+  providers: true,
   integrations: {
     include: {
       service: true,

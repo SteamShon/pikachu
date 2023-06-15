@@ -1,118 +1,165 @@
-import type { Placement, Service } from "@prisma/client";
-// import { useRouter } from "next/router";
-// import type { Dispatch, SetStateAction } from "react";
-// import { useState } from "react";
-// import type { buildServiceTree } from "../../../utils/tree";
-// import ProviderModal from "../../../components/form/providerModal";
-// import Badge from "../../../components/common/Badge";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import SouthIcon from "@mui/icons-material/South";
+import type { GridColDef } from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
+import moment from "moment";
+import { useRouter } from "next/router";
+import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
+import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
+import type IntegrationForm from "../../../components/form/integration/integrationForm";
 
-// function ProviderTable({
-//   service,
-//   serviceTree,
-//   setServiceTree,
-// }: {
-//   service: Service & { placements: Placement[] };
-//   serviceTree?: ReturnType<typeof buildServiceTree>;
-//   setServiceTree: Dispatch<
-//     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
-//   >;
-// }) {
-//   const router = useRouter();
-//   const [provide, setProvide] = useState<string | undefined>(undefined);
-//   const [name, setName] = useState<string | undefined>(undefined);
-//   const [modalOpen, setModalOpen] = useState(false);
+import type { buildServiceTree } from "../../../utils/tree";
+import { api } from "../../../utils/api";
+import ProviderModal from "../../../components/form/provider/providerModal";
+import type ProviderForm from "../../../components/form/provider/providerForm";
 
-//   // const { mutate: deleteProvider } = api.service.removeProvider.useMutation({
-//   //   onSuccess(deleted) {
-//   //     setServiceTree((prev) => {
-//   //       if (!prev) return undefined;
-//   //       prev.providers = buildProviderTree(deleted.providers);
-//   //       return prev;
-//   //     });
-//   //     setModalOpen(false);
-//   //   },
-//   // });
-//   const getProvider = (provide: string, name: string) => {
-//     return Object.values(serviceTree?.providers || {}).find(
-//       (provider) => provider.provide === provide && provider.name === name
-//     );
-//   };
-//   const currentProvider = Object.values(serviceTree?.providers || {}).find(
-//     (provider) => provider.name === name
-//   );
-//   const typeNames = {
-//     API: [{ name: "PIKACHU_API", enabled: true }],
-//     CUBE: [{ name: "AWS_S3_DUCKDB", enabled: true }],
-//     USER_FEATURE: [{ name: "POSTGRES", enabled: true }],
-//     SMS: [
-//       { name: "SOLAPI", enabled: true },
-//       { name: "COOLSMS", enabled: false },
-//     ],
-//   };
+function ProviderTable({
+  service,
+  serviceTree,
+  setServiceTree,
+}: {
+  service: Parameters<typeof ProviderForm>[0]["service"];
+  serviceTree?: ReturnType<typeof buildServiceTree>;
+  setServiceTree: Dispatch<
+    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+  >;
+}) {
+  const router = useRouter();
+  const [modalOpen, setModalOpen] = useState(false);
+  const { providerIds } = router.query;
+  const [provider, setProvider] = useState<
+    Parameters<typeof ProviderForm>[0]["initialData"] | undefined
+  >(undefined);
+  const selectedIds = (providerIds || []) as string[];
 
-//   return (
-//     <>
-//       <div>
-//         {Object.entries(typeNames).map(([provide, names]) => {
-//           return (
-//             <>
-//               <div key={provide} className="px-4 py-5 sm:px-6">
-//                 <h3 className="text-lg font-medium leading-6 text-gray-900">
-//                   {provide}
-//                 </h3>
-//               </div>
-//               <ul className="flex">
-//                 {names.map(({ name, enabled }) => {
-//                   return (
-//                     <li key={`${provide}_${name}`}>
-//                       <button
-//                         className="relative flex items-start justify-between rounded-xl border border-gray-100 p-4 shadow-xl sm:p-6 lg:p-8"
-//                         type="button"
-//                         disabled={!enabled}
-//                         onClick={() => {
-//                           setProvide(provide);
-//                           setName(name);
-//                           setModalOpen(true);
-//                         }}
-//                       >
-//                         <div className="pt-4 text-gray-500">
-//                           <h3
-//                             className={`mt-4 text-lg font-bold text-gray-900 sm:text-xl ${
-//                               !enabled && "line-through"
-//                             }`}
-//                           >
-//                             {name}
-//                           </h3>
+  const { mutate: deleteIntegration } = api.provider.delete.useMutation({
+    onSuccess(deleted) {
+      setServiceTree((prev) => {
+        if (!prev) return undefined;
+        delete prev.integrations[deleted.id];
+        return prev;
+      });
+      setModalOpen(false);
+    },
+  });
 
-//                           <p className="mt-2 hidden text-sm sm:block"></p>
-//                         </div>
+  const allProviders = Object.values(serviceTree?.providers || {});
 
-//                         {getProvider(provide, name)?.status === "PUBLISHED" && (
-//                           <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-medium text-green-600">
-//                             <Badge variant="success" label="active" />
-//                           </span>
-//                         )}
-//                       </button>
-//                     </li>
-//                   );
-//                 })}
-//               </ul>
-//             </>
-//           );
-//         })}
-//       </div>
-//       <ProviderModal
-//         key="providertModal"
-//         modalOpen={modalOpen}
-//         setModalOpen={setModalOpen}
-//         service={service}
-//         setServiceTree={setServiceTree}
-//         initialData={currentProvider}
-//         name={name}
-//         provide={provide}
-//       />
-//     </>
-//   );
-// }
+  const providers =
+    selectedIds.length === 0
+      ? allProviders
+      : allProviders.filter((provider) => {
+          return selectedIds.includes(provider.id);
+        });
 
-// export default ProviderTable;
+  const rows = providers;
+
+  const columns: GridColDef[] = [
+    {
+      field: "name",
+      headerName: "Name",
+      flex: 1,
+    },
+    {
+      field: "description",
+      headerName: "Description",
+      flex: 2,
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      flex: 1,
+    },
+
+    {
+      field: "createdAt",
+      headerName: "CreatedAt",
+      flex: 1,
+      valueFormatter: (params) =>
+        moment(params?.value).format("YYYY/MM/DD hh:mm A"),
+    },
+    {
+      field: "updatedAt",
+      headerName: "UpdatedAt",
+      flex: 1,
+      valueFormatter: (params) =>
+        moment(params?.value).format("YYYY/MM/DD hh:mm A"),
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      renderCell: (params) => {
+        return (
+          <div className="flex">
+            <button
+              className="p-1 text-red-400"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm("Are you sure?")) {
+                  deleteIntegration({
+                    id: params.row.id,
+                  });
+                }
+              }}
+            >
+              <DeleteIcon />
+            </button>
+            <button
+              className="p-1 text-blue-400"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setProvider(params.row);
+                setModalOpen(true);
+              }}
+            >
+              <EditIcon />
+            </button>
+          </div>
+        );
+      },
+    },
+  ];
+  const toolbar = GridCustomToolbar({
+    label: "Create",
+    onClick: () => {
+      setProvider(undefined);
+      setModalOpen(true);
+    },
+  });
+  return (
+    <>
+      <div style={{ display: "flex", height: "100%" }}>
+        <div style={{ flexGrow: 1 }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            autoHeight
+            getRowHeight={() => "auto"}
+            pageSize={10}
+            rowsPerPageOptions={[10, 20, 30, 40, 50]}
+            disableSelectionOnClick
+            experimentalFeatures={{ newEditingApi: true }}
+            components={{
+              Toolbar: toolbar,
+            }}
+          />
+        </div>
+        <ProviderModal
+          key="providerModal"
+          modalOpen={modalOpen}
+          setModalOpen={setModalOpen}
+          service={service}
+          setServiceTree={setServiceTree}
+          initialData={provider}
+        />
+      </div>
+    </>
+  );
+}
+
+export default ProviderTable;

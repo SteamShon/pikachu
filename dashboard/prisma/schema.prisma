@@ -80,19 +80,20 @@ model VerificationToken {
 }
 
 model Service {
-    id            String            @id @default(cuid())
-    name          String
-    description   String?
-    details Json @default("{}")
+    id           String            @id @default(cuid())
+    name         String
+    description  String?
+    details      Json              @default("{}")
     // placementGroups PlacementGroup[]
-    placements    Placement[]
-    contentTypes  ContentType[]
-    users         UsersOnServices[]
-    status        String            @default("CREATED")
-    createdAt     DateTime          @default(now())
-    updatedAt     DateTime          @updatedAt
-    
-    customsets    Customset[]
+    placements   Placement[]
+    contentTypes ContentType[]
+    users        UsersOnServices[]
+    status       String            @default("CREATED")
+    createdAt    DateTime          @default(now())
+    updatedAt    DateTime          @updatedAt
+
+    customsets   Customset[]
+    providers    Provider[]
     integrations Integration[]
 
     @@unique([name])
@@ -141,15 +142,15 @@ model Placement {
     AdvertisersOnPlacements AdvertisersOnPlacements[]
     contentType             ContentType?              @relation(fields: [contentTypeId], references: [id])
     contentTypeId           String?
-    
+
     // createdBy               User                      @relation("createdPlacements", fields: [creatorId], references: [id], onDelete: Cascade)
     // creatorId               String
-    status                  String                    @default("CREATED")
-    createdAt               DateTime                  @default(now())
-    updatedAt               DateTime                  @updatedAt
+    status       String        @default("CREATED")
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
     // cube                    Cube?                     @relation(fields: [cubeId], references: [id])
     // cubeId                  String?
-    integrations            Integration[]
+    integrations Integration[]
 
     @@unique([serviceId, name])
     @@index(fields: [updatedAt])
@@ -160,16 +161,14 @@ model ContentType {
     name        String
     description String?
     source      String   @default("local")
-    type        String @default("DISPLAY") // INAPP_PUSH/SMS
-    details     Json        @default("{}")
+    type        String   @default("DISPLAY") // INAPP_PUSH/SMS
+    details     Json     @default("{}")
     service     Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
     serviceId   String?
 
-    
-
     placements Placement[]
     contents   Content[]
-    
+
     status    String   @default("CREATED")
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -268,60 +267,79 @@ model Content {
 }
 
 model Customset {
-    id              String        @id @default(cuid())
-    name            String
-    description     String?
-    service         Service?      @relation(fields: [serviceId], references: [id])
-    serviceId       String?
+    id          String   @id @default(cuid())
+    name        String
+    description String?
+    service     Service? @relation(fields: [serviceId], references: [id])
+    serviceId   String?
     // ownedBy         User           @relation("ownedCustomsets", fields: [ownerId], references: [id], onDelete: Cascade)
     // ownerId         String
-    createdBy       User          @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
-    creatorId       String
-    details Json @default("{}")
-    status          String        @default("CREATED")
-    createdAt       DateTime      @default(now())
-    updatedAt       DateTime      @updatedAt
+    createdBy   User     @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
+    creatorId   String
+    details     Json     @default("{}")
+    status      String   @default("CREATED")
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
 
     // @@unique([ownerId, name])
     @@unique([serviceId, name])
 }
 
-
 model UserFeature {
-    version String
+    integrationId String
+    version       String
     userId        String
     feature       Json   @default("{}")
 
-    @@id([version, userId])
+    @@id([integrationId, version, userId])
 }
 
-model Integration {
-    id              String           @id @default(cuid())
-    name            String
-    description     String?
-    provide String
-    details       Json        @default("{}")
-    status          String           @default("CREATED")
-    createdAt       DateTime         @default(now())
-    updatedAt       DateTime         @updatedAt
-    service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-    serviceId String
-    
-    placements Placement[]
-    
+model Provider {
+    id          String  @id @default(cuid())
+    name        String
+    description String?
+    template    String
+    service     Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+    serviceId   String
+
+    details     Json          @default("{}")
+    status      String        @default("CREATED")
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    Integration Integration[]
+
     @@unique([serviceId, name])
     @@index(fields: [updatedAt])
 }
 
+model Integration {
+    id          String    @id @default(cuid())
+    name        String
+    description String?
+    provide     String
+    provider    Provider? @relation(fields: [providerId], references: [id], onDelete: Cascade)
+    providerId  String?
+    details     Json      @default("{}")
+    status      String    @default("CREATED")
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    service     Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+    serviceId   String
+
+    placements Placement[]
+
+    @@unique([serviceId, name])
+    @@index(fields: [updatedAt])
+}
 
 model CreativeStat {
-    timeUnit String  
-    time DateTime 
-    creativeId String 
-    impressionCount BigInt 
-    clickCount BigInt 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    timeUnit        String
+    time            DateTime
+    creativeId      String
+    impressionCount BigInt
+    clickCount      BigInt
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
 
     @@id([timeUnit, time, creativeId])
 }

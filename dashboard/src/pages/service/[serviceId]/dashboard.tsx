@@ -21,6 +21,7 @@ import PlacementMenu from "../../../components/PlacementMenu";
 import IntegrationTable from "./integrationTable";
 import PlacementTable from "./placementTable";
 import RenderPreview from "./renderPreview";
+import ProviderTable from "./providerTable";
 
 function Dashboard() {
   const router = useRouter();
@@ -334,6 +335,32 @@ function Dashboard() {
       label: "renderPreview",
       description: `renderPreview`,
       table: () => (service ? <RenderPreview service={service} /> : null),
+    },
+    {
+      label: "providers",
+      description: `providers`,
+      paths: [
+        <>Home</>,
+        <ServiceMenu key="serviceMenu" />,
+        <>
+          <Link
+            href={{
+              pathname: `/service/[serviceId]/dashboard`,
+              query: { ...router.query, step: "providers" },
+            }}
+          >
+            <span className="font-bold">Provider</span>
+          </Link>
+        </>,
+      ],
+      table: () =>
+        service ? (
+          <ProviderTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
+        ) : null,
     },
     {
       label: "integrations",

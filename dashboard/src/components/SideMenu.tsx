@@ -61,9 +61,16 @@ function SideMenu() {
       ],
     },
     {
-      title: "integration",
+      title: "providers",
       icon: <AiOutlineApi />,
-      link: `/service/${serviceId}/dashboard?step=integrations`,
+      link: `/service/${serviceId}/dashboard?step=providers`,
+      subMenus: [
+        {
+          title: "integrations",
+          icon: <AiOutlineApi />,
+          link: `/service/${serviceId}/dashboard?step=integrations`,
+        },
+      ],
     },
   ];
 

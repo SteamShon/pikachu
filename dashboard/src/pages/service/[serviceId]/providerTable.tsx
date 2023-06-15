@@ -1,6 +1,5 @@
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import moment from "moment";
@@ -8,12 +7,11 @@ import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type IntegrationForm from "../../../components/form/integration/integrationForm";
 
-import type { buildServiceTree } from "../../../utils/tree";
-import { api } from "../../../utils/api";
-import ProviderModal from "../../../components/form/provider/providerModal";
 import type ProviderForm from "../../../components/form/provider/providerForm";
+import ProviderModal from "../../../components/form/provider/providerModal";
+import { api } from "../../../utils/api";
+import type { buildServiceTree } from "../../../utils/tree";
 
 function ProviderTable({
   service,

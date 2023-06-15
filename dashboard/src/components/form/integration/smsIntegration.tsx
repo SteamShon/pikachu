@@ -7,7 +7,7 @@ import type { Provider } from "@prisma/client";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-import { extractValue, jsonParseWithFallback } from "../../../utils/json";
+import { jsonParseWithFallback } from "../../../utils/json";
 import Badge from "../../common/Badge";
 import type IntegrationForm from "./integrationForm";
 const SMS_TEST_SCHEMA = {
@@ -31,12 +31,10 @@ const SMS_TEST_SCHEMA = {
   required: ["from", "to", "text"],
 };
 function SmsIntegration({
-  service,
   initialData,
   provider,
   name,
 }: {
-  service: Parameters<typeof IntegrationForm>[0]["service"];
   initialData: Parameters<typeof IntegrationForm>[0]["initialData"];
   provider?: Provider;
   name: string;

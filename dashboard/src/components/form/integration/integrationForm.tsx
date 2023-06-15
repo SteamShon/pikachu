@@ -13,7 +13,7 @@ import type {
 } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { extractValue, jsonParseWithFallback } from "../../../utils/json";
+import { jsonParseWithFallback } from "../../../utils/json";
 import CustomLoadingButton from "../../common/CustomLoadingButton";
 import type { IntegrationSchemaType } from "../../schema/integration";
 import { integrationSchema } from "../../schema/integration";
@@ -90,7 +90,7 @@ function IntegrationForm({
       name: "SMS",
       component: (
         <SmsIntegration
-          service={service}
+          // service={service}
           initialData={initialData}
           provider={provider}
           name="details"

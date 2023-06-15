@@ -12,7 +12,7 @@ import { GiBullseye } from "react-icons/gi";
 import { GrGroup, GrResources } from "react-icons/gr";
 function SideMenu() {
   const router = useRouter();
-  const { serviceId, step } = router.query;
+  const { serviceId } = router.query;
   const menus = [
     {
       title: "contentType",

@@ -1,14 +1,14 @@
 import { Grid, Step, StepButton, Stepper } from "@mui/material";
-import type { Integration, Provider } from "@prisma/client";
+import type { Provider } from "@prisma/client";
 import type { AxiosError } from "axios";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { extractValue } from "../../../utils/json";
 import {
   generateTransformCubeSql,
   toVersion,
 } from "../../../utils/awsS3DuckDB";
+import { extractValue } from "../../../utils/json";
 import Badge from "../../common/Badge";
 import QueryResultTable from "../../common/QueryResultTable";
 import type IntegrationForm from "./integrationForm";
@@ -52,7 +52,7 @@ function UserFeatureIntegration({
           sql,
         },
         method: "executeQuery",
-        integration: initialData,
+        details: provider?.details,
       });
       setRows(data.rows);
       setErrorMessage(undefined);
@@ -81,19 +81,14 @@ function UserFeatureIntegration({
     }
 
     setStatus("started");
-    const version = "1686824716";
-    // String(Math.floor(new Date().getTime() / 1000));
+    const version = String(Math.floor(new Date().getTime() / 1000));
 
     const cubeProvider = service.providers.find(
       ({ id }) => id === cubeIntegration.providerId
     );
-    const cubeProviderDetails = extractValue({
-      object: cubeProvider?.details,
-      paths: ["values"],
-    });
 
     const transformSql = await generateTransformCubeSql({
-      cubeProviderDetails: cubeProviderDetails,
+      cubeProviderDetails: cubeProvider?.details,
       cubeIntegrationDetails: cubeIntegration?.details,
       integrationId: cubeIntegration.id,
       version,
@@ -106,7 +101,7 @@ function UserFeatureIntegration({
       setStatus("transforming");
       await axios.post(`/api/integration/awsS3DuckDB`, {
         method: "executeDuckDBQuery",
-        details: cubeProviderDetails,
+        details: cubeProvider?.details,
         payload: {
           sql: transformSql,
         },
@@ -121,8 +116,8 @@ function UserFeatureIntegration({
           version,
         },
         method: "upload",
-        details: extractValue({ object: provider?.details, paths: ["values"] }),
-        cubeProviderDetails: cubeProviderDetails,
+        details: provider?.details,
+        cubeProviderDetails: cubeProvider?.details,
       });
       setErrorMessage(undefined);
       setValue("status", "PUBLISHED");
@@ -145,20 +140,20 @@ function UserFeatureIntegration({
       ({ id }) => id === integrationId
     );
     setCubeIntegration(cubeIntegration);
+    setValue(`${name}.integrationId`, cubeIntegration?.id);
   };
 
   useEffect(() => {
     if (!initialData) return;
 
     reset({ ...initialData });
-    const cubeIntegrationId = extractValue({
+    const integrationId = extractValue({
       object: initialData?.details,
-      paths: ["cubeIntegrationId"],
+      paths: ["integrationId"],
     }) as string | undefined;
-    console.log(cubeIntegrationId);
-    if (!cubeIntegrationId) return;
+    if (!integrationId) return;
 
-    handleIntegrationChange(cubeIntegrationId);
+    handleIntegrationChange(integrationId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData]);
 
@@ -174,7 +169,7 @@ function UserFeatureIntegration({
             </dt>
             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
               <select
-                {...register(`${name}.cubeIntegrationId`)}
+                {...register(`${name}.integrationId`)}
                 onChange={(e) => {
                   handleIntegrationChange(e.target.value);
                   setActiveStep((prev) => prev + 1);
@@ -247,9 +242,10 @@ function UserFeatureIntegration({
           <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
             <dt className="text-sm font-medium text-gray-500">SQL</dt>
             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-              <input
+              <textarea
                 className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
                 {...register(`${name}.sql`)}
+                rows={10}
               />
             </dd>
           </div>

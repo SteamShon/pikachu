@@ -9,11 +9,10 @@ import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { jsonParseWithFallback } from "../../../utils/json";
 import { PROVIDER_TEMPLATES } from "../../../utils/providerTemplate";
+import Badge from "../../common/Badge";
 import CustomLoadingButton from "../../common/CustomLoadingButton";
 import type { ProviderSchemaType } from "../../schema/provider";
 import { providerSchema } from "../../schema/provider";
-import axios from "axios";
-import Badge from "../../common/Badge";
 
 function ProviderForm({
   service,
@@ -54,8 +53,8 @@ function ProviderForm({
         details,
       });
       // handleProviderChange(initialData.providerId);
-      setFormSchema(details.schema as string);
-      setFormValues(details.values as Record<string, unknown>);
+      setFormSchema(initialData.schema || undefined);
+      setFormValues(details);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData, reset]);
@@ -75,13 +74,13 @@ function ProviderForm({
 
     const newSchema = JSON.stringify(template.schema);
     setFormSchema(newSchema);
-    setValue("details.schema", newSchema);
+    setValue("schema", newSchema);
   };
   const validate = async () => {
     const template = PROVIDER_TEMPLATES.find(
       ({ name }) => name === getValues("template")
     );
-    const values = getValues("details.values") as Prisma.JsonValue | undefined;
+    const values = getValues("details") as Prisma.JsonValue | undefined;
 
     if (!template?.validate || !values) return;
 
@@ -101,11 +100,7 @@ function ProviderForm({
               value={service.id}
               {...register("serviceId")}
             />
-            <input
-              type="hidden"
-              value={formSchema}
-              {...register("details.schema")}
-            />
+            <input type="hidden" value={formSchema} {...register("schema")} />
           </div>
           <div className="border-t border-gray-200">
             <dl>
@@ -175,7 +170,7 @@ function ProviderForm({
                 <dt className="text-sm font-medium text-gray-500">Details</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <Controller
-                    name="details.values"
+                    name="details"
                     control={control}
                     rules={{ required: true }}
                     render={({ field }) => (

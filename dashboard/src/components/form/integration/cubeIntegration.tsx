@@ -1,5 +1,5 @@
 import { Grid, Step, StepButton, Stepper } from "@mui/material";
-import type { Integration, Provider } from "@prisma/client";
+import type { Provider } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { buildJoinSql, fromSql } from "../../../utils/awsS3DuckDB";
@@ -7,14 +7,6 @@ import SqlBuilder from "../../builder/sqlBuilder";
 import SqlPreview from "../../builder/sqlPreview";
 import type { DatasetSchemaType } from "../../schema/dataset";
 import type IntegrationForm from "./integrationForm";
-import Badge from "../../common/Badge";
-import AWSS3Details from "./awsS3Details";
-import { extractValue, jsonParseWithFallback } from "../../../utils/json";
-import { JsonForms } from "@jsonforms/react";
-import {
-  materialCells,
-  materialRenderers,
-} from "@jsonforms/material-renderers";
 
 function CubeIntegration({
   initialData,
@@ -25,13 +17,10 @@ function CubeIntegration({
   provider?: Provider;
   name: string;
 }) {
-  const values = extractValue({ object: provider?.details, paths: ["values"] });
-
   const [activeStep, setActiveStep] = useState(0);
-  const [checked, setChecked] = useState<boolean | undefined>(undefined);
 
   const methods = useFormContext();
-  const { register, reset, watch, setValue, getValues } = methods;
+  const { reset, setValue, getValues } = methods;
 
   useEffect(() => {
     if (initialData) {
@@ -48,7 +37,7 @@ function CubeIntegration({
       component: (
         <>
           <SqlBuilder
-            details={values}
+            details={provider?.details}
             initialData={fromSql(getValues(name) as string | undefined)}
             onSubmit={(data: DatasetSchemaType) => {
               setValue(
@@ -66,7 +55,7 @@ function CubeIntegration({
       description: `Preview`,
       component: (
         <>
-          <SqlPreview details={values} sql={getValues(name)} />
+          <SqlPreview details={provider?.details} sql={getValues(name)} />
         </>
       ),
     },

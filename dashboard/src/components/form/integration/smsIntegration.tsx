@@ -1,16 +1,15 @@
-import type { ContentType, Integration, Provider } from "@prisma/client";
+import {
+  materialCells,
+  materialRenderers,
+} from "@jsonforms/material-renderers";
+import { JsonForms } from "@jsonforms/react";
+import type { Provider } from "@prisma/client";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { extractValue, jsonParseWithFallback } from "../../../utils/json";
 import Badge from "../../common/Badge";
 import type IntegrationForm from "./integrationForm";
-import ContentTypeInfoBuilder from "../contentType/contentTypeInfoBuilder";
-import { JsonForms } from "@jsonforms/react";
-import {
-  materialCells,
-  materialRenderers,
-} from "@jsonforms/material-renderers";
 const SMS_TEST_SCHEMA = {
   type: "object",
   properties: {
@@ -49,7 +48,7 @@ function SmsIntegration({
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
 
   const methods = useFormContext();
-  const { control, reset, register, getValues, setValue } = methods;
+  const { control, reset, register, getValues } = methods;
 
   useEffect(() => {
     const details = initialData?.details as {
@@ -58,7 +57,6 @@ function SmsIntegration({
     if (initialData) {
       reset({
         ...initialData,
-        details,
       });
       setFormSchema(details.schema as string);
       setFormValues(details.values as Record<string, unknown>);
@@ -67,10 +65,6 @@ function SmsIntegration({
   }, [initialData]);
 
   const validate = async () => {
-    const details = extractValue({
-      object: provider?.details,
-      paths: ["values"],
-    });
     const payload = getValues(`${name}.values`) as Record<string, unknown>;
 
     const from = payload.from as string;
@@ -86,7 +80,7 @@ function SmsIntegration({
       const result = await axios.post(`/api/integration/solapi`, {
         payload: messages,
         method: "sendMessages",
-        details,
+        details: provider?.details,
       });
 
       setChecked(result.status === 200);

@@ -286,13 +286,13 @@ model Customset {
 }
 
 model Provider {
-    id          String  @id @default(cuid())
+    id          String        @id @default(cuid())
     name        String
     description String?
     template    String
-    service     Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+    service     Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
     serviceId   String
-
+    schema      String?
     details     Json          @default("{}")
     status      String        @default("CREATED")
     createdAt   DateTime      @default(now())

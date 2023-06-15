@@ -1,5 +1,5 @@
 // async/await
-import type { Prisma, Integration } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { pipeline } from "node:stream/promises";
 import pg from "pg";

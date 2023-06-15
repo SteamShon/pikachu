@@ -1,4 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  materialCells,
+  materialRenderers,
+} from "@jsonforms/material-renderers";
+import { JsonForms } from "@jsonforms/react";
 import type {
   ContentType,
   Integration,
@@ -7,21 +12,14 @@ import type {
   Service,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
-import { Controller, FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
+import { extractValue, jsonParseWithFallback } from "../../../utils/json";
 import CustomLoadingButton from "../../common/CustomLoadingButton";
 import type { IntegrationSchemaType } from "../../schema/integration";
 import { integrationSchema } from "../../schema/integration";
 import CubeIntegration from "./cubeIntegration";
-import PikachuApiIntegration from "./pikachuApiIntegration";
 import SmsIntegration from "./smsIntegration";
 import UserFeatureIntegration from "./userFeatureIntegration";
-import { PROVIDER_TEMPLATES } from "../../../utils/providerTemplate";
-import { JsonForms } from "@jsonforms/react";
-import { extractValue, jsonParseWithFallback } from "../../../utils/json";
-import {
-  materialCells,
-  materialRenderers,
-} from "@jsonforms/material-renderers";
 
 function IntegrationForm({
   service,
@@ -49,11 +47,9 @@ function IntegrationForm({
   });
 
   const {
-    control,
     register,
     handleSubmit,
     reset,
-    setValue,
     formState: { errors },
   } = methods;
 
@@ -171,14 +167,6 @@ function IntegrationForm({
   //       return empty;
   //   }
   // };
-  const providerSchema = extractValue({
-    object: provider?.details,
-    paths: ["schema"],
-  }) as string | undefined;
-  const providerValues = extractValue({
-    object: provider?.details,
-    paths: ["values"],
-  }) as Record<string, unknown> | undefined;
 
   return (
     <FormProvider {...methods}>
@@ -219,8 +207,8 @@ function IntegrationForm({
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                     <JsonForms
-                      schema={jsonParseWithFallback(providerSchema)}
-                      data={providerValues}
+                      schema={jsonParseWithFallback(provider?.schema)}
+                      data={provider?.details}
                       renderers={materialRenderers}
                       cells={materialCells}
                       readonly

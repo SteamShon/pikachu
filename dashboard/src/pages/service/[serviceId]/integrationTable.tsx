@@ -53,7 +53,12 @@ function IntegrationTable({
           return selectedIds.includes(integration.id);
         });
 
-  const rows = integrations;
+  const rows = integrations.map((integration) => {
+    const provider =
+      service.providers.find(({ id }) => id === integration.providerId) || null;
+
+    return { ...integration, provider: provider };
+  });
 
   const columns: GridColDef[] = [
     {

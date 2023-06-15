@@ -1,5 +1,5 @@
 import { Grid, Step, StepButton, Stepper } from "@mui/material";
-import type { Integration } from "@prisma/client";
+import type { Integration, Provider } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { buildJoinSql, fromSql } from "../../../utils/awsS3DuckDB";
@@ -9,14 +9,24 @@ import type { DatasetSchemaType } from "../../schema/dataset";
 import type IntegrationForm from "./integrationForm";
 import Badge from "../../common/Badge";
 import AWSS3Details from "./awsS3Details";
+import { extractValue, jsonParseWithFallback } from "../../../utils/json";
+import { JsonForms } from "@jsonforms/react";
+import {
+  materialCells,
+  materialRenderers,
+} from "@jsonforms/material-renderers";
 
 function CubeIntegration({
   initialData,
+  provider,
   name,
 }: {
   initialData: Parameters<typeof IntegrationForm>[0]["initialData"];
+  provider?: Provider;
   name: string;
 }) {
+  const values = extractValue({ object: provider?.details, paths: ["values"] });
+
   const [activeStep, setActiveStep] = useState(0);
   const [checked, setChecked] = useState<boolean | undefined>(undefined);
 
@@ -31,24 +41,20 @@ function CubeIntegration({
     }
   }, [initialData, reset]);
 
-  const details = watch("details");
-
   const steps = [
-    {
-      label: "Configure",
-      description: `Configure`,
-      component: <AWSS3Details prefix="details" />,
-    },
     {
       label: "QueryBuilder",
       description: `QueryBuilder`,
       component: (
         <>
           <SqlBuilder
-            details={details}
+            details={values}
             initialData={fromSql(getValues(name) as string | undefined)}
             onSubmit={(data: DatasetSchemaType) => {
-              setValue(name, buildJoinSql({ details, dataset: data }));
+              setValue(
+                name,
+                buildJoinSql({ details: provider?.details, dataset: data })
+              );
               setActiveStep((prev) => prev + 1);
             }}
           />
@@ -60,9 +66,7 @@ function CubeIntegration({
       description: `Preview`,
       component: (
         <>
-          {initialData && (
-            <SqlPreview cubeIntegration={initialData} sql={getValues(name)} />
-          )}
+          <SqlPreview details={values} sql={getValues(name)} />
         </>
       ),
     },

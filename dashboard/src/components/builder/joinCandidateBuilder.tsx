@@ -21,6 +21,7 @@ import {
 import type { DatasetSchemaType } from "../schema/dataset";
 import JoinConditionBuilder from "./joinConditionBuilder";
 import type { TableMetadata } from "./sqlBuilder";
+import type { Prisma } from "@prisma/client";
 
 function JoinCandidateBuilder({
   details,
@@ -37,6 +38,7 @@ function JoinCandidateBuilder({
   tableColumns: TableMetadata;
   setTableColumns: Dispatch<SetStateAction<TableMetadata>>;
 }) {
+  console.log(details);
   const [bucket, setBucket] = useState<string | undefined>(undefined);
   const [paths, setPaths] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
@@ -93,9 +95,7 @@ function JoinCandidateBuilder({
   };
 
   const s3Buckets = () => {
-    const s3Buckets = extractS3Buckets(details);
-
-    return s3Buckets?.split(",") || [];
+    return extractS3Buckets(details);
   };
   const defaultValue = {
     sourceColumn: "",
@@ -119,7 +119,7 @@ function JoinCandidateBuilder({
         <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
           <select onChange={(e) => loadPaths(e.target.value)} value={bucket}>
             <option value="">Please choose</option>
-            {s3Buckets().map((bucket) => {
+            {s3Buckets()?.map((bucket) => {
               return (
                 <option key={bucket} value={bucket}>
                   {bucket}

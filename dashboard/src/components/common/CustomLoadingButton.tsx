@@ -6,14 +6,17 @@ import SendIcon from "@mui/icons-material/Send";
 function CustomLoadingButton<TFieldValues extends FieldValues>({
   handleSubmit,
   onSubmit,
+  disabled,
 }: {
   handleSubmit: UseFormHandleSubmit<TFieldValues>;
   onSubmit: (input: TFieldValues) => void;
+  disabled?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
 
   return (
     <LoadingButton
+      disabled={disabled || false}
       type="submit"
       variant="contained"
       loadingPosition="end"

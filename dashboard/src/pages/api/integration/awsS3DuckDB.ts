@@ -1,7 +1,7 @@
 // Server side
 // async/await
 import { Database } from "duckdb-async";
-import type { Integration } from "@prisma/client";
+import type { Integration, Prisma } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
   extractConfigs,
@@ -13,7 +13,7 @@ async function checkConnection(configs: ReturnType<typeof extractConfigs>) {
     return false;
   } else {
     const { s3, buckets } = configs;
-    const bucketName = buckets.split(",")[0];
+    const bucketName = buckets[0];
     if (!bucketName) return false;
     try {
       await listFoldersRecursively({ s3, bucketName });
@@ -40,13 +40,13 @@ async function executeDuckDBQuery(query?: string) {
 }
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const config = req.body as Record<string, unknown>;
-  const integration = config["integration"] as Integration | undefined;
+  const details = config["details"] as Prisma.JsonValue | undefined;
   const method = config["method"] as string | undefined;
   const payload = config["payload"] as Record<string, unknown> | undefined;
 
   console.log(config);
 
-  const configs = extractConfigs(integration?.details);
+  const configs = extractConfigs(details);
 
   if (!configs || !method) {
     console.log(configs);

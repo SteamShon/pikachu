@@ -1,5 +1,5 @@
 import { Grid, Step, StepButton, Stepper } from "@mui/material";
-import type { Integration } from "@prisma/client";
+import type { Integration, Provider } from "@prisma/client";
 import type { AxiosError } from "axios";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -13,10 +13,12 @@ import type IntegrationForm from "./integrationForm";
 function UserFeatureIntegration({
   service,
   initialData,
+  provider,
   name,
 }: {
   service: Parameters<typeof IntegrationForm>[0]["service"];
   initialData: Parameters<typeof IntegrationForm>[0]["initialData"];
+  provider?: Provider;
   name: string;
 }) {
   const [activeStep, setActiveStep] = useState(0);

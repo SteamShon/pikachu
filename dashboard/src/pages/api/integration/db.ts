@@ -138,11 +138,11 @@ async function executeQuery({
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const config = req.body as Record<string, unknown>;
-  const integration = config["integration"] as Integration | undefined;
+  const details = config["details"] as Prisma.JsonValue | undefined;
   const method = config["method"] as string | undefined;
   const payload = config["payload"] as Record<string, unknown> | undefined;
   const databaseUrl = extractValue({
-    object: integration?.details,
+    object: details,
     paths: ["DATABASE_URL"],
   }) as string | undefined;
 
@@ -155,7 +155,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         res.json(valid);
       } else if (method === "executeQuery") {
         const query = payload?.sql as string | undefined;
-        if (integration && query) {
+        if (details && query) {
           const result = await executeQuery({ databaseUrl, query });
           res.json(result);
         }
@@ -169,11 +169,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       } else if (method === "upload") {
         const cubeHistoryId = payload?.cubeHistoryId as string | undefined;
 
-        if (integration && cubeHistoryId) {
+        if (details && cubeHistoryId) {
           const result = await uploadAll({
             cubeHistoryId,
             databaseUrl,
-            cubeProviderDetails: integration?.details,
+            cubeProviderDetails: details,
           });
           res.json(result);
         }

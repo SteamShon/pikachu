@@ -32,6 +32,21 @@ function getAuthHeader(details?: Prisma.JsonValue) {
     Authorization: `HMAC-SHA256 apiKey=${apiKey}, date=${now}, salt=${salt}, signature=${signature}`,
   };
 }
+
+async function getMessageList({ details }: { details?: Prisma.JsonValue }) {
+  const uri = `https://api.solapi.com/messages/v4/list?limit=1`;
+
+  const headers = getAuthHeader(details);
+  try {
+    const { data } = await axios.get(uri, {
+      headers,
+    });
+
+    return data;
+  } catch (e) {
+    console.log(e);
+  }
+}
 async function getSenderList({ details }: { details?: Prisma.JsonValue }) {
   const uri = `https://api.solapi.com/messages/v4/list?limit=1`;
   const headers = getAuthHeader(details);
@@ -75,23 +90,27 @@ async function sendMessages({
 }
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const config = req.body as Record<string, unknown>;
-  const integration = config["integration"] as Integration | undefined;
+  const details = config["details"] as Prisma.JsonValue | undefined;
   const method = config["method"] as string | undefined;
   const payload = config["payload"] as Record<string, unknown> | undefined;
   console.log(config);
 
-  if (!integration) {
+  if (!details) {
     res.status(404).end();
   } else {
     try {
+      if (method === "getMessageList") {
+        const messageList = await getMessageList({ details });
+        res.json(messageList);
+      }
       if (method === "getSenderList") {
         const senderList = await getSenderList({
-          details: integration.details,
+          details,
         });
         res.json(senderList);
       } else if (method === "sendMessages") {
         const sendResult = await sendMessages({
-          details: integration.details,
+          details,
           payload,
         });
         res.json(sendResult);

@@ -15,7 +15,7 @@ export function extractS3Region(details?: Prisma.JsonValue | null) {
 
   return extractValue({
     object: details,
-    paths: ["s3Region"],
+    paths: ["region"],
   }) as string | undefined;
 }
 
@@ -24,7 +24,7 @@ export function extractS3AccessKeyId(details?: Prisma.JsonValue | null) {
 
   return extractValue({
     object: details,
-    paths: ["s3AccessKeyId"],
+    paths: ["aws_access_key_id"],
   }) as string | undefined;
 }
 
@@ -33,7 +33,7 @@ export function extractS3SecretAccessKey(details?: Prisma.JsonValue | null) {
 
   return extractValue({
     object: details,
-    paths: ["s3SecretAccessKey"],
+    paths: ["aws_secret_access_key"],
   }) as string | undefined;
 }
 
@@ -42,8 +42,8 @@ export function extractS3Buckets(details?: Prisma.JsonValue | null) {
 
   return extractValue({
     object: details,
-    paths: ["s3Buckets"],
-  }) as string | undefined;
+    paths: ["buckets"],
+  }) as string[] | undefined;
 }
 
 export function extractBuilderPrivateKey(details?: Prisma.JsonValue | null) {

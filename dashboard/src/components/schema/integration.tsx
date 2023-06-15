@@ -8,6 +8,7 @@ export const integrationSchema = z.object({
   details: z.optional(z.record(z.unknown())),
   status: z.string().min(1),
   serviceId: z.string().min(1),
+  providerId: z.string().optional().nullable().default(null),
 });
 
 export type IntegrationSchemaType = z.infer<typeof integrationSchema>;

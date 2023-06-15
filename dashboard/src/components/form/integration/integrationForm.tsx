@@ -3,10 +3,11 @@ import type {
   ContentType,
   Integration,
   Placement,
+  Provider,
   Service,
 } from "@prisma/client";
 import { useEffect, useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm } from "react-hook-form";
 import CustomLoadingButton from "../../common/CustomLoadingButton";
 import type { IntegrationSchemaType } from "../../schema/integration";
 import { integrationSchema } from "../../schema/integration";
@@ -14,6 +15,13 @@ import CubeIntegration from "./cubeIntegration";
 import PikachuApiIntegration from "./pikachuApiIntegration";
 import SmsIntegration from "./smsIntegration";
 import UserFeatureIntegration from "./userFeatureIntegration";
+import { PROVIDER_TEMPLATES } from "../../../utils/providerTemplate";
+import { JsonForms } from "@jsonforms/react";
+import { extractValue, jsonParseWithFallback } from "../../../utils/json";
+import {
+  materialCells,
+  materialRenderers,
+} from "@jsonforms/material-renderers";
 
 function IntegrationForm({
   service,
@@ -24,97 +32,132 @@ function IntegrationForm({
     placements: Placement[];
     contentTypes: ContentType[];
     integrations: Integration[];
+    providers: Provider[];
   };
   initialData?: Integration & {
     placement: Placement;
   };
   onSubmit: (input: IntegrationSchemaType) => void;
 }) {
-  // const providers = service?.providers || [];
   const [provide, setProvide] = useState<string | undefined>(undefined);
-  const [integration, setIntegration] = useState<typeof initialData>(undefined);
+  const [provider, setProvider] = useState<
+    typeof service.providers[0] | undefined
+  >(undefined);
+
   const methods = useForm<IntegrationSchemaType>({
     resolver: zodResolver(integrationSchema),
   });
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = methods;
 
   console.log(errors);
 
   useEffect(() => {
+    if (!initialData) return;
+
     const details = initialData?.details as {
-      // eslint-disable-next-line @typescript-eslint/ban-types
-      [x: string]: {};
+      [x: string]: unknown;
     };
-    if (initialData) {
-      reset({
-        ...initialData,
-        details,
-      });
-      // handleProviderChange(initialData.providerId);
-    }
-    setIntegration(initialData);
+    reset({
+      ...initialData,
+      details,
+    });
+    handleProviderChange(initialData.providerId);
+    setProvide(initialData.provide);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData, reset]);
 
-  const components = () => {
-    const empty = {} as Record<string, JSX.Element>;
-    if (!provide) return empty;
-
-    switch (provide) {
-      case "USER_FEATURE":
-        return {
-          db: (
-            <>
-              <UserFeatureIntegration
-                service={service}
-                initialData={integration}
-                name="details"
-              />
-            </>
-          ),
-        };
-      case "API":
-        return {
-          http: (
-            <>
-              <PikachuApiIntegration
-                service={service}
-                initialData={initialData}
-                name="details"
-              />
-            </>
-          ),
-        };
-      case "SMS":
-        return {
-          http: (
-            <>
-              <SmsIntegration
-                service={service}
-                initialData={initialData}
-                name="details"
-              />
-            </>
-          ),
-        };
-      case "CUBE":
-        return {
-          SQL: (
-            <>
-              <CubeIntegration initialData={initialData} name="details.SQL" />
-            </>
-          ),
-        };
-      default:
-        return empty;
-    }
+  const handleProviderChange = (providerId?: string | null) => {
+    const provider = service.providers.find(({ id }) => id === providerId);
+    setProvider(provider);
   };
+
+  const components = [
+    {
+      name: "CUBE",
+      component: (
+        <CubeIntegration
+          initialData={initialData}
+          name="details.SQL"
+          provider={provider}
+        />
+      ),
+    },
+  ];
+  // const components = () => {
+  //   const empty = {} as Record<string, JSX.Element>;
+  //   if (!provide) return empty;
+
+  //   switch (provide) {
+  //     case "USER_FEATURE":
+  //       return {
+  //         db: (
+  //           <>
+  //             <UserFeatureIntegration
+  //               service={service}
+  //               initialData={integration}
+  //               provider={provider}
+  //               name="details"
+  //             />
+  //           </>
+  //         ),
+  //       };
+  //     case "API":
+  //       return {
+  //         http: (
+  //           <>
+  //             <PikachuApiIntegration
+  //               service={service}
+  //               initialData={initialData}
+  //               name="details"
+  //             />
+  //           </>
+  //         ),
+  //       };
+  //     case "SMS":
+  //       return {
+  //         http: (
+  //           <>
+  //             <SmsIntegration
+  //               service={service}
+  //               initialData={initialData}
+  //               name="details"
+  //             />
+  //           </>
+  //         ),
+  //       };
+  //     case "CUBE":
+  //       return {
+  //         SQL: (
+  //           <>
+  //             <CubeIntegration
+  //               initialData={initialData}
+  //               name="details.SQL"
+  //               provider={provider}
+  //             />
+  //           </>
+  //         ),
+  //       };
+  //     default:
+  //       return empty;
+  //   }
+  // };
+  const providerSchema = extractValue({
+    object: provider?.details,
+    paths: ["schema"],
+  }) as string | undefined;
+  const providerValues = extractValue({
+    object: provider?.details,
+    paths: ["values"],
+  }) as Record<string, unknown> | undefined;
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} id="integration-form">
@@ -132,19 +175,52 @@ function IntegrationForm({
           <div className="border-t border-gray-200">
             <dl>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Provider</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <select
+                    {...register("providerId")}
+                    onChange={(e) => handleProviderChange(e.target.value)}
+                  >
+                    <option value="">Please select</option>
+                    {service.providers.map((provider) => (
+                      <option key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </option>
+                    ))}
+                  </select>
+                </dd>
+              </div>
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">
+                  ProviderDetails
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  {provider && (
+                    <JsonForms
+                      schema={jsonParseWithFallback(providerSchema)}
+                      data={providerValues}
+                      renderers={materialRenderers}
+                      cells={materialCells}
+                      readonly
+                    />
+                  )}
+                </dd>
+              </div>
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Provide</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("provide")}
-                    // defaultValue={initialData?.type || "DISPLAY"}
                     onChange={(e) => setProvide(e.target.value)}
                   >
-                    <option value="">Please select</option>
-                    <option value="CUBE">CUBE</option>
-                    <option value="USER_FEATURE">USER_FEATURE</option>
-                    <option value="CREATIVE_FETCHER">CREATIVE_FETCHER</option>
-                    <option value="RANKER">RANKER</option>
-                    <option value="SMS">SMS</option>
+                    <option value="">Please choose</option>
+                    {components.map(({ name }) => {
+                      return (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      );
+                    })}
                   </select>
                 </dd>
               </div>
@@ -192,29 +268,14 @@ function IntegrationForm({
                   )}
                 </dd>
               </div>
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Details</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  {components.find(({ name }) => name === provide)?.component}
+                </dd>
+              </div>
             </dl>
           </div>
-        </div>
-
-        <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Details
-            </h3>
-          </div>
-          {Object.entries(components()).map(([key, component]) => {
-            return (
-              <>
-                {component}
-                {/* <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">{key}</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                    {component}
-                  </dd>
-                </div> */}
-              </>
-            );
-          })}
         </div>
 
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">

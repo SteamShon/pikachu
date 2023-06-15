@@ -4,7 +4,7 @@ import {
   materialRenderers,
 } from "@jsonforms/material-renderers";
 import { JsonForms } from "@jsonforms/react";
-import type { Provider, Service } from "@prisma/client";
+import type { Prisma, Provider, Service } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { jsonParseWithFallback } from "../../../utils/json";
@@ -12,6 +12,8 @@ import { PROVIDER_TEMPLATES } from "../../../utils/providerTemplate";
 import CustomLoadingButton from "../../common/CustomLoadingButton";
 import type { ProviderSchemaType } from "../../schema/provider";
 import { providerSchema } from "../../schema/provider";
+import axios from "axios";
+import Badge from "../../common/Badge";
 
 function ProviderForm({
   service,
@@ -24,6 +26,7 @@ function ProviderForm({
   initialData?: Provider;
   onSubmit: (input: ProviderSchemaType) => void;
 }) {
+  const [checked, setChecked] = useState<boolean | undefined>(undefined);
   const [formSchema, setFormSchema] = useState<string | undefined>(undefined);
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   const methods = useForm<ProviderSchemaType>({
@@ -35,6 +38,7 @@ function ProviderForm({
     register,
     handleSubmit,
     reset,
+    getValues,
     setValue,
     formState: { errors },
   } = methods;
@@ -56,12 +60,35 @@ function ProviderForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData, reset]);
+  const checkValidate = () => {
+    const template = PROVIDER_TEMPLATES.find(
+      ({ name }) => name === getValues("template")
+    );
 
-  const handleSchemaChange = (newSchema: string) => {
+    return template?.validate ? true : false;
+  };
+
+  const handleSchemaChange = (templateName: string) => {
+    const template = PROVIDER_TEMPLATES.find(
+      ({ name }) => name === templateName
+    );
+    if (!template) return;
+
+    const newSchema = JSON.stringify(template.schema);
     setFormSchema(newSchema);
     setValue("details.schema", newSchema);
   };
+  const validate = async () => {
+    const template = PROVIDER_TEMPLATES.find(
+      ({ name }) => name === getValues("template")
+    );
+    const values = getValues("details.values") as Prisma.JsonValue | undefined;
 
+    if (!template?.validate || !values) return;
+
+    const result = await template?.validate(values);
+    setChecked(result);
+  };
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} id="integration-form">
@@ -91,9 +118,9 @@ function ProviderForm({
                     onChange={(e) => handleSchemaChange(e.target.value)}
                   >
                     <option value="">Please choose</option>
-                    {PROVIDER_TEMPLATES.map(({ name, schema }) => {
+                    {PROVIDER_TEMPLATES.map(({ name }) => {
                       return (
-                        <option key={name} value={JSON.stringify(schema)}>
+                        <option key={name} value={name}>
                           {name}
                         </option>
                       );
@@ -179,9 +206,28 @@ function ProviderForm({
 
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
           <CustomLoadingButton
+            disabled={checkValidate() && !checked}
             handleSubmit={handleSubmit}
             onSubmit={onSubmit}
           />
+          {checkValidate() && (
+            <>
+              <button
+                className="inline-block rounded-lg bg-violet-500 px-5 py-3 text-sm font-medium text-white"
+                type="button"
+                onClick={() => validate()}
+              >
+                Verify
+              </button>
+              {checked === undefined ? (
+                <span className="p-2">Please Verify To Save</span>
+              ) : checked ? (
+                <Badge variant="success" label="valid" />
+              ) : (
+                <Badge variant="error" label="not valid" />
+              )}
+            </>
+          )}
         </div>
       </form>
     </FormProvider>

@@ -1,3 +1,6 @@
+import type { Prisma } from "@prisma/client";
+import axios from "axios";
+
 export const PROVIDER_TEMPLATES = [
   {
     name: "AWS_S3",
@@ -25,6 +28,13 @@ export const PROVIDER_TEMPLATES = [
       },
       required: ["aws_access_key_id", "aws_secret_access_key", "buckets"],
     },
+    validate: async (details: Prisma.JsonValue) => {
+      const result = await axios.post("/api/integration/awsS3DuckDB", {
+        method: "checkConnection",
+        details,
+      });
+      return result.status === 200;
+    },
   },
   {
     name: "SOLAPI",
@@ -42,6 +52,13 @@ export const PROVIDER_TEMPLATES = [
       },
       required: ["apiKey", "apiSecret"],
     },
+    validate: async (details: Prisma.JsonValue) => {
+      const result = await axios.post("/api/integration/solapi", {
+        method: "getMessageList",
+        details,
+      });
+      return result.status === 200;
+    },
   },
   {
     name: "DATABASE_PRISMA",
@@ -54,6 +71,13 @@ export const PROVIDER_TEMPLATES = [
         },
       },
       required: ["DATABASE_URL"],
+    },
+    validate: async (details: Prisma.JsonValue) => {
+      const result = await axios.post("/api/integration/db", {
+        method: "checkConnection",
+        details,
+      });
+      return result.status === 200;
     },
   },
 ];

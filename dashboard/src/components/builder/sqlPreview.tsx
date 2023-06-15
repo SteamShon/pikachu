@@ -3,15 +3,15 @@ import LoadingButton from "@mui/lab/LoadingButton";
 
 import { useState } from "react";
 
-import QueryResultTable from "../common/QueryResultTable";
-import type { Integration } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { executeQuery } from "../../utils/awsS3DuckDB";
+import QueryResultTable from "../common/QueryResultTable";
 
 function SqlPreview({
-  cubeIntegration,
+  details,
   sql,
 }: {
-  cubeIntegration: Integration;
+  details?: Prisma.JsonValue;
   sql: string;
 }) {
   const [rows, setRows] = useState<{ [x: string]: unknown }[]>([]);
@@ -21,7 +21,7 @@ function SqlPreview({
     setLoading(true);
     const withLimit = `${sql} LIMIT 100`;
     const result = await executeQuery({
-      details: cubeIntegration.details,
+      details,
       query: withLimit,
     });
     setRows(result);

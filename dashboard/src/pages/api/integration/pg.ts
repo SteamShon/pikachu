@@ -42,27 +42,40 @@ function extractValue({
   }, object);
 }
 
-function toOutputPath(cubeHistoryId: string) {
-  return `s3://pikachu-dev/dashboard/user-feature/${cubeHistoryId}.csv`;
+function toOutputPath(integrationId: string, version: string) {
+  return `s3://pikachu-dev/dashboard/user-feature/${integrationId}/${version}.csv`;
 }
+function toVersion(integrationId: string, version: string) {
+  return `${integrationId}_${version}`;
+}
+
 async function uploadAll({
-  cubeHistoryId,
+  integrationId,
+  version,
   databaseUrl,
   cubeProviderDetails,
 }: {
+  integrationId: string;
+  version: string;
   databaseUrl: string;
   cubeProviderDetails?: Prisma.JsonValue | null;
-  cubeHistoryId: string;
 }) {
   try {
     const sql = `
-    CREATE TABLE IF NOT EXISTS "UserFeature_${cubeHistoryId}" PARTITION OF "UserFeature" FOR VALUES IN ('${cubeHistoryId}')
+    CREATE TABLE IF NOT EXISTS "UserFeature_${toVersion(
+      integrationId,
+      version
+    )}" PARTITION OF "UserFeature" FOR VALUES IN ('${toVersion(
+      integrationId,
+      version
+    )}')
     `;
     await executeQuery({ databaseUrl, query: sql });
     return await upload({
       cubeProviderDetails: cubeProviderDetails,
       databaseUrl,
-      cubeHistoryId,
+      integrationId,
+      version,
     });
   } catch (error) {
     console.log(error);
@@ -71,11 +84,13 @@ async function uploadAll({
 async function upload({
   cubeProviderDetails,
   databaseUrl,
-  cubeHistoryId,
+  integrationId,
+  version,
 }: {
   databaseUrl: string;
   cubeProviderDetails?: Prisma.JsonValue | null;
-  cubeHistoryId: string;
+  integrationId: string;
+  version: string;
 }) {
   let result = false;
   console.log("uploading");
@@ -89,13 +104,15 @@ async function upload({
 
     const ingestStream = client.query(
       copyFrom(
-        `COPY "UserFeature_${cubeHistoryId}" FROM STDIN CSV HEADER DELIMITER ','`
+        `COPY "UserFeature_${toVersion(
+          integrationId,
+          version
+        )}" FROM STDIN CSV HEADER DELIMITER ','`
       )
     );
-    const outputPath = toOutputPath(cubeHistoryId);
+    const outputPath = toOutputPath(integrationId, version);
     const { bucket, prefix } = partitionBucketPrefix(outputPath);
-    console.log(bucket);
-    console.log(prefix);
+
     if (!bucket) {
       return new Error(`bucket is not found: ${outputPath}`);
     }
@@ -138,9 +155,15 @@ async function executeQuery({
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const config = req.body as Record<string, unknown>;
+  const cubeProviderDetails = config["cubeProviderDetails"] as
+    | Prisma.JsonValue
+    | undefined;
   const details = config["details"] as Prisma.JsonValue | undefined;
   const method = config["method"] as string | undefined;
   const payload = config["payload"] as Record<string, unknown> | undefined;
+
+  console.log(config);
+
   const databaseUrl = extractValue({
     object: details,
     paths: ["DATABASE_URL"],
@@ -155,25 +178,29 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         res.json(valid);
       } else if (method === "executeQuery") {
         const query = payload?.sql as string | undefined;
-        if (details && query) {
+        if (query) {
           const result = await executeQuery({ databaseUrl, query });
           res.json(result);
         }
       } else if (method === "createPartition") {
-        const cubeHistoryId = payload?.cubeHistoryId as string | undefined;
-        if (cubeHistoryId) {
-          const sql = `CREATE TABLE IF NOT EXISTS "UserFeature_${cubeHistoryId}" PARTITION OF "UserFeature" FOR VALUES IN ('${cubeHistoryId}')`;
+        const integrationId = payload?.integrationId as string | undefined;
+        const version = payload?.version as string | undefined;
+
+        if (integrationId && version) {
+          const sql = `CREATE TABLE IF NOT EXISTS "UserFeature_${integrationId}_${version}" PARTITION OF "UserFeature" FOR VALUES IN ('${version}')`;
           const result = await executeQuery({ databaseUrl, query: sql });
           res.json(result);
         }
       } else if (method === "upload") {
-        const cubeHistoryId = payload?.cubeHistoryId as string | undefined;
+        const integrationId = payload?.integrationId as string | undefined;
+        const version = payload?.version as string | undefined;
 
-        if (details && cubeHistoryId) {
+        if (details && integrationId && version) {
           const result = await uploadAll({
-            cubeHistoryId,
+            integrationId,
+            version,
             databaseUrl,
-            cubeProviderDetails: details,
+            cubeProviderDetails,
           });
           res.json(result);
         }

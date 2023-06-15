@@ -514,8 +514,11 @@ export function fromSql(sql?: string): DatasetSchemaType | undefined {
   return { tables: datasets };
 }
 
-function toOutputPath(cubeHistoryId: string) {
-  return `s3://pikachu-dev/dashboard/user-feature/${cubeHistoryId}.csv`;
+function toOutputPath(integrationId: string, version: string) {
+  return `s3://pikachu-dev/dashboard/user-feature/${integrationId}/${version}.csv`;
+}
+function toVersion(integrationId: string, version: string) {
+  return `${integrationId}_${version}`;
 }
 export async function getColumns({
   details,
@@ -531,29 +534,31 @@ export async function getColumns({
 }
 export async function generateTransformCubeSql({
   cubeProviderDetails,
-  cubeDetails,
-  cubeHistoryId,
+  cubeIntegrationDetails: cubeIntegrationDetails,
+  integrationId,
+  version,
 }: {
   cubeProviderDetails?: Prisma.JsonValue | null;
-  cubeDetails?: Prisma.JsonValue | null;
-  cubeHistoryId?: string;
+  cubeIntegrationDetails?: Prisma.JsonValue | null;
+  integrationId: string;
+  version: string;
 }) {
-  const cubeSql = extractValue({ object: cubeDetails, paths: ["SQL"] }) as
-    | string
-    | undefined;
+  const cubeSql = extractValue({
+    object: cubeIntegrationDetails,
+    paths: ["SQL"],
+  }) as string | undefined;
 
-  if (!cubeProviderDetails || !cubeDetails || !cubeSql || !cubeHistoryId)
-    return;
+  if (!cubeProviderDetails || !cubeIntegrationDetails || !cubeSql) return;
 
   const columns = await getColumns({ details: cubeProviderDetails, cubeSql });
-  const outputPath = toOutputPath(cubeHistoryId);
+  const outputPath = toOutputPath(integrationId, version);
 
   const transformSql = prependS3ConfigsOnQuery({
     details: cubeProviderDetails,
     query: `
     DROP TABLE IF EXISTS download;
     CREATE TABLE download AS (
-        SELECT  '${cubeHistoryId}' AS cubeHistoryId,
+        SELECT  '${toVersion(integrationId, version)}' AS version,
                 userId,
                 to_json((${columns.join(",")})) AS feature
         FROM    (${cubeSql})

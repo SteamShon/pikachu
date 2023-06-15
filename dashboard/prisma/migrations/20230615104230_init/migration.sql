@@ -50,6 +50,7 @@ CREATE TABLE "Service" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
+    "details" JSONB NOT NULL DEFAULT '{}',
     "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -77,7 +78,6 @@ CREATE TABLE "Placement" (
     "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "cubeId" TEXT,
 
     CONSTRAINT "Placement_pkey" PRIMARY KEY ("id")
 );
@@ -88,23 +88,14 @@ CREATE TABLE "ContentType" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "source" TEXT NOT NULL DEFAULT 'local',
+    "type" TEXT NOT NULL DEFAULT 'DISPLAY',
+    "details" JSONB NOT NULL DEFAULT '{}',
     "serviceId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "ContentType_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "ContentTypeInfo" (
-    "id" TEXT NOT NULL,
-    "contentTypeId" TEXT NOT NULL,
-    "details" JSONB NOT NULL DEFAULT '{}',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "ContentTypeInfo_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -185,7 +176,7 @@ CREATE TABLE "Customset" (
     "description" TEXT,
     "serviceId" TEXT,
     "creatorId" TEXT NOT NULL,
-    "customsetInfoId" TEXT NOT NULL,
+    "details" JSONB NOT NULL DEFAULT '{}',
     "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -194,53 +185,40 @@ CREATE TABLE "Customset" (
 );
 
 -- CreateTable
-CREATE TABLE "CustomsetInfo" (
+CREATE TABLE "Provider" (
     "id" TEXT NOT NULL,
-    "filePath" TEXT NOT NULL,
-    "config" TEXT NOT NULL,
-
-    CONSTRAINT "CustomsetInfo_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "ServiceConfig" (
-    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "template" TEXT NOT NULL,
     "serviceId" TEXT NOT NULL,
-    "s3Config" JSONB NOT NULL DEFAULT '{}',
-    "builderConfig" JSONB NOT NULL DEFAULT '{}',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "ServiceConfig_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Cube" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "serviceConfigId" TEXT NOT NULL,
-    "sql" TEXT,
+    "details" JSONB NOT NULL DEFAULT '{}',
     "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Cube_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Provider_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Segment" (
+CREATE TABLE "Integration" (
     "id" TEXT NOT NULL,
-    "cubeId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
-    "where" TEXT,
-    "population" TEXT,
+    "provide" TEXT NOT NULL,
+    "providerId" TEXT,
+    "details" JSONB NOT NULL DEFAULT '{}',
     "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "serviceId" TEXT NOT NULL,
 
-    CONSTRAINT "Segment_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Integration_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "_IntegrationToPlacement" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL
 );
 
 -- CreateIndex
@@ -277,12 +255,6 @@ CREATE INDEX "ContentType_updatedAt_idx" ON "ContentType"("updatedAt");
 CREATE UNIQUE INDEX "ContentType_serviceId_name_key" ON "ContentType"("serviceId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ContentTypeInfo_contentTypeId_key" ON "ContentTypeInfo"("contentTypeId");
-
--- CreateIndex
-CREATE INDEX "ContentTypeInfo_updatedAt_idx" ON "ContentTypeInfo"("updatedAt");
-
--- CreateIndex
 CREATE INDEX "Campaign_updatedAt_idx" ON "Campaign"("updatedAt");
 
 -- CreateIndex
@@ -307,19 +279,25 @@ CREATE INDEX "Content_updatedAt_idx" ON "Content"("updatedAt");
 CREATE UNIQUE INDEX "Content_contentTypeId_name_key" ON "Content"("contentTypeId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Customset_customsetInfoId_key" ON "Customset"("customsetInfoId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Customset_serviceId_name_key" ON "Customset"("serviceId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ServiceConfig_serviceId_key" ON "ServiceConfig"("serviceId");
+CREATE INDEX "Provider_updatedAt_idx" ON "Provider"("updatedAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Cube_serviceConfigId_name_key" ON "Cube"("serviceConfigId", "name");
+CREATE UNIQUE INDEX "Provider_serviceId_name_key" ON "Provider"("serviceId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Segment_cubeId_name_key" ON "Segment"("cubeId", "name");
+CREATE INDEX "Integration_updatedAt_idx" ON "Integration"("updatedAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Integration_serviceId_name_key" ON "Integration"("serviceId", "name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "_IntegrationToPlacement_AB_unique" ON "_IntegrationToPlacement"("A", "B");
+
+-- CreateIndex
+CREATE INDEX "_IntegrationToPlacement_B_index" ON "_IntegrationToPlacement"("B");
 
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -340,13 +318,7 @@ ALTER TABLE "Placement" ADD CONSTRAINT "Placement_serviceId_fkey" FOREIGN KEY ("
 ALTER TABLE "Placement" ADD CONSTRAINT "Placement_contentTypeId_fkey" FOREIGN KEY ("contentTypeId") REFERENCES "ContentType"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Placement" ADD CONSTRAINT "Placement_cubeId_fkey" FOREIGN KEY ("cubeId") REFERENCES "Cube"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "ContentType" ADD CONSTRAINT "ContentType_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ContentTypeInfo" ADD CONSTRAINT "ContentTypeInfo_contentTypeId_fkey" FOREIGN KEY ("contentTypeId") REFERENCES "ContentType"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AdvertisersOnPlacements" ADD CONSTRAINT "AdvertisersOnPlacements_advertiserId_fkey" FOREIGN KEY ("advertiserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -379,13 +351,16 @@ ALTER TABLE "Customset" ADD CONSTRAINT "Customset_serviceId_fkey" FOREIGN KEY ("
 ALTER TABLE "Customset" ADD CONSTRAINT "Customset_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Customset" ADD CONSTRAINT "Customset_customsetInfoId_fkey" FOREIGN KEY ("customsetInfoId") REFERENCES "CustomsetInfo"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Provider" ADD CONSTRAINT "Provider_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ServiceConfig" ADD CONSTRAINT "ServiceConfig_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Integration" ADD CONSTRAINT "Integration_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "Provider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Cube" ADD CONSTRAINT "Cube_serviceConfigId_fkey" FOREIGN KEY ("serviceConfigId") REFERENCES "ServiceConfig"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Integration" ADD CONSTRAINT "Integration_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Segment" ADD CONSTRAINT "Segment_cubeId_fkey" FOREIGN KEY ("cubeId") REFERENCES "Cube"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_IntegrationToPlacement" ADD CONSTRAINT "_IntegrationToPlacement_A_fkey" FOREIGN KEY ("A") REFERENCES "Integration"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_IntegrationToPlacement" ADD CONSTRAINT "_IntegrationToPlacement_B_fkey" FOREIGN KEY ("B") REFERENCES "Placement"("id") ON DELETE CASCADE ON UPDATE CASCADE;

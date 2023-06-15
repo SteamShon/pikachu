@@ -101,6 +101,17 @@ function IntegrationForm({
         />
       ),
     },
+    {
+      name: "USER_FEATURE",
+      component: (
+        <UserFeatureIntegration
+          service={service}
+          initialData={initialData}
+          provider={provider}
+          name="details"
+        />
+      ),
+    },
   ];
   // const components = () => {
   //   const empty = {} as Record<string, JSX.Element>;

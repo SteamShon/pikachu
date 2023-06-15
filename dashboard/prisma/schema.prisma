@@ -285,15 +285,6 @@ model Customset {
     @@unique([serviceId, name])
 }
 
-model UserFeature {
-    integrationId String
-    version       String
-    userId        String
-    feature       Json   @default("{}")
-
-    @@id([integrationId, version, userId])
-}
-
 model Provider {
     id          String  @id @default(cuid())
     name        String
@@ -330,6 +321,15 @@ model Integration {
 
     @@unique([serviceId, name])
     @@index(fields: [updatedAt])
+}
+
+// External Models 
+model UserFeature {
+    version String
+    userId  String
+    feature Json   @default("{}")
+
+    @@id([version, userId])
 }
 
 model CreativeStat {

@@ -38,7 +38,7 @@ function UserFeatureIntegration({
 
   const methods = useFormContext();
 
-  const { register, getValues, setValue } = methods;
+  const { reset, register, getValues, setValue } = methods;
 
   const validate = async () => {
     const sql = getValues(`${name}.sql`) as string | undefined;
@@ -63,51 +63,71 @@ function UserFeatureIntegration({
       setChecked(false);
     }
   };
-  const generateSql = (cubeHistoryId: string) => {
+  const generateSql = (integrationId: string, version: string) => {
     return `
       SELECT  *
       FROM    "UserFeature"
-      WHERE   "cubeHistoryId" = '${cubeHistoryId}'
+      WHERE   "integrationId" = '${integrationId}'
+      AND     "version" = '${version}'
       LIMIT   100
     `;
   };
   const upload = async () => {
+    if (!cubeIntegration) {
+      setStatus("cubeIntegration is not selected.");
+      return;
+    }
+
     setStatus("started");
-    const cubeHistoryId = String(Math.floor(new Date().getTime() / 1000));
+    const version = "1686824716";
+    // String(Math.floor(new Date().getTime() / 1000));
+
+    const cubeProvider = service.providers.find(
+      ({ id }) => id === cubeIntegration.providerId
+    );
+    const cubeProviderDetails = extractValue({
+      object: cubeProvider?.details,
+      paths: ["values"],
+    });
 
     const transformSql = await generateTransformCubeSql({
-      cubeProviderDetails: cubeIntegration?.details,
-      cubeDetails: cubeIntegration?.details,
-      cubeHistoryId,
+      cubeProviderDetails: cubeProviderDetails,
+      cubeIntegrationDetails: cubeIntegration?.details,
+      integrationId: cubeIntegration.id,
+      version,
     });
-    setValue(`${name}.cubeHistoryId`, cubeHistoryId);
+
+    setStatus(`${transformSql}`);
+    setValue(`${name}.version`, version);
 
     try {
       setStatus("transforming");
-      await axios.post(`/api/provider/awsS3DuckDB`, {
-        method: "executeDuckDBQuery",
-        integration: cubeIntegration,
-        payload: {
-          sql: transformSql,
-        },
-      });
+      // await axios.post(`/api/integration/awsS3DuckDB`, {
+      //   method: "executeDuckDBQuery",
+      //   details: cubeProviderDetails,
+      //   payload: {
+      //     sql: transformSql,
+      //   },
+      // });
 
       // create partition.
       setStatus("uploading");
-      const result = await axios.post(`/api/integration/db`, {
+
+      const result = await axios.post(`/api/integration/pg`, {
         payload: {
-          cubeHistoryId,
+          integrationId: cubeIntegration.id,
+          version,
         },
         method: "upload",
-        integration: initialData,
-        cubeProvider: cubeIntegration,
+        details: extractValue({ object: provider?.details, paths: ["values"] }),
+        cubeProviderDetails: cubeProviderDetails,
       });
       setErrorMessage(undefined);
       setValue("status", "PUBLISHED");
       setChecked(result.status === 200);
       setStatus("finished");
       setActiveStep((prev) => prev + 1);
-      setValue(`${name}.sql`, generateSql(cubeHistoryId));
+      setValue(`${name}.sql`, generateSql(cubeIntegration.id, version));
     } catch (error) {
       console.log(error);
       const err = error as AxiosError;
@@ -123,11 +143,12 @@ function UserFeatureIntegration({
       ({ id }) => id === integrationId
     );
     setCubeIntegration(cubeIntegration);
-
-    setValue(`${name}.cubeIntegrationId`, integrationId);
   };
 
   useEffect(() => {
+    if (!initialData) return;
+
+    reset({ ...initialData });
     const cubeIntegrationId = extractValue({
       object: initialData?.details,
       paths: ["cubeIntegrationId"],
@@ -136,7 +157,6 @@ function UserFeatureIntegration({
     if (!cubeIntegrationId) return;
 
     handleIntegrationChange(cubeIntegrationId);
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData]);
 

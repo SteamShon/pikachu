@@ -95,7 +95,6 @@ async fn fetch_content_types(
         .content_type()
         .find_many(vec![content_type::updated_at::gt(last_updated_at)])
         .order_by(content_type::updated_at::order(Direction::Desc))
-        .with(content_type::content_type_info::fetch())
         .exec()
         .await
         .unwrap()

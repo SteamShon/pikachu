@@ -82,15 +82,18 @@ impl Integrations {
     pub fn is_user_feature_integration(integration: &integration::Data) -> bool {
         let table_partition = integration
             .details
-            .get("cubeHistoryId")
+            .get("version")
             .map(|v| v.as_str().unwrap())
             .is_some();
         integration
             .provider()
-            .map(|provider| {
-                provider.details.get("DATABASE_URL").is_some()
+            .map(|provider_opt| {
+                provider_opt.map(|provider| {
+                    provider.details.get("DATABASE_URL").is_some()
                     && table_partition
-                    && provider.provide == "USER_FEATURE"
+                    && integration.provide == "USER_FEATURE"
+                }).unwrap_or(false)
+                
             })
             .unwrap_or(false)
     }
@@ -109,11 +112,13 @@ impl Integrations {
     pub fn is_sms_sender_integration(integration: &integration::Data) -> bool {
         integration
             .provider()
-            .map(|provider| {
-                integration.details.get("uri").is_some()
-                    && provider.provide == "SMS"
+            .map(|provider_opt| {
+                provider_opt.map(|provider| {
+                    integration.details.get("uri").is_some()
+                    && integration.provide == "SMS"
                     && provider.details.get("apiKey").is_some()
                     && provider.details.get("apiSecret").is_some()
+                }).unwrap_or(false)
             })
             .unwrap_or(false)
     }
@@ -135,7 +140,7 @@ impl Integrations {
         integration
             .provider()
             .map(|provider| {
-                    provider.provide == "API"
+                    integration.provide == "CREATIVE_FETCHER"
             })
             .unwrap_or(false)
     }
@@ -172,7 +177,7 @@ impl Integrations {
         integration
             .provider()
             .map(|provider| {
-                provider.provide == "RANKER"
+                integration.provide == "RANKER"
             })
             .unwrap_or(false)
     }

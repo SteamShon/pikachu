@@ -24,6 +24,7 @@ impl Function {
             let database_url = integration
                 .provider()
                 .unwrap()
+                .unwrap()
                 .details
                 .get("DATABASE_URL")
                 .map(|v| v.as_str().unwrap())?;
@@ -44,11 +45,13 @@ impl Function {
             let api_key = integration
                 .provider()
                 .unwrap()
+                .unwrap()
                 .details
                 .get("apiKey")
                 .map(|v| v.as_str().unwrap())?;
             let api_secret = integration
                 .provider()
+                .unwrap()
                 .unwrap()
                 .details
                 .get("apiSecret")

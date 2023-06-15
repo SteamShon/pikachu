@@ -95,7 +95,7 @@ function UserFeatureIntegration({
     });
 
     setStatus(`${transformSql}`);
-    setValue(`${name}.version`, version);
+    setValue(`${name}.version`, toVersion(cubeIntegration.id, version));
 
     try {
       setStatus("transforming");

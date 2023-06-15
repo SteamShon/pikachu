@@ -73,7 +73,7 @@ export const PROVIDER_TEMPLATES = [
       required: ["DATABASE_URL"],
     },
     validate: async (details: Prisma.JsonValue) => {
-      const result = await axios.post("/api/integration/db", {
+      const result = await axios.post("/api/integration/pg", {
         method: "checkConnection",
         details,
       });

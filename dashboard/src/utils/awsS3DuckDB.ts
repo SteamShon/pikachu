@@ -517,7 +517,7 @@ export function fromSql(sql?: string): DatasetSchemaType | undefined {
 function toOutputPath(integrationId: string, version: string) {
   return `s3://pikachu-dev/dashboard/user-feature/${integrationId}/${version}.csv`;
 }
-function toVersion(integrationId: string, version: string) {
+export function toVersion(integrationId: string, version: string) {
   return `${integrationId}_${version}`;
 }
 export async function getColumns({

@@ -5,7 +5,10 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { extractValue } from "../../../utils/json";
-import { generateTransformCubeSql } from "../../../utils/awsS3DuckDB";
+import {
+  generateTransformCubeSql,
+  toVersion,
+} from "../../../utils/awsS3DuckDB";
 import Badge from "../../common/Badge";
 import QueryResultTable from "../../common/QueryResultTable";
 import type IntegrationForm from "./integrationForm";
@@ -44,7 +47,7 @@ function UserFeatureIntegration({
     const sql = getValues(`${name}.sql`) as string | undefined;
 
     try {
-      const { status, data } = await axios.post(`/api/integration/db`, {
+      const { status, data } = await axios.post(`/api/integration/pg`, {
         payload: {
           sql,
         },
@@ -67,8 +70,7 @@ function UserFeatureIntegration({
     return `
       SELECT  *
       FROM    "UserFeature"
-      WHERE   "integrationId" = '${integrationId}'
-      AND     "version" = '${version}'
+      WHERE   "version" = '${toVersion(integrationId, version)}'
       LIMIT   100
     `;
   };
@@ -102,13 +104,13 @@ function UserFeatureIntegration({
 
     try {
       setStatus("transforming");
-      // await axios.post(`/api/integration/awsS3DuckDB`, {
-      //   method: "executeDuckDBQuery",
-      //   details: cubeProviderDetails,
-      //   payload: {
-      //     sql: transformSql,
-      //   },
-      // });
+      await axios.post(`/api/integration/awsS3DuckDB`, {
+        method: "executeDuckDBQuery",
+        details: cubeProviderDetails,
+        payload: {
+          sql: transformSql,
+        },
+      });
 
       // create partition.
       setStatus("uploading");

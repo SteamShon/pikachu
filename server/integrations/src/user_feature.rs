@@ -57,7 +57,7 @@ impl UserFeatureDatabase {
             r#"
             SELECT  *
             FROM    "UserFeature"
-            WHERE   "cubeHistoryId" = '{}'
+            WHERE   "version" = '{}'
             AND     "userId" = '{}'
         "#,
             version, user_id

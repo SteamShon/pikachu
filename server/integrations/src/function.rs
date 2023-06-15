@@ -30,7 +30,7 @@ impl Function {
                 .map(|v| v.as_str().unwrap())?;
             let table_partition = integration
                 .details
-                .get("cubeHistoryId")
+                .get("version")
                 .map(|v| v.as_str().unwrap())?;
             let client = Arc::new(db::new_client_with_url(database_url).await.ok()?);
             let function = UserFeatureDatabase {

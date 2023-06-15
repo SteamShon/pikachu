@@ -1,8 +1,8 @@
-import type { Integration, Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import axios from "axios";
+import { createHmac } from "crypto";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { extractValue, jsonParseWithFallback } from "../../../utils/json";
-import { createHmac } from "crypto";
 
 function getAuthHeader(details?: Prisma.JsonValue) {
   const now = new Date().toISOString();

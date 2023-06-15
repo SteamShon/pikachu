@@ -1,39 +1,77 @@
-import type { ContentType, Integration } from "@prisma/client";
+import type { ContentType, Integration, Provider } from "@prisma/client";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { Controller, useFormContext } from "react-hook-form";
 import { extractValue, jsonParseWithFallback } from "../../../utils/json";
 import Badge from "../../common/Badge";
 import type IntegrationForm from "./integrationForm";
 import ContentTypeInfoBuilder from "../contentType/contentTypeInfoBuilder";
-
+import { JsonForms } from "@jsonforms/react";
+import {
+  materialCells,
+  materialRenderers,
+} from "@jsonforms/material-renderers";
+const SMS_TEST_SCHEMA = {
+  type: "object",
+  properties: {
+    from: {
+      type: "string",
+      title: "from",
+    },
+    text: {
+      type: "string",
+      title: "text",
+    },
+    tos: {
+      type: "array",
+      items: {
+        type: "string",
+      },
+    },
+  },
+  required: ["from", "to", "text"],
+};
 function SmsIntegration({
   service,
   initialData,
+  provider,
   name,
 }: {
   service: Parameters<typeof IntegrationForm>[0]["service"];
   initialData: Parameters<typeof IntegrationForm>[0]["initialData"];
+  provider?: Provider;
   name: string;
 }) {
-  const contentTypes = service?.contentTypes || [];
   const [checked, setChecked] = useState<boolean | undefined>(undefined);
-  const [contentType, setContentType] = useState<
-    typeof contentTypes[0] | undefined
-  >(undefined);
-
-  const handleContentTypeChange = (contentTypeId: string | null) => {
-    const contentType = contentTypes.find(({ id }) => id === contentTypeId);
-    setContentType(contentType);
-    setValue(`${name}.contentTypeId`, contentType?.id);
-  };
+  const [formSchema, setFormSchema] = useState<string | undefined>(
+    JSON.stringify(SMS_TEST_SCHEMA)
+  );
+  const [formValues, setFormValues] = useState<Record<string, unknown>>({});
 
   const methods = useFormContext();
-  const { register, getValues, setValue } = methods;
+  const { control, reset, register, getValues, setValue } = methods;
+
+  useEffect(() => {
+    const details = initialData?.details as {
+      [x: string]: unknown;
+    };
+    if (initialData) {
+      reset({
+        ...initialData,
+        details,
+      });
+      setFormSchema(details.schema as string);
+      setFormValues(details.values as Record<string, unknown>);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData]);
 
   const validate = async () => {
-    const values = getValues(`${name}.defaultValues`) as string | undefined;
-    const payload = jsonParseWithFallback(values);
+    const details = extractValue({
+      object: provider?.details,
+      paths: ["values"],
+    });
+    const payload = getValues(`${name}.values`) as Record<string, unknown>;
 
     const from = payload.from as string;
     const text = payload.text as string;
@@ -48,32 +86,18 @@ function SmsIntegration({
       const result = await axios.post(`/api/integration/solapi`, {
         payload: messages,
         method: "sendMessages",
-        integration: initialData,
+        details,
       });
-      if (result.status === 200) {
-        setValue("status", "PUBLISHED");
-      }
+
       setChecked(result.status === 200);
     } catch (error) {
       setChecked(false);
     }
   };
 
-  useEffect(() => {
-    if (initialData) {
-      const contentTypeId = extractValue({
-        object: initialData?.details,
-        paths: ["contentTypeId"],
-      }) as string | undefined;
-      if (!contentTypeId) return;
-
-      handleContentTypeChange(contentTypeId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialData]);
-
   return (
     <div className="overflow-hidden bg-white shadow sm:rounded-lg">
+      <input type="hidden" value={formSchema} {...register(`${name}.schema`)} />
       <div className="border-t border-gray-200">
         <dl>
           <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -86,33 +110,34 @@ function SmsIntegration({
             </dd>
           </div>
           <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">ContentType</dt>
+            <dt className="text-sm font-medium text-gray-500">Test Payload</dt>
             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-              <select
-                {...register(`${name}.contentTypeId`)}
-                onChange={(e) => handleContentTypeChange(e.target.value)}
-              >
-                <option value="">Please choose</option>
-                {contentTypes.map((contentType) => {
-                  return (
-                    <option key={contentType.id} value={contentType.id}>
-                      {contentType.name}
-                    </option>
-                  );
-                })}
-              </select>
+              <Controller
+                name={`${name}.values`}
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <>
+                    {formSchema && (
+                      <JsonForms
+                        schema={jsonParseWithFallback(formSchema)}
+                        data={formValues}
+                        renderers={materialRenderers}
+                        cells={materialCells}
+                        onChange={({ data }) => {
+                          if (Object.keys(data).length === 0) return;
+
+                          field.onChange(data);
+                          setFormValues(data);
+                        }}
+                      />
+                    )}
+                  </>
+                )}
+              />
             </dd>
           </div>
         </dl>
-      </div>
-      <div>
-        {contentType && (
-          <ContentTypeInfoBuilder
-            details={contentType?.details}
-            hideCodeEditor={true}
-            fieldPrefix={name}
-          />
-        )}
       </div>
       <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
         <button

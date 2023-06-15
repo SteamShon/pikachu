@@ -90,6 +90,17 @@ function IntegrationForm({
         />
       ),
     },
+    {
+      name: "SMS",
+      component: (
+        <SmsIntegration
+          service={service}
+          initialData={initialData}
+          provider={provider}
+          name="details"
+        />
+      ),
+    },
   ];
   // const components = () => {
   //   const empty = {} as Record<string, JSX.Element>;
@@ -190,12 +201,12 @@ function IntegrationForm({
                   </select>
                 </dd>
               </div>
-              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">
-                  ProviderDetails
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  {provider && (
+              {provider && (
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">
+                    ProviderDetails
+                  </dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                     <JsonForms
                       schema={jsonParseWithFallback(providerSchema)}
                       data={providerValues}
@@ -203,9 +214,9 @@ function IntegrationForm({
                       cells={materialCells}
                       readonly
                     />
-                  )}
-                </dd>
-              </div>
+                  </dd>
+                </div>
+              )}
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Provide</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">

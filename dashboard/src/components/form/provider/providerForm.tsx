@@ -49,7 +49,6 @@ function ProviderForm({
     };
 
     if (initialData) {
-      console.log(initialData);
       reset({
         ...initialData,
         details,

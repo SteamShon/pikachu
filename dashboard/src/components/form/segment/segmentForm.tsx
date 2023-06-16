@@ -1,110 +1,116 @@
-// import { api } from "../../utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type {
-  AdGroup,
-  Campaign,
-  Integration,
-  Placement,
-  Provider,
-} from "@prisma/client";
+import type { Integration, Provider, Segment, Service } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { formatQuery, parseJsonLogic } from "react-querybuilder";
-import "react-querybuilder/dist/query-builder.scss";
 import CustomLoadingButton from "../../common/CustomLoadingButton";
-import type { AdGroupWithCampaignSchemaType } from "../../schema/adGroup";
-import { adGroupWithCampaignSchema } from "../../schema/adGroup";
+import { SegmentSchemaType, segmentSchema } from "../../schema/segment";
 import SegmentQueryBuilder from "../segmentQueryBuilder";
 
-function AdGroupForm({
-  campaigns,
-  providers,
-  cubeIntegrations,
-  onSubmit,
+function SegmentForm({
+  service,
   initialData,
+  onSubmit,
 }: {
-  campaigns: (Campaign & {
-    placement: Placement & {
-      integrations: Integration[];
-    };
-  })[];
-  providers: Provider[];
-  cubeIntegrations: Integration[];
-  onSubmit: (input: AdGroupWithCampaignSchemaType) => void;
-  initialData?: AdGroup & { campaign: Campaign };
+  service: Service & {
+    providers: Provider[];
+    integrations: Integration[];
+  };
+  initialData?: Segment;
+  onSubmit: (input: SegmentSchemaType) => void;
 }) {
+  const cubeIntegrations = service.integrations.filter(
+    ({ provide }) => provide === "CUBE"
+  );
   const [cubeIntegration, setCubeIntegration] = useState<
-    typeof cubeIntegrations[0] | undefined
+    Integration | undefined
   >(undefined);
-  const cubeProvider = providers.find(
+
+  const cubeProvider = service.providers.find(
     ({ id }) => id === cubeIntegration?.providerId
   );
-
-  const methods = useForm<AdGroupWithCampaignSchemaType>({
-    resolver: zodResolver(adGroupWithCampaignSchema),
+  const methods = useForm<SegmentSchemaType>({
+    resolver: zodResolver(segmentSchema),
   });
 
   const {
     control,
     register,
     handleSubmit,
-    setValue,
     reset,
+    getValues,
+    setValue,
     formState: { errors },
   } = methods;
 
-  const handleCmapaignChange = (campaignId: string) => {
-    const campaign = campaigns.find((campaign) => campaign.id === campaignId);
-    const cubeIntegration = campaign?.placement.integrations.find(
-      (integration) => integration.provide === "CUBE"
-    );
-    console.log(cubeIntegration);
-    setCubeIntegration(cubeIntegration);
-  };
   useEffect(() => {
-    reset({
-      ...(initialData ? initialData : {}),
-      campaignId: initialData?.campaign.id,
-    });
-
-    if (initialData?.campaignId) {
-      handleCmapaignChange(initialData?.campaignId);
+    if (initialData) {
+      reset({
+        ...initialData,
+      });
+      // setFormSchema(initialData.schema || undefined);
+      // setFormValues(details);
+      handleIntegrationChange(initialData?.integrationId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reset, initialData, campaigns, providers, cubeIntegrations]);
+  }, [initialData, reset]);
+
+  // const checkValidate = () => {
+  //   const template = PROVIDER_TEMPLATES.find(
+  //     ({ name }) => name === getValues("template")
+  //   );
+
+  //   return template?.validate ? true : false;
+  // };
+
+  const handleIntegrationChange = (integrationId: string) => {
+    const integration = service.integrations.find(
+      ({ id }) => id === integrationId
+    );
+    setCubeIntegration(integration);
+
+    if (!integration) return;
+
+    // const newSchema = JSON.stringify(template.schema);
+    // setFormSchema(newSchema);
+    // setValue("schema", newSchema);
+  };
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} id="campaign-form">
+      <form onSubmit={handleSubmit(onSubmit)} id="integration-form">
         <div className="overflow-hidden bg-white shadow sm:rounded-lg">
           <div className="px-4 py-5 sm:px-6">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
-              AdGroup
+              Segment
             </h3>
+            {/* <input
+              type="hidden"
+              value={service.id}
+              {...register("serviceId")}
+            />
+            <input type="hidden" value={formSchema} {...register("schema")} /> */}
           </div>
           <div className="border-t border-gray-200">
             <dl>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Campaign</dt>
+                <dt className="text-sm font-medium text-gray-500">
+                  Integration
+                </dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
-                    {...register("campaignId")}
-                    defaultValue={initialData?.campaignId}
-                    disabled={initialData ? true : false}
-                    onChange={(e) => handleCmapaignChange(e.target.value)}
+                    {...register("integrationId")}
+                    onChange={(e) => handleIntegrationChange(e.target.value)}
                   >
                     <option value="">Please choose</option>
-                    {campaigns.map((campaign) => {
+                    {cubeIntegrations.map(({ id, name }) => {
                       return (
-                        <option key={campaign.id} value={campaign.id}>
-                          {campaign.name}
+                        <option key={id} value={id}>
+                          {name}
                         </option>
                       );
                     })}
                   </select>
-                  {errors.campaignId && (
-                    <p role="alert">{errors.campaignId?.message}</p>
-                  )}
                 </dd>
               </div>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -152,30 +158,29 @@ function AdGroupForm({
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Filter</dt>
+                <dt className="text-sm font-medium text-gray-500">Where</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <textarea
                     className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                    defaultValue={initialData?.filter || undefined}
                     rows={3}
-                    {...register("filter")}
+                    {...register("where")}
                   />
                   {cubeIntegration && (
                     <Controller
                       control={control}
-                      name="filter"
+                      name="where"
                       render={({}) => (
                         <SegmentQueryBuilder
                           providerDetails={cubeProvider?.details}
                           integrationDetails={cubeIntegration?.details}
                           initialQuery={
-                            initialData?.filter
-                              ? parseJsonLogic(initialData?.filter)
+                            initialData?.where
+                              ? parseJsonLogic(initialData?.where)
                               : undefined
                           }
                           onQueryChange={(newQuery) => {
                             setValue(
-                              "filter",
+                              "where",
                               JSON.stringify(formatQuery(newQuery, "jsonlogic"))
                             );
                           }}
@@ -187,9 +192,7 @@ function AdGroupForm({
                     />
                   )}
 
-                  {errors.filter && (
-                    <p role="alert">{errors.filter?.message}</p>
-                  )}
+                  {errors.where && <p role="alert">{errors.where?.message}</p>}
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -199,7 +202,6 @@ function AdGroupForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <input
                     className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
-                    defaultValue={initialData?.population || undefined}
                     {...register("population")}
                     disabled
                   />
@@ -211,15 +213,35 @@ function AdGroupForm({
             </dl>
           </div>
         </div>
+
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
           <CustomLoadingButton
+            // disabled={checkValidate() && !checked}
             handleSubmit={handleSubmit}
             onSubmit={onSubmit}
           />
+          {/* {checkValidate() && (
+            <>
+              <button
+                className="inline-block rounded-lg bg-violet-500 px-5 py-3 text-sm font-medium text-white"
+                type="button"
+                onClick={() => validate()}
+              >
+                Verify
+              </button>
+              {checked === undefined ? (
+                <span className="p-2">Please Verify To Save</span>
+              ) : checked ? (
+                <Badge variant="success" label="valid" />
+              ) : (
+                <Badge variant="error" label="not valid" />
+              )}
+            </>
+          )} */}
         </div>
       </form>
     </FormProvider>
   );
 }
 
-export default AdGroupForm;
+export default SegmentForm;

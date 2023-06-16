@@ -10,6 +10,7 @@ import { createTRPCRouter } from "./trpc";
 import { integrationRouter } from "./routers/integration";
 import { contentRouter } from "./routers/content";
 import { providerRouter } from "./routers/provider";
+import { segmentRouter } from "./routers/segment";
 
 /**
  * This is the primary router for your server.
@@ -28,6 +29,7 @@ export const appRouter = createTRPCRouter({
   content: contentRouter,
   provider: providerRouter,
   integration: integrationRouter,
+  segment: segmentRouter,
 });
 
 // export type definition of API

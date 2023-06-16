@@ -43,6 +43,8 @@ export const getIncludes = {
     include: {
       service: true,
       placements: true,
+      provider: true,
+      segments: true,
     },
   },
 };

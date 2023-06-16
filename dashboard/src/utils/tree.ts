@@ -8,6 +8,7 @@ import type {
   Integration,
   Placement,
   Provider,
+  Segment,
   Service,
 } from "@prisma/client";
 
@@ -41,7 +42,10 @@ export function buildServiceTree(
     })[];
     customsets: Customset[];
     providers: Provider[];
-    integrations: Integration[];
+    integrations: (Integration & {
+      provider: Provider | null;
+      segments: Segment[];
+    })[];
   }
 ): Service & {
   placements: Record<string, ReturnType<typeof buildPlacementTree>>;
@@ -95,7 +99,7 @@ export function buildPlacementTree(
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
   contentType: ContentType | null;
-  integrations: ReturnType<typeof buildIntegraionTree>;
+  integrations: Record<string, Integration>;
 } {
   const campaigns = arrayToRecord(
     placement.campaigns.map((campaign) => {
@@ -103,7 +107,10 @@ export function buildPlacementTree(
     })
   ) as Record<string, ReturnType<typeof buildCampaignTree>>;
 
-  const integrations = buildIntegraionTree(placement.integrations);
+  const integrations = arrayToRecord(placement.integrations) as Record<
+    string,
+    Integration
+  >;
 
   return { ...placement, campaigns, integrations };
 }
@@ -183,7 +190,25 @@ export function buildCustomsetsTree(
 }
 
 export function buildIntegraionTree(
-  integrations: Integration[]
-): Record<string, Integration> {
-  return arrayToRecord(integrations) as Record<string, Integration>;
+  integrations: (Integration & {
+    provider: Provider | null;
+    segments: Segment[];
+  })[]
+): Record<
+  string,
+  Integration & {
+    provider: Provider | null;
+    segments: ReturnType<typeof buildSegmentTree>;
+  }
+> {
+  const segments = integrations.map((integration) => {
+    const segments = buildSegmentTree(integration.segments);
+    return { ...integration, segments };
+  });
+
+  return arrayToRecord(segments) as ReturnType<typeof buildIntegraionTree>;
+}
+
+export function buildSegmentTree(segments: Segment[]): Record<string, Segment> {
+  return arrayToRecord(segments) as Record<string, Segment>;
 }

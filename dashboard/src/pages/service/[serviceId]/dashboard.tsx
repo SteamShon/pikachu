@@ -22,6 +22,7 @@ import IntegrationTable from "./integrationTable";
 import PlacementTable from "./placementTable";
 import RenderPreview from "./renderPreview";
 import ProviderTable from "./providerTable";
+import SegmentTable from "./segmentTable";
 
 function Dashboard() {
   const router = useRouter();
@@ -384,6 +385,19 @@ function Dashboard() {
       table: () =>
         service ? (
           <IntegrationTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
+        ) : null,
+    },
+    {
+      label: "segments",
+      description: `segments`,
+      paths: [],
+      table: () =>
+        service ? (
+          <SegmentTable
             service={service}
             setServiceTree={setTree}
             serviceTree={tree}

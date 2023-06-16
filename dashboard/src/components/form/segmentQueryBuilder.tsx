@@ -23,12 +23,14 @@ const emptyQuery: RuleGroupType = { combinator: "and", rules: [] };
 
 function SegmentQueryBuilder({
   integrationDetails,
+  providerDetails,
   initialQuery,
   onQueryChange,
   onPopulationChange,
 }: {
   initialQuery?: RuleGroupType;
   integrationDetails?: Prisma.JsonValue;
+  providerDetails?: Prisma.JsonValue;
   population?: string;
   onQueryChange: (newQuery: RuleGroupType) => void;
   onPopulationChange: (population: string) => void;
@@ -50,14 +52,14 @@ function SegmentQueryBuilder({
       //TODO: abstract executeQuery not to coupled with awsS3DuckDB integration
       const rows = await executeQuery({
         query: sql,
-        details: integrationDetails,
+        details: providerDetails,
       });
       enqueueSnackbar("finished loading metadata", { variant: "success" });
       setMetadata(rows);
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [integrationDetails]
+    [integrationDetails, providerDetails]
   );
 
   const fetchPopulation = useMemo(
@@ -65,17 +67,19 @@ function SegmentQueryBuilder({
       debounce((q?: RuleGroupType) => {
         (async () => {
           try {
-            if (!q || !integrationDetails) return;
+            if (!q || !integrationDetails || !providerDetails) return;
+
             const cubeIntegrationSql = extractValue({
               object: integrationDetails,
               paths: ["SQL"],
             }) as string | undefined;
+
             const sql = formatQueryCustom(metadata, q);
             if (!sql || !cubeIntegrationSql) return;
 
             //TODO: abstract countPopulation not to coupled with awsS3DuckDB integration
             const count = await countPopulation({
-              details: integrationDetails,
+              details: providerDetails,
               sql: cubeIntegrationSql,
               where: sql,
             });
@@ -93,7 +97,7 @@ function SegmentQueryBuilder({
       }, 1000),
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [metadata, providerDetails, integrationDetails]
   );
 
   useEffect(() => {
@@ -105,7 +109,7 @@ function SegmentQueryBuilder({
 
     loadMetadata(cubeIntegrationSql);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [integrationDetails]);
+  }, [providerDetails, integrationDetails]);
 
   const fields = (metadata || []).map((row) => {
     const name = row.column_name as string;
@@ -161,7 +165,7 @@ function SegmentQueryBuilder({
                 controlElements={{
                   valueEditor: AsyncValueEditor,
                 }}
-                context={{ fields, integrationDetails }}
+                context={{ fields, providerDetails, integrationDetails }}
                 controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
                 operators={operators}
               />
@@ -185,13 +189,13 @@ function SegmentQueryBuilder({
             </LoadingButton>
           </Grid>
           <Grid item xs={1}></Grid>
-          <Grid item xs={12}>
+          {/* <Grid item xs={12}>
             {query ? (
               <span className="flex-wrap font-medium">
                 {formatQuery(query, "sql")}
               </span>
             ) : null}
-          </Grid>
+          </Grid> */}
         </Grid>
       )}
     </>

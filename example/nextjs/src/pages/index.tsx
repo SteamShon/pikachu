@@ -10,31 +10,35 @@ const Home: NextPage = () => {
 
   const featuredPlacementId = "clgf56kk0000hl408m2ni4yy0";
   const rankingCardPlacementId = "clgf7s3ji0005jl08u8oqg3sj";
-  const { 
-    renderCode: featuredRenderCode, 
-    setUserInfo: featuredSetUserInfo, 
+  const {
+    renderCode: featuredRenderCode,
+    setUserInfo: featuredSetUserInfo,
     component: featuredComponent,
-  } = usePikachu({endpoint, serviceId, placementId: featuredPlacementId, eventEndpoint, debug: true});
+  } = usePikachu({
+    endpoint,
+    serviceId,
+    placementId: featuredPlacementId,
+    eventEndpoint,
+    debug: true,
+  });
 
   const {
     renderCode: rankingCardRenderCode,
     setUserInfo: rankingCardSetUserInfo,
     component: rankingCardComponent,
-  } = usePikachu({endpoint, serviceId, placementId: rankingCardPlacementId, eventEndpoint, debug: true});
+  } = usePikachu({
+    endpoint,
+    serviceId,
+    placementId: rankingCardPlacementId,
+    eventEndpoint,
+    debug: true,
+  });
 
   const renderFeaturedRankingBanner = () => {
-    return (
-      <>
-        {featuredComponent}
-      </>
-    );
+    return <>{featuredComponent}</>;
   };
   const renderRankingCard = () => {
-    return (
-      <>
-        {rankingCardComponent}
-      </>
-    );
+    return <>{rankingCardComponent}</>;
   };
   const renderReviewCard = () => {
     return (
@@ -104,6 +108,15 @@ const Home: NextPage = () => {
                 <span className="text-medium font-medium">
                   사용자의 속성(genres)를 선택하면 해당 사용자에게 노출 되도록
                   타게팅된 contents들만 노출됩니다.
+                  <a
+                    className="text-base text-cyan-300"
+                    href="https://pikachu-iota.vercel.app"
+                    target="_blank"
+                  >
+                    Console
+                  </a>{" "}
+                  에 등록된 컨텐츠들이 설정된 사용자 segment별로 다르게 dynamic
+                  placement에 노출 됩니다.
                 </span>
               </div>
               <div className="grid grid-cols-12 gap-1 border-t border-gray-200">
@@ -111,7 +124,10 @@ const Home: NextPage = () => {
                   <select
                     onChange={(e) => {
                       console.log(e.target.value);
-                      const userInfo = { userId: "steamshon", info: {genres: [e.target.value] }};
+                      const userInfo = {
+                        userId: "steamshon",
+                        info: { genres: [e.target.value] },
+                      };
                       featuredSetUserInfo(userInfo);
                       rankingCardSetUserInfo(userInfo);
                     }}
@@ -128,6 +144,46 @@ const Home: NextPage = () => {
             </div>
           </form>
           <div className="mx-auto mt-20 max-w-2xl justify-center bg-[#101322]">
+            <div className="text-white">Dynamic Placements</div>
+
+            <div>
+              <input
+                className="mt-10 w-full border-spacing-2 bg-[#172036]"
+                placeholder="작품명,게시글,감독,배우를 검색해보세요"
+                readOnly={true}
+              />
+            </div>
+
+            <div className="relative mt-10 font-normal text-[#EFEFEF]">
+              <span>오늘의 넷플릭스 랭킹</span>
+              <span className="absolute right-0 top-0">
+                <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-sm text-gray-900">
+                  <a href="https://pikachu-iota.vercel.app" target="_blank">
+                    Powered By Pikachu
+                  </a>
+                </span>
+              </span>
+            </div>
+
+            <div className="mb-2 mt-2 h-[3%] border-spacing-1">
+              {/* Ranking Featured Banner*/}
+              {renderFeaturedRankingBanner()}
+            </div>
+            <div className="relative mt-10 font-normal text-[#EFEFEF]">
+              <span>랭킹 리스트</span>
+              <span className="absolute right-0 top-0">
+                <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-sm text-gray-900">
+                  <a href="https://pikachu-iota.vercel.app" target="_blank">
+                    Powered By Pikachu
+                  </a>
+                </span>
+              </span>
+            </div>
+            <div className="mb-2 mt-2 h-[3%] border-spacing-1">
+              {/* Ranking Banner */}
+              {renderRankingCard()}
+            </div>
+          </div>
           <div className="text-white">Static Placements</div>
           <div className="mt-10 font-normal text-[#EFEFEF]">
             최신 리뷰 한줄평
@@ -151,44 +207,6 @@ const Home: NextPage = () => {
             {renderTodayPickCard()}
           </div>
         </div>
-
-          <div className="text-white">Dynamic Placements</div>
-
-          <div>
-            <input
-              className="mt-10 w-full border-spacing-2 bg-[#172036]"
-              placeholder="작품명,게시글,감독,배우를 검색해보세요"
-              readOnly={true}
-            />
-          </div>
-
-          <div className="relative mt-10 font-normal text-[#EFEFEF]">
-            <span>오늘의 넷플릭스 랭킹</span>
-            <span className="absolute right-0 top-0">
-              <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-sm text-gray-900">
-                Powered By Pikachu
-              </span>
-            </span>
-          </div>
-
-          <div className="mb-2 mt-2 h-[3%] border-spacing-1">
-            {/* Ranking Featured Banner*/}
-            {renderFeaturedRankingBanner()}
-          </div>
-          <div className="relative mt-10 font-normal text-[#EFEFEF]">
-            <span>랭킹 리스트</span>
-            <span className="absolute right-0 top-0">
-              <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-sm text-gray-900">
-                Powered By Pikachu
-              </span>
-            </span>
-          </div>
-          <div className="mb-2 mt-2 h-[3%] border-spacing-1">
-            {/* Ranking Banner */}
-            {renderRankingCard()}
-          </div>
-        </div>
-        
       </div>
     </>
   );

@@ -80,18 +80,21 @@ model VerificationToken {
 }
 
 model Service {
-    id            String            @id @default(cuid())
-    name          String
-    description   String?
+    id           String            @id @default(cuid())
+    name         String
+    description  String?
+    details      Json              @default("{}")
     // placementGroups PlacementGroup[]
-    placements    Placement[]
-    contentTypes  ContentType[]
-    users         UsersOnServices[]
-    status        String            @default("CREATED")
-    createdAt     DateTime          @default(now())
-    updatedAt     DateTime          @updatedAt
-    customsets    Customset[]
-    serviceConfig ServiceConfig?
+    placements   Placement[]
+    contentTypes ContentType[]
+    users        UsersOnServices[]
+    status       String            @default("CREATED")
+    createdAt    DateTime          @default(now())
+    updatedAt    DateTime          @updatedAt
+
+    customsets   Customset[]
+    providers    Provider[]
+    integrations Integration[]
 
     @@unique([name])
     @@index(fields: [updatedAt])
@@ -139,14 +142,15 @@ model Placement {
     AdvertisersOnPlacements AdvertisersOnPlacements[]
     contentType             ContentType?              @relation(fields: [contentTypeId], references: [id])
     contentTypeId           String?
+
     // createdBy               User                      @relation("createdPlacements", fields: [creatorId], references: [id], onDelete: Cascade)
     // creatorId               String
-    status                  String                    @default("CREATED")
-    createdAt               DateTime                  @default(now())
-    updatedAt               DateTime                  @updatedAt
-    cube                    Cube?                     @relation(fields: [cubeId], references: [id])
-    cubeId                  String?
-    integrations            Integration[]
+    status       String        @default("CREATED")
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+    // cube                    Cube?                     @relation(fields: [cubeId], references: [id])
+    // cubeId                  String?
+    integrations Integration[]
 
     @@unique([serviceId, name])
     @@index(fields: [updatedAt])
@@ -157,12 +161,10 @@ model ContentType {
     name        String
     description String?
     source      String   @default("local")
+    type        String   @default("DISPLAY") // INAPP_PUSH/SMS
+    details     Json     @default("{}")
     service     Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
     serviceId   String?
-
-    contentTypeInfo ContentTypeInfo?
-    // createdBy   User        @relation("createdContentTypes", fields: [creatorId], references: [id], onDelete: Cascade)
-    // creatorId   String
 
     placements Placement[]
     contents   Content[]
@@ -172,22 +174,6 @@ model ContentType {
     updatedAt DateTime @updatedAt
 
     @@unique([serviceId, name])
-    @@index(fields: [updatedAt])
-}
-
-model ContentTypeInfo {
-    id            String      @id @default(cuid())
-    contentType   ContentType @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
-    contentTypeId String      @unique
-    // source        String      @default("local")
-    details       Json        @default("{}")
-    // schema        String?
-    // uiSchema      String?
-    // defaultValues String?
-    //status        String      @default("CREATED")
-    createdAt     DateTime    @default(now())
-    updatedAt     DateTime    @updatedAt
-
     @@index(fields: [updatedAt])
 }
 
@@ -281,128 +267,79 @@ model Content {
 }
 
 model Customset {
-    id              String        @id @default(cuid())
-    name            String
-    description     String?
-    service         Service?      @relation(fields: [serviceId], references: [id])
-    serviceId       String?
+    id          String   @id @default(cuid())
+    name        String
+    description String?
+    service     Service? @relation(fields: [serviceId], references: [id])
+    serviceId   String?
     // ownedBy         User           @relation("ownedCustomsets", fields: [ownerId], references: [id], onDelete: Cascade)
     // ownerId         String
-    createdBy       User          @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
-    creatorId       String
-    customsetInfo   CustomsetInfo @relation(fields: [customsetInfoId], references: [id], onDelete: Cascade)
-    customsetInfoId String        @unique
-    status          String        @default("CREATED")
-    createdAt       DateTime      @default(now())
-    updatedAt       DateTime      @updatedAt
+    createdBy   User     @relation("createdCustomsets", fields: [creatorId], references: [id], onDelete: Cascade)
+    creatorId   String
+    details     Json     @default("{}")
+    status      String   @default("CREATED")
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
 
     // @@unique([ownerId, name])
     @@unique([serviceId, name])
 }
 
-model CustomsetInfo {
-    id        String     @id @default(cuid())
-    customset Customset?
-    filePath  String
-    config    String
-}
+model Provider {
+    id          String        @id @default(cuid())
+    name        String
+    description String?
+    template    String
+    service     Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+    serviceId   String
+    schema      String?
+    details     Json          @default("{}")
+    status      String        @default("CREATED")
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    Integration Integration[]
 
-model ServiceConfig {
-    id            String   @id @default(cuid())
-    service       Service  @relation(fields: [serviceId], references: [id])
-    serviceId     String   @unique
-    // name          String
-    // description   String?
-    s3Config      Json     @default("{}")
-    builderConfig Json     @default("{}")
-    // s3Region          String
-    // s3AccessKeyId     String
-    // s3SecretAccessKey String
-    // buckets           String?
-    cubes         Cube[]
-    // status        String   @default("CREATED")
-    createdAt     DateTime @default(now())
-    updatedAt     DateTime @updatedAt
-}
-
-model Cube {
-    id              String        @id @default(cuid())
-    name            String
-    description     String?
-    serviceConfig   ServiceConfig @relation(fields: [serviceConfigId], references: [id], onDelete: Cascade)
-    serviceConfigId String
-    // s3Path       String?
-    sql             String?
-    placements      Placement[]
-    cubeHistories   CubeHistory[]
-    status          String        @default("CREATED")
-    createdAt       DateTime      @default(now())
-    updatedAt       DateTime      @updatedAt
-
-    @@unique([serviceConfigId, name])
-}
-
-model CubeHistory {
-    id        String   @id @default(cuid())
-    cube      Cube     @relation(fields: [cubeId], references: [id], onDelete: Cascade)
-    cubeId    String
-    version   String
-    status    String   @default("CREATED")
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([cubeId, version(sort: Desc)])
+    @@unique([serviceId, name])
     @@index(fields: [updatedAt])
 }
 
-model UserFeature {
-    cubeHistoryId String
-    userId        String
-    feature       Json   @default("{}")
-
-    @@id([cubeHistoryId, userId])
-}
-
-// store how to get user features by integrating database.
-// type == DB then API server will lookup cubeHistory+UserFeature table.
-// DB type require connection string.
-// type == HTTP then API server will call http API to get user feature.
-// HTTP type require METHOD, URL endpoint
 model Integration {
-    id              String           @id @default(cuid())
-    name            String
-    description     String?
-    type            String // DB/HTTP
-    status          String           @default("CREATED")
-    createdAt       DateTime         @default(now())
-    updatedAt       DateTime         @updatedAt
-    placement       Placement        @relation(fields: [placementId], references: [id])
-    placementId     String
-    integrationInfo IntegrationInfo?
+    id          String    @id @default(cuid())
+    name        String
+    description String?
+    provide     String
+    provider    Provider? @relation(fields: [providerId], references: [id], onDelete: Cascade)
+    providerId  String?
+    details     Json      @default("{}")
+    status      String    @default("CREATED")
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    service     Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+    serviceId   String
 
-    @@unique([placementId, name])
+    placements Placement[]
+
+    @@unique([serviceId, name])
     @@index(fields: [updatedAt])
 }
 
-model IntegrationInfo {
-    id            String      @id @default(cuid())
-    details       Json        @default("{}")
-    createdAt     DateTime    @default(now())
-    updatedAt     DateTime    @updatedAt
-    integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-    integrationId String      @unique
+// External Models 
+model UserFeature {
+    version String
+    userId  String
+    feature Json   @default("{}")
 
-    @@index(fields: [updatedAt])
+    @@id([version, userId])
 }
 
 model CreativeStat {
-    timeUnit String  
-    time DateTime 
-    creativeId String 
-    impressionCount BigInt 
-    clickCount BigInt 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    timeUnit        String
+    time            DateTime
+    creativeId      String
+    impressionCount BigInt
+    clickCount      BigInt
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
 
     @@id([timeUnit, time, creativeId])
 }

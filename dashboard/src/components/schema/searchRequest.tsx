@@ -3,6 +3,7 @@ import { z } from "zod";
 export const searchRequestSchema = z.object({
   placementId: z.string().min(1),
   apiServerHost: z.string().min(1),
+  filter: z.string().optional(),
   dimensionValues: z
     .array(
       z.object({

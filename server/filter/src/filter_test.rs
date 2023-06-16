@@ -3,6 +3,7 @@ use lazy_static::lazy_static;
 use serde_json::Value;
 use std::collections::HashSet;
 use TargetFilter::*;
+use crate::serde;
 
 lazy_static! {
     static ref FILTER_1: TargetFilter = {
@@ -311,9 +312,9 @@ fn test_target_filter_from_raw_string() {
         ]
     }"#;
     let value: Value = serde_json::from_str(raw_str).unwrap();
-    let deserialized_filter = TargetFilter::from(&value).unwrap();
-    let serialized_filter = TargetFilter::to_json(&deserialized_filter);
-    let deserialized_filter_after = TargetFilter::from(&serialized_filter).unwrap();
+    let deserialized_filter = serde::from_json(&value).unwrap();
+    let serialized_filter = serde::to_json(&deserialized_filter);
+    let deserialized_filter_after = serde::from_json(&serialized_filter).unwrap();
 
     println!("{:?}", deserialized_filter);
     println!("{:?}", serialized_filter);
@@ -340,9 +341,9 @@ fn test_jsonlogic_serde() {
     }
     "#;
     let value: Value = serde_json::from_str(raw_str).unwrap();
-    let deserialized_filter = TargetFilter::from_jsonlogic(&value).unwrap();
-    let serialized_filter = TargetFilter::to_jsonlogic(&deserialized_filter);
-    let deserialized_filter_after = TargetFilter::from_jsonlogic(&serialized_filter).unwrap();
+    let deserialized_filter = serde::from_jsonlogic(&value).unwrap();
+    let serialized_filter = serde::to_jsonlogic(&deserialized_filter);
+    let deserialized_filter_after = serde::from_jsonlogic(&serialized_filter).unwrap();
 
     println!("{:?}", deserialized_filter);
     println!("{:?}", serialized_filter);

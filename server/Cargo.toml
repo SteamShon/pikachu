@@ -1,2 +1,2 @@
 [workspace]
-members = ["prisma-cli", "filter", "api", "common", "ranker", "event"]
+members = ["prisma-cli", "filter", "ad_state", "api", "common", "event", "integrations"]

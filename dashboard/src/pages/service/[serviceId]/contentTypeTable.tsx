@@ -9,34 +9,30 @@ import EditIcon from "@mui/icons-material/Edit";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type {
-  Service,
-  ServiceConfig
-} from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import ContentPreview from "../../../components/builder/contentPreview";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type ContentTypeForm from "../../../components/form/contentTypeForm";
-import ContentTypeModal from "../../../components/form/contentTypeModal";
+import type ContentTypeForm from "../../../components/form/contentType/contentTypeForm";
 import { api } from "../../../utils/api";
 import {
   extractDefaultValues,
   extractSchema,
   toNewCreative,
-} from "../../../utils/contentTypeInfo";
+} from "../../../utils/contentType";
 import { jsonParseWithFallback } from "../../../utils/json";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypesTree } from "../../../utils/tree";
+import ContentTypeModal from "../../../components/form/contentType/contentTypeModal";
 
 function ContentTypeTable({
   service,
   serviceTree,
   setServiceTree,
 }: {
-  service: Service & { serviceConfig?: ServiceConfig | null };
+  service: Parameters<typeof ContentPreview>[0]["service"];
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -49,18 +45,16 @@ function ContentTypeTable({
   const [modalOpen, setModalOpen] = useState(false);
   const { contentTypeIds } = router.query;
 
-  const { mutate: deleteContentType } =
-    api.service.removeContentType.useMutation({
-      onSuccess(deleted) {
-        setServiceTree((prev) => {
-          if (!prev) return prev;
-          prev.contentTypes = buildContentTypesTree(deleted.contentTypes);
-          return prev;
-        });
-        setModalOpen(false);
-      },
-    });
-
+  const { mutate: deleteContentType } = api.contentType.remove.useMutation({
+    onSuccess(deleted) {
+      setServiceTree((prev) => {
+        if (!prev) return prev;
+        prev.contentTypes = buildContentTypesTree(deleted.contentTypes);
+        return prev;
+      });
+      setModalOpen(false);
+    },
+  });
 
   const rows = serviceTree?.contentTypes
     ? Object.values(serviceTree.contentTypes).map((contentType) => {
@@ -100,13 +94,9 @@ function ContentTypeTable({
       renderCell: (params: GridRenderCellParams<Date>) => {
         return params.row.source === "builder.io" ? null : (
           <JsonForms
-            schema={jsonParseWithFallback(
-              extractSchema(params.row.contentTypeInfo)
-            )}
+            schema={jsonParseWithFallback(extractSchema(params.row))}
             //uischema={uiSchema}
-            data={jsonParseWithFallback(
-              extractDefaultValues(params.row.contentTypeInfo)
-            )}
+            data={jsonParseWithFallback(extractDefaultValues(params.row))}
             renderers={materialRenderers}
             cells={materialCells}
           />
@@ -118,8 +108,13 @@ function ContentTypeTable({
       headerName: "Preview",
       flex: 4,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        return <ContentPreview contentType={params.row} 
-        creatives={[toNewCreative(extractDefaultValues(params.row.contentTypeInfo))]}/>
+        return (
+          <ContentPreview
+            service={service}
+            contentType={params.row}
+            creatives={[toNewCreative(extractDefaultValues(params.row))]}
+          />
+        );
       },
     },
     {
@@ -178,7 +173,7 @@ function ContentTypeTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Contents",
+                    step: "contents",
                     contentTypeId: params.row.id,
                   },
                 });

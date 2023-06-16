@@ -1,15 +1,17 @@
 import SendIcon from "@mui/icons-material/Send";
 import LoadingButton from "@mui/lab/LoadingButton";
-import type { ServiceConfig } from "@prisma/client";
+
 import { useState } from "react";
-import { executeQuery } from "../../utils/duckdb";
+
+import type { Prisma } from "@prisma/client";
+import { executeQuery } from "../../utils/awsS3DuckDB";
 import QueryResultTable from "../common/QueryResultTable";
 
 function SqlPreview({
-  serviceConfig,
+  details,
   sql,
 }: {
-  serviceConfig: ServiceConfig;
+  details?: Prisma.JsonValue;
   sql: string;
 }) {
   const [rows, setRows] = useState<{ [x: string]: unknown }[]>([]);
@@ -18,7 +20,10 @@ function SqlPreview({
   const runQuery = async () => {
     setLoading(true);
     const withLimit = `${sql} LIMIT 100`;
-    const result = await executeQuery(serviceConfig, withLimit);
+    const result = await executeQuery({
+      details,
+      query: withLimit,
+    });
     setRows(result);
     setLoading(false);
   };

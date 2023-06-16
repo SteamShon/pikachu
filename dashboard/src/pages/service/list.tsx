@@ -8,11 +8,13 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import GridCustomToolbar from "../../components/common/GridCustomToolbar";
 import Loading from "../../components/common/Loading";
-import type ServiceForm from "../../components/form/serviceForm";
-import ServiceModal from "../../components/form/serviceModal";
 import { api } from "../../utils/api";
+import { useSession } from "next-auth/react";
+import type ServiceForm from "../../components/form/service/serviceForm";
+import ServiceModal from "../../components/form/service/serviceModal";
 
 function ServiceList() {
+  const { data: session } = useSession();
   const router = useRouter();
   const [service, setService] =
     useState<Parameters<typeof ServiceForm>[0]["initialData"]>(undefined);
@@ -21,10 +23,15 @@ function ServiceList() {
   >([]);
   const [modalOpen, setModalOpen] = useState(false);
   const { serviceIds } = router.query;
+
+  // const { data: myServices } = api.usersOnServices.getAll.useQuery({
+  //   userId: session?.user?.id,
+  // });
+
   const { data: allServices, isLoading } =
     api.service.getAllOnlyServices.useQuery();
 
-  const { mutate: deleteService } = api.service.delete.useMutation({
+  const { mutate: deleteService } = api.service.remove.useMutation({
     onSuccess(deleted) {
       setServices((prev) =>
         prev.filter((service) => service.id !== deleted.id)
@@ -34,15 +41,7 @@ function ServiceList() {
   });
 
   useEffect(() => {
-    if (allServices)
-      setServices(
-        allServices.map((service) => {
-          return {
-            ...service,
-            serviceConfig: service.serviceConfig || undefined,
-          };
-        })
-      );
+    if (allServices) setServices(allServices);
   }, [allServices]);
 
   const rows = services || [];

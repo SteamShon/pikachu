@@ -1,5 +1,4 @@
-pub mod ad_state;
-use crate::ad_state::AdState;
+
 use actix_cors::Cors;
 use actix_web::{
     get,
@@ -8,7 +7,7 @@ use actix_web::{
     web::{self},
     App, HttpResponse, HttpServer, Responder,
 };
-use ad_state::CreativeFeedback;
+use ad_state::{ad_state::{AdState, CreativeFeedback}, ad_state_builder::load};
 use arc_swap::ArcSwap;
 use common::db::{self, PrismaClient};
 use dotenv::dotenv;
@@ -29,14 +28,25 @@ struct Request {
     user_info: Value,
     top_k: Option<usize>
 }
+
+#[derive(Deserialize)]
+struct SMSRequest{
+    placement_id: String, 
+    payload: Value
+}
 // copy prev shared state into new struct on heap. then atomically replace Arc using ArcSwap
-async fn load_ad_meta(data: web::Data<ArcSwap<Arc<AdState>>>, client: web::Data<PrismaClient>) {
+async fn load_ad_meta(
+    data: web::Data<ArcSwap<Arc<AdState>>>, 
+    client: web::Data<PrismaClient>
+) -> () {
     let prev = data.load();
     let mut new_ad_state = AdState {
         ..prev.as_ref().as_ref().clone()
     };
-    new_ad_state.load(client.clone().into_inner()).await;
-    data.store(Arc::new(Arc::new(new_ad_state)));
+    
+    load(&mut new_ad_state, client.clone().into_inner()).await;
+    let new_ad_state_arc = Arc::new(Arc::new(new_ad_state));
+    data.store(new_ad_state_arc);
 }
 
 pub async fn load_ad_meta_periodic(
@@ -65,12 +75,13 @@ async fn search(
     data: web::Data<ArcSwap<Arc<AdState>>>,
     request: web::Json<Request>,
 ) -> impl Responder {
-    let matched_ad_groups = data.load().search(
+    let ad_state = data.load();
+    let matched_ad_groups = ad_state.search(
         &request.service_id,
         &request.placement_id,
         &request.user_info,
         request.top_k,
-    );
+    ).await;
 
     HttpResponse::Ok().json(matched_ad_groups)
 }
@@ -78,12 +89,11 @@ async fn search(
 #[post("/user_info")]
 async fn user_info(
     data: web::Data<ArcSwap<Arc<AdState>>>,
-    client: web::Data<PrismaClient>,
     request: web::Json<UserFeatureRequest>,
 ) -> impl Responder {
     let user_info = data
         .load()
-        .fetch_user_info(client.into_inner(), &request.placement_id, &request.user_id)
+        .fetch_user_info(&request.placement_id, &request.user_id)
         .await;
 
     HttpResponse::Ok().json(user_info)
@@ -118,6 +128,19 @@ async fn update_feedback(
     new_ad_state.update_creative_feedback(&request.into_inner());
 
     data.store(Arc::new(Arc::new(new_ad_state)));
+    HttpResponse::Ok().json(true)
+}
+#[post("/send_sms")]
+async fn send_sms(
+    data: web::Data<ArcSwap<Arc<AdState>>>,
+    request: web::Json<SMSRequest>,
+) -> impl Responder {
+    let placement_id = &request.placement_id;
+    let payload = &request.payload;
+    let ad_state = data.load();
+    let response = ad_state.send_sms(placement_id, payload).await;
+    println!("{:?}", response.map(|r| r.status()));
+
     HttpResponse::Ok().json(true)
 }
 
@@ -160,6 +183,7 @@ async fn main() -> std::io::Result<()> {
             .service(update_ad_meta)
             .service(all_dimensions)
             .service(update_feedback)
+            .service(send_sms)
             .wrap(cors)
             .wrap(logger)
     })

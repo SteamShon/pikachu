@@ -8,36 +8,43 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import type { ValueEditorProps } from "react-querybuilder";
 import { ValueEditor } from "react-querybuilder";
-import { fetchValues } from "../../utils/duckdb";
+import { fetchValues } from "../../utils/awsS3DuckDB";
+import { extractValue } from "../../utils/json";
 
 const AsyncValueEditor = (props: ValueEditorProps) => {
+  const { integrationDetails } = props.context;
   const columnType = props.fieldData?.columnType;
   const useSearch = props.fieldData?.useSearch || false;
-  const { cube } = props.context;
   const [inputValue, setInputValue] = useState<string | undefined>(undefined);
   const [options, setOptions] = useState<string[] | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const loading = open && !options;
+  const cubeIntegrationSql = extractValue({
+    object: integrationDetails,
+    paths: ["SQL"],
+  }) as string | undefined;
 
   const fetch = useMemo(
     () =>
       debounce((prefix?: string) => {
         (async () => {
+          if (!cubeIntegrationSql) return;
+
           const values = (
-            await fetchValues(
-              cube.serviceConfig,
-              cube.sql,
-              props.field,
+            await fetchValues({
+              details: integrationDetails,
+              sql: cubeIntegrationSql,
+              fieldName: props.field,
               columnType,
-              prefix
-            )
+              value: prefix,
+            })
           ).map((value) => String(value));
 
           setOptions(values);
         })();
       }, 1000),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cube.cubeConfig, cube.s3Path, props.field]
+    [integrationDetails, props.field]
   );
 
   useEffect(() => {
@@ -51,7 +58,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, inputValue, cube.cubeConfig, cube.s3Path]);
+  }, [loading, inputValue, integrationDetails]);
 
   const filterOptions = createFilterOptions({
     matchFrom: "any",

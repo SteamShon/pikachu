@@ -9,7 +9,7 @@ use actix_cors::Cors;
 use actix_web::{
     middleware::Logger,
     post,
-    web::{self, Bytes, Json},
+    web::{self, Json},
     App, HttpResponse, HttpServer, Responder,
 };
 use common::db;

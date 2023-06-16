@@ -1,7 +1,6 @@
 import type { DatasetSchemaType } from "../components/schema/dataset";
 
-export function buildJoinSql(dataset: DatasetSchemaType) {
-  console.log(dataset);
+export function buildJoinSql({ dataset }: { dataset: DatasetSchemaType }) {
   const targets = dataset.tables.map((target, index) => {
     const read = target.files.map((file) => `'${file}'`).join(",");
     const conditions = target.conditions.map(

@@ -3,24 +3,23 @@ import EditIcon from "@mui/icons-material/Edit";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Placement, Service } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type IntegrationForm from "../../../components/form/integrationForm";
-import IntegrationModal from "../../../components/form/integrationModal";
-import { api } from "../../../utils/api";
+import type IntegrationForm from "../../../components/form/integration/integrationForm";
+
 import type { buildServiceTree } from "../../../utils/tree";
-import { buildIntegraionTree } from "../../../utils/tree";
+import { api } from "../../../utils/api";
+import IntegrationModal from "../../../components/form/integration/integrationModal";
 
 function IntegrationTable({
   service,
   serviceTree,
   setServiceTree,
 }: {
-  service: Service & { placements: Placement[] };
+  service: Parameters<typeof IntegrationForm>[0]["service"];
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -34,30 +33,18 @@ function IntegrationTable({
   >(undefined);
   const selectedIds = (integrationIds || []) as string[];
 
-  const { mutate: deleteIntegration } =
-    api.placement.removeIntegration.useMutation({
-      onSuccess(deleted) {
-        setServiceTree((prev) => {
-          if (!prev) return undefined;
-          console.log("1", prev?.placements[deleted.id]?.integrations);
-          const placement = prev.placements[deleted.id];
-          if (!placement) return prev;
+  const { mutate: deleteIntegration } = api.integration.delete.useMutation({
+    onSuccess(deleted) {
+      setServiceTree((prev) => {
+        if (!prev) return undefined;
+        delete prev.integrations[deleted.id];
+        return prev;
+      });
+      setModalOpen(false);
+    },
+  });
 
-          placement.integrations = buildIntegraionTree(deleted.integrations);
-          console.log("2", prev?.placements[deleted.id]?.integrations);
-          return prev;
-        });
-        setModalOpen(false);
-      },
-    });
-
-  const allIntegrations = serviceTree
-    ? Object.values(serviceTree?.placements).flatMap((placement) => {
-        return Object.values(placement.integrations).map((integration) => {
-          return { ...integration, placement: { ...placement } };
-        });
-      })
-    : [];
+  const allIntegrations = Object.values(serviceTree?.integrations || {});
 
   const integrations =
     selectedIds.length === 0
@@ -66,9 +53,30 @@ function IntegrationTable({
           return selectedIds.includes(integration.id);
         });
 
-  const rows = integrations;
+  const rows = integrations.map((integration) => {
+    const provider =
+      service.providers.find(({ id }) => id === integration.providerId) || null;
+
+    return { ...integration, provider: provider };
+  });
 
   const columns: GridColDef[] = [
+    {
+      field: "provide",
+      headerName: "Provide",
+      flex: 1,
+      renderCell: (params) => {
+        return params.row.provider.provide;
+      },
+    },
+    {
+      field: "provider",
+      headerName: "Provider",
+      flex: 1,
+      renderCell: (params) => {
+        return params.row.provider.name;
+      },
+    },
     {
       field: "name",
       headerName: "Name",
@@ -113,7 +121,6 @@ function IntegrationTable({
                 e.stopPropagation();
                 if (confirm("Are you sure?")) {
                   deleteIntegration({
-                    placementId: params.row.placement.id,
                     id: params.row.id,
                   });
                 }
@@ -140,7 +147,7 @@ function IntegrationTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Campaigns",
+                    step: "campaigns",
                     placementId: params.row.id,
                   },
                 });

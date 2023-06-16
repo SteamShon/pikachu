@@ -9,11 +9,13 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import Loading from "../../../components/common/Loading";
 import UsersOnServicesModal from "../../../components/form/usersOnServicesModal";
 import { api } from "../../../utils/api";
+import { useSession } from "next-auth/react";
 
 function UsersOnServicesList() {
+  const { data: session } = useSession();
   const [modalOpen, setModalOpen] = useState(false);
   const { data: usersOnServicesList, isLoading } =
-    api.usersOnServices.getAll.useQuery();
+    api.usersOnServices.getAll.useQuery({ userId: session?.user?.id || "" });
 
   const { data: users, isLoading: isUsersLoading } = api.user.getAll.useQuery();
   const { data: services, isLoading: isServicesLoading } =

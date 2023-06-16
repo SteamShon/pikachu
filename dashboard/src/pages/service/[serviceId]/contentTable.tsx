@@ -2,7 +2,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import NorthIcon from "@mui/icons-material/North";
 import SouthIcon from "@mui/icons-material/South";
-import { Button } from "@mui/material";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import moment from "moment";
@@ -10,16 +9,14 @@ import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import ContentPreview from "../../../components/builder/contentPreview";
-import ContentSync from "../../../components/builder/contentSync";
-
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type ContentForm from "../../../components/form/contentForm";
-import ContentModal from "../../../components/form/contentModal";
+import type ContentForm from "../../../components/form/content/contentForm";
+import ContentModal from "../../../components/form/content/contentModal";
 import { api } from "../../../utils/api";
-import { jsonParseWithFallback } from "../../../utils/json";
+import { toNewCreative } from "../../../utils/contentType";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildContentTypeTree } from "../../../utils/tree";
-import { toNewCreative } from "../../../utils/contentTypeInfo";
+
 function ContentTable({
   service,
   serviceTree,
@@ -39,7 +36,7 @@ function ContentTable({
     Parameters<typeof ContentForm>[0]["initialData"] | undefined
   >(undefined);
 
-  const { mutate: deleteContent } = api.contentType.removeContent.useMutation({
+  const { mutate: deleteContent } = api.content.remove.useMutation({
     onSuccess(deleted) {
       setServiceTree((prev) => {
         if (!prev) return prev;
@@ -82,30 +79,41 @@ function ContentTable({
       flex: 1,
     },
     {
-      field: "update",
-      headerName: "Update",
+      field: "type",
+      headerName: "Type",
       flex: 1,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        return (
-          <ContentSync
-            serviceConfig={service?.serviceConfig || undefined}
-            contentType={params.row?.contentType}
-            contents={[jsonParseWithFallback(params.row.values)]}
-          />
-        );
+        return <>{params.row.contentType?.type}</>;
       },
     },
+    // {
+    //   field: "update",
+    //   headerName: "Update",
+    //   flex: 1,
+    //   renderCell: (params: GridRenderCellParams<Date>) => {
+    //     return (
+    //       <ContentSync
+    //         serviceConfig={service?.serviceConfig || undefined}
+    //         contentType={params.row?.contentType}
+    //         contents={[jsonParseWithFallback(params.row.values)]}
+    //       />
+    //     );
+    //   },
+    // },
     {
       field: "preview",
       headerName: "Preview",
       flex: 4,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        return (
-          <ContentPreview
-            contentType={params.row?.contentType}
-            creatives={[toNewCreative(params.row.values)]}
-          />
-        );
+        if (params.row?.contentType?.type === "DISPLAY") {
+          return (
+            <ContentPreview
+              service={service}
+              contentType={params.row?.contentType}
+              creatives={[toNewCreative(params.row.values)]}
+            />
+          );
+        }
       },
     },
     {
@@ -166,12 +174,12 @@ function ContentTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Creatives",
+                    step: "creatives",
                   },
                 });
               }}
@@ -181,12 +189,12 @@ function ContentTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "ContentTypes",
+                    step: "contentTypes",
                   },
                 });
               }}

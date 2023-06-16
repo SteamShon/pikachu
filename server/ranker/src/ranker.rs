@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use filter::filter::UserInfo;
+use common::types::UserInfo;
 use rand_chacha::ChaCha8Rng;
 use rand_distr::{Distribution, Beta};
 use rand::SeedableRng;

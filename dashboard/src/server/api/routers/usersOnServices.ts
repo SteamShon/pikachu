@@ -4,16 +4,24 @@ import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const usersOnServicesRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({}) => {
-    const usersOnServices = await prisma.usersOnServices.findMany({
-      include: {
-        user: true,
-        service: true,
-      },
-    });
+  getAll: protectedProcedure
+    .input(z.object({ userId: z.string().optional() }))
+    .query(async ({ input }) => {
+      const { userId } = input;
+      if (!userId) return [];
 
-    return usersOnServices;
-  }),
+      const usersOnServices = await prisma.usersOnServices.findMany({
+        where: {
+          userId,
+        },
+        include: {
+          user: true,
+          service: true,
+        },
+      });
+
+      return usersOnServices;
+    }),
   create: protectedProcedure
     .input(usersOnServicesSchema)
     .mutation(async ({ input }) => {

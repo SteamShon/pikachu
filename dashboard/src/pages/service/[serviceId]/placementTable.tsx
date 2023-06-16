@@ -3,26 +3,26 @@ import EditIcon from "@mui/icons-material/Edit";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
-import type { Service } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type PlacementForm from "../../../components/form/placementForm";
-import PlacementModal from "../../../components/form/placementModal";
+import type PlacementForm from "../../../components/form/placement/placementForm";
 import { api } from "../../../utils/api";
 import { buildServiceTree } from "../../../utils/tree";
 
-import RenderPreview from "./renderPreview";
+import type ContentPreview from "../../../components/builder/contentPreview";
 import Stat from "../../../components/chart/Stat";
+import RenderPreview from "./renderPreview";
+import PlacementModal from "../../../components/form/placement/placementModal";
 
 function PlacementTable({
   service,
   serviceTree,
   setServiceTree,
 }: {
-  service: Service;
+  service: Parameters<typeof ContentPreview>[0]["service"];
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -39,7 +39,7 @@ function PlacementTable({
 
   const selectedIds = (placementIds || []) as string[];
 
-  const { mutate: deletePlacement } = api.service.removePlacement.useMutation({
+  const { mutate: deletePlacement } = api.placement.remove.useMutation({
     onSuccess(deleted) {
       setServiceTree((prev) => {
         if (!prev) return undefined;
@@ -49,9 +49,15 @@ function PlacementTable({
     },
   });
 
-  const allPlacements = serviceTree
-    ? Object.values(serviceTree?.placements)
-    : [];
+  const allPlacements = Object.values(serviceTree?.placements || {}).map(
+    ({ integrations, campaigns, ...placement }) => {
+      return {
+        ...placement,
+        campaigns,
+        integrations: Object.values(integrations),
+      };
+    }
+  );
 
   const placements =
     selectedIds.length === 0
@@ -64,7 +70,7 @@ function PlacementTable({
     ? Object.values(serviceTree?.contentTypes)
     : [];
 
-  const cubes = Object.values(serviceTree?.serviceConfig?.cubes || {});
+  const integrations = Object.values(serviceTree?.integrations || {});
 
   const rows = placements;
 
@@ -77,12 +83,20 @@ function PlacementTable({
     {
       field: "description",
       headerName: "Description",
-      flex: 2,
+      flex: 1,
     },
     {
       field: "status",
       headerName: "Status",
       flex: 1,
+    },
+    {
+      field: "integrations",
+      headerName: "Integrations",
+      flex: 2,
+      valueGetter: (params) => {
+        return params.row.integrations?.length || 0;
+      },
     },
     {
       field: "contentType.name",
@@ -147,7 +161,7 @@ function PlacementTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Campaigns",
+                    step: "campaigns",
                     placementId: params.row.id,
                   },
                 });
@@ -178,7 +192,7 @@ function PlacementTable({
     },
     {
       label: "Playground",
-      component: <>{service && <RenderPreview serviceId={service.id} />}</>,
+      component: <>{service && <RenderPreview service={service} />}</>,
     },
   ];
   return (
@@ -212,7 +226,7 @@ function PlacementTable({
           setModalOpen={setModalOpen}
           service={service}
           contentTypes={contentTypes}
-          cubes={cubes}
+          integrations={integrations}
           initialData={placement}
           setServiceTree={setServiceTree}
         />

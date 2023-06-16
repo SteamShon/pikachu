@@ -1,7 +1,9 @@
 import { z } from "zod";
-import { contentWithContentTypeSchema } from "../../../components/schema/content";
 import { prisma } from "../../db";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { contentTypeSchema } from "../../../components/schema/contentType";
+import type { Prisma } from "@prisma/client";
+import { getIncludes } from "./service";
 
 export const contentTypeRouter = createTRPCRouter({
   list: protectedProcedure
@@ -16,145 +18,89 @@ export const contentTypeRouter = createTRPCRouter({
 
       return contentTypes;
     }),
-  addContent: protectedProcedure
-    .input(contentWithContentTypeSchema)
-    .mutation(async ({ input, ctx }) => {
-      const { contentTypeId, ...contentInput } = input;
 
-      const contentType = await prisma.contentType.update({
+  create: protectedProcedure
+    .input(contentTypeSchema)
+    .mutation(async ({ input }) => {
+      const { serviceId, ...contentType } = input;
+      const detailsJson = contentType.details as Prisma.JsonObject;
+
+      const service = await prisma.service.update({
         where: {
-          id: contentTypeId,
+          id: serviceId,
         },
-
         data: {
-          contents: {
+          contentTypes: {
             connectOrCreate: {
               where: {
-                contentTypeId_name: {
-                  contentTypeId: contentTypeId,
-                  name: contentInput.name,
+                serviceId_name: {
+                  serviceId,
+                  name: contentType.name,
                 },
               },
               create: {
-                ...contentInput,
-                values: JSON.stringify(contentInput.values),
-                createdBy: {
-                  connect: {
-                    id: ctx.session?.user?.id,
-                  },
-                },
+                ...contentType,
+                details: detailsJson,
               },
             },
           },
         },
-
-        include: {
-          contentTypeInfo: true,
-          contents: {
-            include: {
-              creatives: true,
-            },
-          },
-        },
+        include: getIncludes,
       });
 
-      return contentType;
+      return service;
     }),
-  updateContent: protectedProcedure
-    .input(contentWithContentTypeSchema)
-    .mutation(async ({ input, ctx }) => {
-      const { contentTypeId, ...contentInput } = input;
+  update: protectedProcedure
+    .input(contentTypeSchema)
+    .mutation(async ({ input }) => {
+      const { serviceId, ...contentType } = input;
+      const detailsJson = contentType.details as Prisma.JsonObject;
 
-      return await prisma.contentType.update({
+      const service = await prisma.service.update({
         where: {
-          id: contentTypeId,
+          id: serviceId,
         },
-
         data: {
-          contents: {
+          contentTypes: {
             update: {
               where: {
-                id: contentInput.id || "",
+                id: contentType.id,
               },
               data: {
-                ...contentInput,
-                values: JSON.stringify(contentInput.values),
-                createdBy: {
-                  connect: {
-                    id: ctx.session?.user?.id,
-                  },
-                },
+                ...contentType,
+                details: detailsJson,
               },
             },
           },
         },
-
-        include: {
-          contentTypeInfo: true,
-          contents: {
-            include: {
-              creatives: true,
-            },
-          },
-        },
+        include: getIncludes,
       });
+
+      return service;
     }),
-  removeContent: protectedProcedure
+  remove: protectedProcedure
     .input(
       z.object({
-        contentTypeId: z.string(),
+        serviceId: z.string(),
         id: z.string(),
       })
     )
     .mutation(async ({ input }) => {
-      const { contentTypeId, id } = input;
-
-      const contentType = await prisma.contentType.update({
+      const { serviceId, id } = input;
+      const service = await prisma.service.update({
         where: {
-          id: contentTypeId,
+          id: serviceId,
         },
-
         data: {
-          contents: {
+          contentTypes: {
             delete: {
               id,
             },
           },
         },
-
-        include: {
-          contentTypeInfo: true,
-          contents: {
-            include: {
-              creatives: true,
-            },
-          },
-        },
+        include: getIncludes,
       });
 
-      return contentType;
-    }),
-  getAll: protectedProcedure.query(({}) => {
-    const contentTypes = prisma.contentType.findMany({
-      include: {
-        contents: true,
-      },
-    });
-
-    return contentTypes;
-  }),
-  get: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(({ input }) => {
-      const contentTypes = prisma.contentType.findMany({
-        where: {
-          id: input.id,
-        },
-        include: {
-          contents: true,
-        },
-      });
-
-      return contentTypes;
+      return service;
     }),
 });

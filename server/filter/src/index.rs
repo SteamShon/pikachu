@@ -1,3 +1,4 @@
+use common::types::{DimValue, UserInfo};
 use serde_json::json;
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};

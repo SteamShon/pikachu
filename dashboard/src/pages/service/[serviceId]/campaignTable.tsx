@@ -9,14 +9,14 @@ import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type CampaignForm from "../../../components/form/campaignForm";
-import CampaignModal from "../../../components/form/campaignModal";
+import type CampaignForm from "../../../components/form/campaign/campaignForm";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
 import { buildPlacementTree } from "../../../utils/tree";
 import type { Service } from "@prisma/client";
 
 import Stat from "../../../components/chart/Stat";
+import CampaignModal from "../../../components/form/campaign/campaignModal";
 
 function CampaignTable({
   service,
@@ -167,12 +167,12 @@ function CampaignTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "AdGroups",
+                    step: "adGroups",
                     campaignId: params.row.id,
                   },
                 });
@@ -183,12 +183,12 @@ function CampaignTable({
             <button
               type="button"
               className="p-1 text-blue-400"
-              onClick={(e) => {
+              onClick={() => {
                 router.push({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "Placements",
+                    step: "placements",
                   },
                 });
               }}

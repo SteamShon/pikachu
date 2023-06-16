@@ -2,6 +2,8 @@ use super::*;
 
 use serde_json::Value;
 use std::collections::HashSet;
+use crate::serde;
+
 struct TestFilter {
     id: String,
     filter: String,
@@ -21,7 +23,7 @@ impl Filterable for TestFilter {
 
     fn filter(&self) -> Option<TargetFilter> {
         let value: Value = serde_json::from_str(&self.filter).ok()?;
-        TargetFilter::from(&value)
+        serde::from_json(&value)
     }
 }
 const FILTER_1_STR: &str = r#"

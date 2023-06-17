@@ -5,6 +5,7 @@ CREATE TABLE "AdSet" (
     "contentId" TEXT NOT NULL,
     "segmentId" TEXT,
     "name" TEXT NOT NULL,
+    "description" TEXT,
     "status" TEXT NOT NULL DEFAULT 'CREATED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

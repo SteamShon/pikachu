@@ -23,6 +23,7 @@ import PlacementTable from "./placementTable";
 import RenderPreview from "./renderPreview";
 import ProviderTable from "./providerTable";
 import SegmentTable from "./segmentTable";
+import AdSetTable from "./adSetTable";
 
 function Dashboard() {
   const router = useRouter();
@@ -398,6 +399,19 @@ function Dashboard() {
       table: () =>
         service ? (
           <SegmentTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
+        ) : null,
+    },
+    {
+      label: "adSets",
+      description: `adSets`,
+      paths: [],
+      table: () =>
+        service ? (
+          <AdSetTable
             service={service}
             setServiceTree={setTree}
             serviceTree={tree}

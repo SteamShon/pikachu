@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { formatQuery, parseJsonLogic } from "react-querybuilder";
 import CustomLoadingButton from "../../common/CustomLoadingButton";
-import { SegmentSchemaType, segmentSchema } from "../../schema/segment";
+import type { SegmentSchemaType } from "../../schema/segment";
+import { segmentSchema } from "../../schema/segment";
 import SegmentQueryBuilder from "../segmentQueryBuilder";
 
 function SegmentForm({
@@ -48,32 +49,16 @@ function SegmentForm({
       reset({
         ...initialData,
       });
-      // setFormSchema(initialData.schema || undefined);
-      // setFormValues(details);
       handleIntegrationChange(initialData?.integrationId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData, reset]);
-
-  // const checkValidate = () => {
-  //   const template = PROVIDER_TEMPLATES.find(
-  //     ({ name }) => name === getValues("template")
-  //   );
-
-  //   return template?.validate ? true : false;
-  // };
 
   const handleIntegrationChange = (integrationId: string) => {
     const integration = service.integrations.find(
       ({ id }) => id === integrationId
     );
     setCubeIntegration(integration);
-
-    if (!integration) return;
-
-    // const newSchema = JSON.stringify(template.schema);
-    // setFormSchema(newSchema);
-    // setValue("schema", newSchema);
   };
 
   return (
@@ -84,12 +69,6 @@ function SegmentForm({
             <h3 className="text-lg font-medium leading-6 text-gray-900">
               Segment
             </h3>
-            {/* <input
-              type="hidden"
-              value={service.id}
-              {...register("serviceId")}
-            />
-            <input type="hidden" value={formSchema} {...register("schema")} /> */}
           </div>
           <div className="border-t border-gray-200">
             <dl>
@@ -216,28 +195,9 @@ function SegmentForm({
 
         <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
           <CustomLoadingButton
-            // disabled={checkValidate() && !checked}
             handleSubmit={handleSubmit}
             onSubmit={onSubmit}
           />
-          {/* {checkValidate() && (
-            <>
-              <button
-                className="inline-block rounded-lg bg-violet-500 px-5 py-3 text-sm font-medium text-white"
-                type="button"
-                onClick={() => validate()}
-              >
-                Verify
-              </button>
-              {checked === undefined ? (
-                <span className="p-2">Please Verify To Save</span>
-              ) : checked ? (
-                <Badge variant="success" label="valid" />
-              ) : (
-                <Badge variant="error" label="not valid" />
-              )}
-            </>
-          )} */}
         </div>
       </form>
     </FormProvider>

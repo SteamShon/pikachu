@@ -351,6 +351,7 @@ model AdSet {
     segment     Segment?  @relation(fields: [segmentId], references: [id], onDelete: Cascade)
     segmentId   String?
     name        String
+    description String?
     status      String    @default("CREATED")
     createdAt   DateTime  @default(now())
     updatedAt   DateTime  @updatedAt

@@ -22,6 +22,7 @@ function ContentPreview({
   }[];
   showEditor?: boolean;
 }) {
+  console.log(contentType);
   console.log(creatives[0]?.content);
   const newCode = replacePropsInFunction({
     code: extractCode(contentType),

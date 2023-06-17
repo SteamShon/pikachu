@@ -21,7 +21,18 @@ export const getIncludes = {
           },
         },
       },
-      integrations: true,
+      integrations: {
+        include: {
+          provider: true,
+          segments: true,
+        },
+      },
+      adSets: {
+        include: {
+          segment: true,
+          content: true,
+        },
+      },
     },
   },
   contentTypes: {

@@ -1,5 +1,6 @@
 import type {
   AdGroup,
+  AdSet,
   Campaign,
   Content,
   ContentType,
@@ -11,6 +12,7 @@ import type {
   Segment,
   Service,
 } from "@prisma/client";
+import build from "next/dist/build";
 
 type Item = {
   id: string;
@@ -35,7 +37,11 @@ export function buildServiceTree(
         })[];
       })[];
       contentType: ContentType | null;
-      integrations: Integration[];
+      integrations: (Integration & {
+        provider: Provider | null;
+        segments: Segment[];
+      })[];
+      adSets: (AdSet & { segment: Segment | null; content: Content })[];
     })[];
     contentTypes: (ContentType & {
       contents: (Content & { creatives: Creative[] })[];
@@ -52,7 +58,7 @@ export function buildServiceTree(
   contentTypes: Record<string, ReturnType<typeof buildContentTypeTree>>;
   customsets: Record<string, Customset>;
   providers: Record<string, Provider>;
-  integrations: ReturnType<typeof buildIntegraionTree>;
+  integrations: Record<string, ReturnType<typeof buildIntegraionTree>>;
 } {
   const placements = arrayToRecord(
     service.placements.map((placement) => {
@@ -72,7 +78,11 @@ export function buildServiceTree(
     string,
     Provider
   >;
-  const integrations = buildIntegraionTree(service.integrations);
+  const integrations = arrayToRecord(
+    service.integrations.map((integration) => {
+      return buildIntegraionTree(integration);
+    })
+  ) as Record<string, ReturnType<typeof buildIntegraionTree>>;
 
   return {
     ...service,
@@ -94,12 +104,17 @@ export function buildPlacementTree(
       })[];
     })[];
     contentType: ContentType | null;
-    integrations: Integration[];
+    integrations: (Integration & {
+      provider: Provider | null;
+      segments: Segment[];
+    })[];
+    adSets: (AdSet & { segment: Segment | null; content: Content })[];
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
   contentType: ContentType | null;
-  integrations: Record<string, Integration>;
+  integrations: Record<string, ReturnType<typeof buildIntegraionTree>>;
+  adSets: Record<string, AdSet & { segment: Segment | null; content: Content }>;
 } {
   const campaigns = arrayToRecord(
     placement.campaigns.map((campaign) => {
@@ -107,12 +122,17 @@ export function buildPlacementTree(
     })
   ) as Record<string, ReturnType<typeof buildCampaignTree>>;
 
-  const integrations = arrayToRecord(placement.integrations) as Record<
-    string,
-    Integration
-  >;
+  const integrations = arrayToRecord(
+    placement.integrations.map((integration) => {
+      return buildIntegraionTree(integration);
+    })
+  ) as Record<string, ReturnType<typeof buildIntegraionTree>>;
 
-  return { ...placement, campaigns, integrations };
+  const adSets = arrayToRecord(placement.adSets) as Record<
+    string,
+    AdSet & { segment: Segment | null; content: Content }
+  >;
+  return { ...placement, campaigns, integrations, adSets };
 }
 
 export function buildCampaignTree(
@@ -188,25 +208,17 @@ export function buildCustomsetsTree(
 ): Record<string, Customset> {
   return arrayToRecord(customsets) as Record<string, Customset>;
 }
-
 export function buildIntegraionTree(
-  integrations: (Integration & {
+  integration: Integration & {
     provider: Provider | null;
     segments: Segment[];
-  })[]
-): Record<
-  string,
-  Integration & {
-    provider: Provider | null;
-    segments: ReturnType<typeof buildSegmentTree>;
   }
-> {
-  const segments = integrations.map((integration) => {
-    const segments = buildSegmentTree(integration.segments);
-    return { ...integration, segments };
-  });
-
-  return arrayToRecord(segments) as ReturnType<typeof buildIntegraionTree>;
+): Integration & {
+  provider: Provider | null;
+  segments: ReturnType<typeof buildSegmentTree>;
+} {
+  const segments = buildSegmentTree(integration.segments);
+  return { ...integration, segments };
 }
 
 export function buildSegmentTree(segments: Segment[]): Record<string, Segment> {

@@ -7,19 +7,18 @@ import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
-import type IntegrationForm from "../../../components/form/integration/integrationForm";
 
-import type SegmentForm from "../../../components/form/segment/segmentForm";
-import SegmentModal from "../../../components/form/segment/segmentModal";
+import type AdSetForm from "../../../components/form/adSet/adSetForm";
+import AdSetModal from "../../../components/form/adSet/adSetModal";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
 
-function SegmentTable({
+function AdSetTable({
   service,
   serviceTree,
   setServiceTree,
 }: {
-  service: Parameters<typeof IntegrationForm>[0]["service"];
+  service: Parameters<typeof AdSetForm>[0]["service"];
   serviceTree?: ReturnType<typeof buildServiceTree>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
@@ -27,51 +26,41 @@ function SegmentTable({
 }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const { segmentIds } = router.query;
-  const [segment, setSegment] = useState<
-    Parameters<typeof SegmentForm>[0]["initialData"] | undefined
+  const { adSetIds } = router.query;
+  const [adSet, setAdSet] = useState<
+    Parameters<typeof AdSetForm>[0]["initialData"] | undefined
   >(undefined);
-  const selectedIds = (segmentIds || []) as string[];
+  const selectedIds = (adSetIds || []) as string[];
 
-  const { mutate: deleteSegment } = api.segment.remove.useMutation({
+  const { mutate: deleteAdSet } = api.adSet.remove.useMutation({
     onSuccess(deleted) {
       setServiceTree((prev) => {
         if (!prev) return prev;
-        const integration = prev.integrations[deleted.integrationId];
-        if (!integration) return prev;
-        delete integration.segments[deleted.id];
+        const placement = prev.placements[deleted.placementId];
+        if (!placement) return prev;
+        delete placement.adSets[deleted.id];
         return prev;
       });
       setModalOpen(false);
     },
   });
 
-  const allSegments = Object.values(serviceTree?.integrations || {}).flatMap(
-    ({ segments, ...integration }) => {
-      return Object.values(segments).map((segment) => {
-        return { ...segment, integration };
-      });
+  const allAdSets = Object.values(serviceTree?.placements || {}).flatMap(
+    ({ adSets }) => {
+      return Object.values(adSets);
     }
   );
 
-  const segments =
+  const adSets =
     selectedIds.length === 0
-      ? allSegments
-      : allSegments.filter((segment) => {
-          return selectedIds.includes(segment.id);
+      ? allAdSets
+      : allAdSets.filter((adSet) => {
+          return selectedIds.includes(adSet.id);
         });
 
-  const rows = segments;
+  const rows = adSets;
 
   const columns: GridColDef[] = [
-    {
-      field: "integration",
-      headerName: "Integration",
-      flex: 1,
-      renderCell: (params) => {
-        return params.row.integration.name;
-      },
-    },
     {
       field: "name",
       headerName: "Name",
@@ -115,7 +104,7 @@ function SegmentTable({
               onClick={(e) => {
                 e.stopPropagation();
                 if (confirm("Are you sure?")) {
-                  deleteSegment({
+                  deleteAdSet({
                     id: params.row.id,
                   });
                 }
@@ -128,7 +117,7 @@ function SegmentTable({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setSegment(params.row);
+                setAdSet(params.row);
                 setModalOpen(true);
               }}
             >
@@ -142,7 +131,7 @@ function SegmentTable({
   const toolbar = GridCustomToolbar({
     label: "Create",
     onClick: () => {
-      setSegment(undefined);
+      setAdSet(undefined);
       setModalOpen(true);
     },
   });
@@ -164,12 +153,12 @@ function SegmentTable({
             }}
           />
         </div>
-        <SegmentModal
+        <AdSetModal
           key="segmentModal"
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
           service={service}
-          initialData={segment}
+          initialData={adSet}
           setServiceTree={setServiceTree}
         />
       </div>
@@ -177,4 +166,4 @@ function SegmentTable({
   );
 }
 
-export default SegmentTable;
+export default AdSetTable;

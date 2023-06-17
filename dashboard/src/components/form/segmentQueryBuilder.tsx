@@ -18,6 +18,7 @@ import {
   formatQueryCustom,
 } from "../../utils/awsS3DuckDB";
 import AsyncValueEditor from "../common/AsyncValueEditor";
+import { init } from "@jsonforms/core";
 
 const emptyQuery: RuleGroupType = { combinator: "and", rules: [] };
 
@@ -55,11 +56,12 @@ function SegmentQueryBuilder({
         details: providerDetails,
       });
       enqueueSnackbar("finished loading metadata", { variant: "success" });
+      console.log(rows);
       setMetadata(rows);
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [integrationDetails, providerDetails]
+    [initialQuery, integrationDetails, providerDetails]
   );
 
   const fetchPopulation = useMemo(
@@ -99,6 +101,11 @@ function SegmentQueryBuilder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [metadata, providerDetails, integrationDetails]
   );
+  useEffect(() => {
+    if (initialQuery) {
+      setQuery(initialQuery);
+    }
+  }, [initialQuery]);
 
   useEffect(() => {
     const cubeIntegrationSql = extractValue({
@@ -138,6 +145,7 @@ function SegmentQueryBuilder({
     { name: "in", label: "in" },
     { name: "notIn", label: "not in" },
   ];
+  console.log(fields);
   return (
     <>
       {fields.length > 0 && (

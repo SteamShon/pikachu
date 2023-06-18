@@ -83,7 +83,7 @@ impl<'a> Default for SearchResult<'a> {
 
 #[derive(Serialize)]
 pub struct AdSetSearchResult<'a> {
-    pub placement: &'a placement::Data,
+    pub content_type: &'a content_type::Data,
     pub contents: Vec<&'a content::Data>
 }
 
@@ -188,7 +188,8 @@ impl AdState {
     ) -> Option<AdSetSearchResult> {
         let mut contents = Vec::new();
         let placement = self.placements.get(placement_id)?;
-        
+        let content_type = self.content_types.get(&placement.content_type_id)?;
+
         let user_info = parse_user_info(user_info_json).unwrap();
         let index = self.ad_set_index.get(placement_id)?;
         let ad_set_ids = index.search(&user_info);
@@ -202,7 +203,7 @@ impl AdState {
             }
         }
         
-        Some(AdSetSearchResult { placement, contents })
+        Some(AdSetSearchResult { content_type, contents })
     }
     pub async fn search(
         &self,

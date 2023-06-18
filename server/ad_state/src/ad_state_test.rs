@@ -35,7 +35,7 @@ lazy_static! {
         advertisers_on_placements: None,
         campaigns: None,
         content_type: None,
-        content_type_id: Some(CONTENT_TYPE.id.clone()),
+        content_type_id: CONTENT_TYPE.id.clone(),
         service: None,
         service_id: Some(SERVICE.id.clone()),
         integrations: None,

@@ -70,6 +70,21 @@ async fn update_ad_meta(
 
     HttpResponse::Ok().json(true)
 }
+
+#[post("/search_ad_sets")]
+async fn search_ad_sets(
+    data: web::Data<ArcSwap<Arc<AdState>>>,
+    request: web::Json<Request>,
+) -> impl Responder {
+    let ad_state = data.load();
+    let ad_set_search_result = ad_state.search_ad_sets(
+        &request.service_id,
+        &request.placement_id,
+        &request.user_info,
+    ).await;
+
+    HttpResponse::Ok().json(ad_set_search_result)
+}
 #[post("/search")]
 async fn search(
     data: web::Data<ArcSwap<Arc<AdState>>>,
@@ -179,6 +194,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(ad_state.clone())
             .app_data(client.clone())
             .service(search)
+            .service(search_ad_sets)
             .service(user_info)
             .service(update_ad_meta)
             .service(all_dimensions)

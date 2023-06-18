@@ -39,6 +39,7 @@ lazy_static! {
         service: None,
         service_id: Some(SERVICE.id.clone()),
         integrations: None,
+        ad_sets: None,
         created_at: *NOW,
         updated_at: *NOW,
     };
@@ -107,6 +108,7 @@ lazy_static! {
         creator_id: String::from(""),
         user_id: None,
         creatives: None,
+        ad_sets: None,
         values: String::from(""),
         status: String::from("published"),
         created_at: *NOW,

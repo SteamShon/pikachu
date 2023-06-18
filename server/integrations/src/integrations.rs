@@ -3,7 +3,7 @@ use common::{
     types::{UserInfo, Stat, CreativeWithContent},
     util::is_active_provider,
 };
-use filter::index::FilterIndex;
+use filter::{index::FilterIndex, filter::Filter};
 use std::collections::HashMap;
 
 use crate::{function::Function, local_creative_fetcher::LocalCreativeFetcher};
@@ -160,6 +160,7 @@ impl Integrations {
             ad_group_creatives
         ))
     }
+    
     pub async fn fetch_creatives<'a: 'b, 'b>(
         &'b self,
         filter_index: &'a HashMap<String, FilterIndex>,

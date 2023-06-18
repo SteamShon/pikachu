@@ -1,6 +1,7 @@
 use common::types::*;
 use common::db::{
     ad_group, campaign, content, content_type, creative, placement, service,
+    segment, ad_set,
 };
 use common::util::*;
 
@@ -33,6 +34,33 @@ impl Filterable for AdGroup {
         }
     }
 }
+
+pub struct AdSet {
+    pub data: ad_set::Data,
+}
+
+impl Filterable for AdSet {
+    fn id(&self) -> String {
+        String::from(&self.data.id)
+    }
+
+    fn filter(&self) -> Option<TargetFilter> {
+         match &self.data.segment().ok()? {
+            None => None,
+            Some(segment) => {
+                match &segment.r#where {
+                    None => None,
+                    Some(s) => {
+                        let value: serde_json::Value = 
+                            serde_json::from_str(s).ok()?;
+                
+                        TargetFilterSerde::from_jsonlogic(&value)
+                    }
+                }
+            }
+        }
+    }
+}
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreativeFeedback {
     ad_group_id: String,
@@ -52,6 +80,13 @@ impl<'a> Default for SearchResult<'a> {
         Self { matched_ads: Default::default(), non_filter_ads: Default::default() }
     }
 }
+
+#[derive(Serialize)]
+pub struct AdSetSearchResult<'a> {
+    pub placement: &'a placement::Data,
+    pub contents: Vec<&'a content::Data>
+}
+
 #[derive(Debug, Clone)]
 pub struct UpdateInfo {
     pub services: DateTime<FixedOffset>,
@@ -60,6 +95,7 @@ pub struct UpdateInfo {
     pub ad_groups: DateTime<FixedOffset>,
     pub creatives: DateTime<FixedOffset>,
     pub contents: DateTime<FixedOffset>,
+    pub ad_sets: DateTime<FixedOffset>,
     pub content_types: DateTime<FixedOffset>,
     pub integrations: DateTime<FixedOffset>,
 }
@@ -72,6 +108,7 @@ impl Default for UpdateInfo {
             ad_groups: Default::default(),
             creatives: Default::default(),
             contents: Default::default(),
+            ad_sets: Default::default(),
             content_types: Default::default(),
             integrations: Default::default(),
         }
@@ -86,8 +123,11 @@ pub struct AdState {
     pub creatives: HashMap<String, HashMap<String, creative::Data>>,
     pub contents: HashMap<String, content::Data>,
     pub content_types: HashMap<String, content_type::Data>,
+    pub segments: HashMap<String, segment::Data>,
+    pub ad_sets: HashMap<String, ad_set::Data>,
     pub update_info: UpdateInfo,
     pub filter_index: HashMap<String, FilterIndex>,
+    pub ad_set_index: HashMap<String, FilterIndex>,
     //TODO: Make Different implementation for Ranker trait per placement.
     // pub ranker: DefaultRanker<Creative>,
     pub creatives_stat: HashMap<String, Stat>,
@@ -103,8 +143,11 @@ impl Default for AdState {
             creatives: Default::default(),
             contents: Default::default(),
             content_types: Default::default(),
+            segments: Default::default(),
+            ad_sets: Default::default(),
             update_info: Default::default(),
             filter_index: Default::default(),
+            ad_set_index: Default::default(),
             // ranker: Default::default(),
             creatives_stat: Default::default(),
             integrations: Integrations::default(),
@@ -137,35 +180,30 @@ impl AdState {
     pub fn set_integrations(&mut self, integrations: Integrations) {
         self.integrations = integrations;
     }
-    // pub async fn fetch_user_info(
-    //     &self,
-    //     placement_id: &str,
-    //     user_id: &str,
-    // ) -> Option<UserInfo> {
-    //     let integrations = self.integrations.get(placement_id)?;
-    //     let (integration, provider) = self.get_user_feature_integration(integrations)?;
+    pub async fn search_ad_sets(
+        &self,
+        _service_id: &str,
+        placement_id: &str,
+        user_info_json: &serde_json::Value,
+    ) -> Option<AdSetSearchResult> {
+        let mut contents = Vec::new();
+        let placement = self.placements.get(placement_id)?;
         
-    // }
-
-    // fn generate_user_feature_sqls(
-    //     &self,
-    //     integration: &integration::Data,
-    //     user_id: &str,
-    // ) -> Option<Vec<prisma_client_rust::Raw>> {
-    //     let mut queries = Vec::new();
-    //     if let Some(version) = integration.details.get("cubeHistoryId").map(|v| v.as_str().unwrap()) {
-    //         let sql = format!(r#"
-    //             SELECT  *
-    //             FROM    "UserFeature"
-    //             WHERE   "cubeHistoryId" = '{}'
-    //             AND     "userId" = '{}'
-    //         "#, version, user_id);
-    //         println!("{:?}", sql);
-    //         let query = raw!(&sql);
-    //         queries.push(query);
-    //     }   
-    //     Some(queries)
-    // }
+        let user_info = parse_user_info(user_info_json).unwrap();
+        let index = self.ad_set_index.get(placement_id)?;
+        let ad_set_ids = index.search(&user_info);
+        for ad_set_id in ad_set_ids {
+            if let Some(ad_set) = self.ad_sets.get(&ad_set_id) {
+                if let Some(content) = self.contents.get(&ad_set.content_id) {
+                    if is_active_content(content) {
+                        contents.push(content);
+                    }
+                }
+            }
+        }
+        
+        Some(AdSetSearchResult { placement, contents })
+    }
     pub async fn search(
         &self,
         _service_id: &str,

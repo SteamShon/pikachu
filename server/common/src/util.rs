@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::{db::{placement, integration, content_type, content, creative, ad_group, campaign, provider}, types::UserInfo};
+use crate::{db::{placement, integration, content_type, content, creative, ad_group, campaign, provider, ad_set}, types::UserInfo};
 
 pub const USER_FEATURE_SQL_TEMPLATE: &str = r#"SELECT * FROM "UserFeature" WHERE "cubeHistoryId" = '{}' AND "userId" = '{}'"#;
 
@@ -40,26 +40,38 @@ pub fn parse_user_info(value: &serde_json::Value) -> Option<UserInfo> {
 }
 
 pub fn is_active_placement(placement: &placement::Data) -> bool {
-    placement.status.to_lowercase() == "published"
+    // placement.status.to_lowercase() == "published"
+    true
 }
 pub fn is_active_campaign(campaign: &campaign::Data) -> bool {
-    campaign.status.to_lowercase() == "published"
+    // campaign.status.to_lowercase() == "published"
+    true
 }
 pub fn is_active_ad_group(ad_group: &ad_group::Data) -> bool {
-    ad_group.status.to_lowercase() == "published"
+    // ad_group.status.to_lowercase() == "published"
+    true
 }
 pub fn is_active_creative(creative: &creative::Data) -> bool {
-    creative.status.to_lowercase() == "published"
+    // creative.status.to_lowercase() == "published"
+    true
 }
 pub fn is_active_content(content: &content::Data) -> bool {
-    content.status.to_lowercase() == "published"
+    // content.status.to_lowercase() == "published"
+    true
 }
 pub fn is_active_content_type(content_type: &content_type::Data) -> bool {
-    content_type.status.to_lowercase() == "published"
+    // content_type.status.to_lowercase() == "published"
+    true
 }
 pub fn is_active_integration(integration: &integration::Data) -> bool {
-    integration.status.to_lowercase() == "published"
+    // integration.status.to_lowercase() == "published"
+    true
 }
 pub fn is_active_provider(provider: &provider::Data) -> bool {
-    provider.status.to_lowercase() == "published"
+    // provider.status.to_lowercase() == "published"
+    true
+}
+pub fn is_active_ad_set(ad_set: &ad_set::Data) -> bool {
+    // ad_set.status.to_lowercase() == "published"
+    true
 }

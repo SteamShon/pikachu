@@ -5,7 +5,7 @@ use rand_chacha::ChaCha8Rng;
 use rand_distr::{Beta, Distribution};
 use serde::{Serialize, Deserialize};
 
-use crate::db::{content, creative, ad_group, campaign, placement};
+use crate::db::{content, creative, ad_group, campaign, placement, segment, ad_set};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct DimValue {

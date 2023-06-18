@@ -52,7 +52,7 @@ function AdGroupTable({
   const cubeIntegrations = Object.values(
     serviceTree?.integrations || {}
   ).filter(({ provide }) => provide === "CUBE");
-  const providers = Object.values(serviceTree?.providers);
+  const providers = Object.values(serviceTree?.providers || {});
 
   const allCampaigns = Object.values(serviceTree?.placements || {}).flatMap(
     ({ campaigns, ...placement }) => {

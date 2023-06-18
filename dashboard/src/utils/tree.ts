@@ -12,7 +12,6 @@ import type {
   Segment,
   Service,
 } from "@prisma/client";
-import build from "next/dist/build";
 
 type Item = {
   id: string;
@@ -36,7 +35,7 @@ export function buildServiceTree(
           })[];
         })[];
       })[];
-      contentType: ContentType | null;
+      contentType: ContentType;
       integrations: (Integration & {
         provider: Provider | null;
         segments: Segment[];
@@ -103,7 +102,7 @@ export function buildPlacementTree(
         })[];
       })[];
     })[];
-    contentType: ContentType | null;
+    contentType: ContentType;
     integrations: (Integration & {
       provider: Provider | null;
       segments: Segment[];
@@ -112,7 +111,7 @@ export function buildPlacementTree(
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
-  contentType: ContentType | null;
+  contentType: ContentType;
   integrations: Record<string, ReturnType<typeof buildIntegraionTree>>;
   adSets: Record<string, AdSet & { segment: Segment | null; content: Content }>;
 } {

@@ -140,8 +140,8 @@ model Placement {
     serviceId               String?
     campaigns               Campaign[]
     AdvertisersOnPlacements AdvertisersOnPlacements[]
-    contentType             ContentType?              @relation(fields: [contentTypeId], references: [id])
-    contentTypeId           String?
+    contentType             ContentType               @relation(fields: [contentTypeId], references: [id])
+    contentTypeId           String
 
     // createdBy               User                      @relation("createdPlacements", fields: [creatorId], references: [id], onDelete: Cascade)
     // creatorId               String
@@ -340,6 +340,7 @@ model Segment {
     adSets        AdSet[]
 
     @@unique([integrationId, name])
+    @@index(fields: [updatedAt])
 }
 
 model AdSet {
@@ -357,6 +358,7 @@ model AdSet {
     updatedAt   DateTime  @updatedAt
 
     @@unique([placementId, contentId])
+    @@index(fields: [updatedAt])
 }
 
 // External Models 

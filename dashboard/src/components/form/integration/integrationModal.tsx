@@ -3,7 +3,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { integrationRouter } from "../../../server/api/routers/integration";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import { buildIntegraionTree, buildServiceTree } from "../../../utils/tree";
 import type { IntegrationSchemaType } from "../../schema/integration";
 import IntegrationForm from "./integrationForm";
 
@@ -27,7 +27,7 @@ function IntegrationModal({
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
       if (!prev) return prev;
-      prev.integrations[created.id] = created;
+      prev.integrations[created.id] = buildIntegraionTree(created);
       return prev;
     });
     setModalOpen(false);

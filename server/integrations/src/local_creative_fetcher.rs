@@ -35,6 +35,7 @@ impl LocalCreativeFetcher {
     ) -> Option<HashMap<&'a str, &'a HashMap<String, creative::Data>>> {
         let index = filter_index.get(placement_id)?;
         let ad_group_ids = index.search(&user_info);
+        
         let tree = 
             Self::ad_group_ids_to_creatives(ad_group_ids, ad_group_creatives);
         

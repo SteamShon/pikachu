@@ -40,38 +40,29 @@ pub fn parse_user_info(value: &serde_json::Value) -> Option<UserInfo> {
 }
 
 pub fn is_active_placement(placement: &placement::Data) -> bool {
-    // placement.status.to_lowercase() == "published"
-    true
+    placement.status.to_lowercase() == "published"
 }
 pub fn is_active_campaign(campaign: &campaign::Data) -> bool {
-    // campaign.status.to_lowercase() == "published"
-    true
+    campaign.status.to_lowercase() == "published"
 }
 pub fn is_active_ad_group(ad_group: &ad_group::Data) -> bool {
-    // ad_group.status.to_lowercase() == "published"
-    true
+    ad_group.status.to_lowercase() == "published"
 }
 pub fn is_active_creative(creative: &creative::Data) -> bool {
-    // creative.status.to_lowercase() == "published"
-    true
+    creative.status.to_lowercase() == "published"
 }
 pub fn is_active_content(content: &content::Data) -> bool {
-    // content.status.to_lowercase() == "published"
-    true
+    content.status.to_lowercase() == "published"
 }
 pub fn is_active_content_type(content_type: &content_type::Data) -> bool {
-    // content_type.status.to_lowercase() == "published"
-    true
+    content_type.status.to_lowercase() == "published"
 }
 pub fn is_active_integration(integration: &integration::Data) -> bool {
-    // integration.status.to_lowercase() == "published"
-    true
+    integration.status.to_lowercase() == "published"
 }
 pub fn is_active_provider(provider: &provider::Data) -> bool {
-    // provider.status.to_lowercase() == "published"
-    true
+    provider.status.to_lowercase() == "published"
 }
 pub fn is_active_ad_set(ad_set: &ad_set::Data) -> bool {
-    // ad_set.status.to_lowercase() == "published"
-    true
+    ad_set.status.to_lowercase() == "published"
 }

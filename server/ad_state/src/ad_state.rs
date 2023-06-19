@@ -195,15 +195,20 @@ impl AdState {
         let ad_set_ids = index.search(&user_info);
         for ad_set_id in ad_set_ids {
             if let Some(ad_set) = self.ad_sets.get(ad_set_id) {
-                if let Some(content) = self.contents.get(&ad_set.content_id) {
-                    if is_active_content(content) {
-                        contents.push(content);
+                if is_active_ad_set(ad_set) {
+                    if let Some(content) = self.contents.get(&ad_set.content_id) {
+                        if is_active_content(content) {
+                            contents.push(content);
+                        }
                     }
                 }
             }
         }
-        
-        Some(AdSetSearchResult { content_type, contents })
+        if !is_active_placement(&placement) || !is_active_content_type(&content_type) {
+            None
+        } else {
+            Some(AdSetSearchResult { content_type, contents })
+        }
     }
     pub async fn search(
         &self,
@@ -220,6 +225,8 @@ impl AdState {
             placement_id, 
             &user_info
         ).await.unwrap_or(HashMap::new());
+        println!("creatives_map: [{:?}]", creatives_map.len());
+
         let creatives = 
             self.ad_group_ids_to_creatives_with_contents(creatives_map);
         println!("creatives: [{:?}]", creatives.len());

@@ -3,8 +3,8 @@ use common::{
     types::{UserInfo, Stat, CreativeWithContent},
     util::is_active_provider,
 };
-use filter::{index::FilterIndex, filter::Filter};
-use std::collections::HashMap;
+use filter::index::FilterIndex;
+use std::collections::{HashMap, HashSet};
 
 use crate::{function::Function, local_creative_fetcher::LocalCreativeFetcher};
 
@@ -139,7 +139,7 @@ impl Integrations {
     pub fn is_creative_fetcher(integration: &integration::Data) -> bool {
         integration
             .provider()
-            .map(|provider| {
+            .map(|_provider| {
                     integration.provide == "CREATIVE_FETCHER"
             })
             .unwrap_or(false)
@@ -152,14 +152,14 @@ impl Integrations {
         filter_index: &'a HashMap<String, FilterIndex>,
         ad_group_creatives: &'a HashMap<String, HashMap<String, creative::Data>>,
         placement_id: &str, 
-    ) -> Option<HashMap<String, &'a HashMap<String, creative::Data>> > {
-        // let index = filter_index.get(placement_id)?;
-
-        // Some(LocalCreativeFetcher::ad_group_ids_to_creatives(
-        //     &index.non_filter_ids, 
-        //     ad_group_creatives
-        // ))
-        todo!()
+    ) -> Option<HashMap<&'a str, &'a HashMap<String, creative::Data>> > {
+        let index = filter_index.get(placement_id)?;
+        let ids: HashSet<&str> = 
+            index.non_filter_ids.iter().map(|id| id.as_str()).collect();
+        Some(LocalCreativeFetcher::ad_group_ids_to_creatives(
+            ids, 
+            ad_group_creatives
+        ))
     }
     
     pub async fn fetch_creatives<'a: 'b, 'b>(
@@ -169,16 +169,19 @@ impl Integrations {
         placement_id: &str, 
         user_info: &UserInfo,
     ) -> Option<HashMap<&'a str, &'a HashMap<String, creative::Data>> > {
-        match self.get_creative_fetcher_function(placement_id)? {
-            Function::LocalCreativeFetcher { function } => 
+        match self.get_creative_fetcher_function(placement_id) {
+            Some(Function::LocalCreativeFetcher { function }) => 
                 function.apply(filter_index, ad_group_creatives, placement_id, user_info).await,
-            _ => None,
+            _ => { 
+                let function = LocalCreativeFetcher {};
+                function.apply(filter_index, ad_group_creatives, placement_id, user_info).await
+            }
         }
     }
     pub fn is_ranker_integration(integration: &integration::Data) -> bool {
         integration
             .provider()
-            .map(|provider| {
+            .map(|_provider| {
                 integration.provide == "RANKER"
             })
             .unwrap_or(false)

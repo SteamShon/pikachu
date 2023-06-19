@@ -9,7 +9,7 @@ import {
   debounce,
   TextField,
 } from "@mui/material";
-import type { Integration, Placement } from "@prisma/client";
+import type { Integration, Placement, Provider } from "@prisma/client";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -31,7 +31,7 @@ function SearchRequestForm({
   onSubmit,
 }: {
   placements: (Placement & {
-    integrations: Integration[];
+    integrations: (Integration & { provider: Provider | null })[];
   })[];
   setMatchedAds: Dispatch<SetStateAction<SearchResult[]>>;
   onSubmit: (input: SearchRequestSchemaType) => void;
@@ -43,6 +43,9 @@ function SearchRequestForm({
   const [dimension, setDimension] = useState<string | undefined>(undefined);
   const [options, setOptions] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const [cubeIntegration, setCubeIntegration] = useState<
+    (Integration & { provider: Provider | null }) | undefined
+  >(undefined);
 
   const [open, setOpen] = useState(false);
   const loading = open && options.length === 0;
@@ -55,9 +58,13 @@ function SearchRequestForm({
     control,
     name: "dimensionValues",
   });
-  const cubeIntegration = placement?.integrations.find(
-    ({ provide }) => provide === "CUBE"
-  );
+
+  useEffect(() => {
+    setCubeIntegration(
+      placement?.integrations.find(({ provide }) => provide === "CUBE")
+    );
+  }, [placement]);
+
   useEffect(() => {
     if (cubeIntegration) {
       const load = async () => {
@@ -70,7 +77,7 @@ function SearchRequestForm({
         const sql = `DESCRIBE ${cubeIntegrationSql}`;
         try {
           const rows = await executeQuery({
-            details: cubeIntegration.details,
+            details: cubeIntegration?.provider?.details,
             query: sql,
           });
           setMetadata(rows);
@@ -80,7 +87,7 @@ function SearchRequestForm({
       };
       load();
     }
-  }, [cubeIntegration, placement]);
+  }, [cubeIntegration]);
 
   const fetchRemoteValues = useMemo(
     () =>
@@ -100,7 +107,7 @@ function SearchRequestForm({
           try {
             const values = (
               await fetchValues({
-                details: cubeIntegration?.details,
+                details: cubeIntegration?.provider?.details,
                 sql: cubeIntegrationSql,
                 fieldName: field,
                 columnType,
@@ -168,7 +175,7 @@ function SearchRequestForm({
                   <input
                     className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
                     {...register("apiServerHost")}
-                    defaultValue={"https://pikachu-api-server.fly.dev"}
+                    defaultValue={"https://pikachu-api-server.fly.dev/search"}
                   />
                 </dd>
               </div>

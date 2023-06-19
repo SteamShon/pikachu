@@ -44,20 +44,25 @@ function SideMenu() {
       link: `/service/${serviceId}/dashboard?step=placements`,
       subMenus: [
         {
-          title: "campaign",
+          title: "adSets",
           icon: <GiBullseye />,
-          link: `/service/${serviceId}/dashboard?step=campaigns`,
+          link: `/service/${serviceId}/dashboard?step=adSets`,
         },
-        {
-          title: "adGroup",
-          icon: <GrGroup />,
-          link: `/service/${serviceId}/dashboard?step=adGroups`,
-        },
-        {
-          title: "creative",
-          icon: <AiOutlinePicture />,
-          link: `/service/${serviceId}/dashboard?step=creatives`,
-        },
+        // {
+        //   title: "campaign",
+        //   icon: <GiBullseye />,
+        //   link: `/service/${serviceId}/dashboard?step=campaigns`,
+        // },
+        // {
+        //   title: "adGroup",
+        //   icon: <GrGroup />,
+        //   link: `/service/${serviceId}/dashboard?step=adGroups`,
+        // },
+        // {
+        //   title: "creative",
+        //   icon: <AiOutlinePicture />,
+        //   link: `/service/${serviceId}/dashboard?step=creatives`,
+        // },
       ],
     },
     {
@@ -69,6 +74,11 @@ function SideMenu() {
           title: "integrations",
           icon: <AiOutlineApi />,
           link: `/service/${serviceId}/dashboard?step=integrations`,
+        },
+        {
+          title: "segments",
+          icon: <AiOutlineApi />,
+          link: `/service/${serviceId}/dashboard?step=segments`,
         },
       ],
     },

@@ -17,7 +17,11 @@ export const placementRouter = createTRPCRouter({
           serviceId,
         },
         include: {
-          integrations: true,
+          integrations: {
+            include: {
+              provider: true,
+            },
+          },
           contentType: {
             include: {
               contents: true,

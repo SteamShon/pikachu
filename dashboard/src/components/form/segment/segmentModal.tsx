@@ -1,13 +1,11 @@
 import { Dialog, DialogContent } from "@mui/material";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import type { providerRouter } from "../../../server/api/routers/provider";
+import type { segmentRouter } from "../../../server/api/routers/segment";
 import { api } from "../../../utils/api";
 import type { buildServiceTree } from "../../../utils/tree";
-import type { ProviderSchemaType } from "../../schema/provider";
+import type { SegmentSchemaType } from "../../schema/segment";
 import SegmentForm from "./segmentForm";
-import { segmentRouter } from "../../../server/api/routers/segment";
-import { SegmentSchemaType } from "../../schema/segment";
 
 function SegmentModal({
   service,
@@ -30,6 +28,7 @@ function SegmentModal({
     setServiceTree((prev) => {
       if (!prev) return prev;
       const integration = prev.integrations[created.integrationId];
+
       if (!integration) return prev;
       integration.segments[created.id] = created;
       return prev;

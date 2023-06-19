@@ -5,20 +5,19 @@ import type { Prisma } from "@prisma/client";
 import { useSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
 import type { RuleGroupType } from "react-querybuilder";
-import QueryBuilder, { formatQuery } from "react-querybuilder";
+import QueryBuilder from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
 
 import { QueryBuilderDnD } from "@react-querybuilder/dnd";
 import * as ReactDnD from "react-dnd";
 import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
-import { extractValue } from "../../utils/json";
 import {
   countPopulation,
   executeQuery,
   formatQueryCustom,
 } from "../../utils/awsS3DuckDB";
+import { extractValue } from "../../utils/json";
 import AsyncValueEditor from "../common/AsyncValueEditor";
-import { init } from "@jsonforms/core";
 
 const emptyQuery: RuleGroupType = { combinator: "and", rules: [] };
 
@@ -145,7 +144,7 @@ function SegmentQueryBuilder({
     { name: "in", label: "in" },
     { name: "notIn", label: "not in" },
   ];
-  console.log(fields);
+
   return (
     <>
       {fields.length > 0 && (

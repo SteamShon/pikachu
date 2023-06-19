@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 
-use common::{types::{Stat, AdSetWithContent}, db::ad_set, util::is_active_ad_set};
+use common::{types::{Stat}, db::ad_set, util::is_active_ad_set};
 
 #[derive(Debug, Clone, Default)]
 pub struct AdSetThompsonSamplingRanker {

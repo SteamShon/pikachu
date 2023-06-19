@@ -69,6 +69,12 @@ pub struct CreativeFeedback {
     stat: Stat,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct AdSetFeedback {
+    ad_set_id: String,
+    stat: Stat,
+}
+
 
 #[derive(Serialize)]
 pub struct SearchResult<'a> {
@@ -132,6 +138,7 @@ pub struct AdState {
     //TODO: Make Different implementation for Ranker trait per placement.
     // pub ranker: DefaultRanker<Creative>,
     pub creatives_stat: HashMap<String, Stat>,
+    pub ad_sets_stat: HashMap<String, Stat>,
     pub integrations: Integrations,
 }
 impl Default for AdState {
@@ -151,6 +158,7 @@ impl Default for AdState {
             ad_set_index: Default::default(),
             // ranker: Default::default(),
             creatives_stat: Default::default(),
+            ad_sets_stat: Default::default(),
             integrations: Integrations::default(),
             // clients: Default::default(),
             // functions: Default::default(),
@@ -201,7 +209,7 @@ impl AdState {
             &user_info
         ).await.unwrap_or(Vec::new());
         let top_ad_sets = 
-            self.integrations.rank_ad_sets(placement_id, &self.creatives_stat, ad_sets, top_k.unwrap_or(1));
+            self.integrations.rank_ad_sets(placement_id, &self.ad_sets_stat, ad_sets, top_k.unwrap_or(1));
 
         for (ad_set, _score) in top_ad_sets {
             if let Some(content) = self.contents.get(&ad_set.content_id) {
@@ -232,20 +240,15 @@ impl AdState {
             placement_id, 
             &user_info
         ).await.unwrap_or(HashMap::new());
-        println!("creatives_map: [{:?}]", creatives_map.len());
-
+        
         let creatives = 
             self.ad_group_ids_to_creatives_with_contents(creatives_map);
-        println!("creatives: [{:?}]", creatives.len());
         let ad_group_creatives = 
             self.ad_group_creatives(placement_id, creatives, top_k);
-        println!("ad_groups: [{:?}]", ad_group_creatives.len());
         let campaign_ad_groups = 
             self.campaign_ad_groups(ad_group_creatives);
-        println!("campaigns: [{:?}]", campaign_ad_groups.len());
         let matched_ads = 
             self.placement_campaigns(campaign_ad_groups);
-        println!("placements: [{:?}]", matched_ads.len());
         
         SearchResult {
             matched_ads,
@@ -385,6 +388,23 @@ impl AdState {
             if creatives.contains_key(ad_group_id) {
                 creatives_stat
                     .entry(creative_id.clone())
+                    .or_insert_with(|| Stat::default())
+                    .merge(stat);
+            }
+        }
+    }
+
+    pub fn update_ad_set_feedback(
+        &mut self, 
+        ad_set_feedbacks: &Vec<AdSetFeedback>
+    ) {
+        let ad_sets_stat = &mut self.ad_sets_stat;
+        let ad_sets = &self.ad_sets;
+        
+        for AdSetFeedback { ad_set_id, stat } in ad_set_feedbacks {
+            if ad_sets.contains_key(ad_set_id) {
+                ad_sets_stat
+                    .entry(ad_set_id.clone())
                     .or_insert_with(|| Stat::default())
                     .merge(stat);
             }

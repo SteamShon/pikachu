@@ -1,6 +1,6 @@
 use common::{
     db::{integration, placement, provider, creative, ad_set},
-    types::{UserInfo, Stat, CreativeWithContent, AdSetWithContent},
+    types::{UserInfo, Stat, CreativeWithContent},
     util::{is_active_provider, is_active_ad_set},
 };
 use filter::index::FilterIndex;

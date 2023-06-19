@@ -1,8 +1,7 @@
 
-use std::collections::{HashMap, HashSet};
-use common::{types::UserInfo, db::{creative, content, ad_set}, util::is_active_ad_set};
+use std::collections::{HashMap};
+use common::{types::UserInfo, db::{ad_set}, util::is_active_ad_set};
 use filter::index::FilterIndex;
-use prisma_client_rust::chrono::Local;
 
 #[derive(Debug, Clone, Default)]
 pub struct LocalAdSetFetcher {

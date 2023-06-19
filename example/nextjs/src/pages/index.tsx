@@ -9,7 +9,8 @@ const Home: NextPage = () => {
   const eventEndpoint = env.NEXT_PUBLIC_PIKACHU_EVENT_ENDPOINT;
 
   const featuredPlacementId = "clgf56kk0000hl408m2ni4yy0";
-  const rankingCardPlacementId = "clgf7s3ji0005jl08u8oqg3sj";
+  const rankingCardPlacementId = "clix718cx000ms4uny65m37ay";
+  // "clgf7s3ji0005jl08u8oqg3sj";
   const {
     renderCode: featuredRenderCode,
     setUserInfo: featuredSetUserInfo,
@@ -19,6 +20,7 @@ const Home: NextPage = () => {
     serviceId,
     placementId: featuredPlacementId,
     eventEndpoint,
+    useAdSet: true,
     debug: true,
   });
 
@@ -31,6 +33,7 @@ const Home: NextPage = () => {
     serviceId,
     placementId: rankingCardPlacementId,
     eventEndpoint,
+    useAdSet: true,
     debug: true,
   });
 

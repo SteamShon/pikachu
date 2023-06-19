@@ -22,12 +22,25 @@ export function replacePropsInFunction({
   creatives,
 }: {
   code: string;
-  creatives: {id: string; content: {[key:string]:unknown}; [key:string]:unknown}[];
+  creatives: {
+    id: string;
+    content: { [key: string]: unknown };
+    [key: string]: unknown;
+  }[];
 }) {
   const replaceValue = `render (new Test(${JSON.stringify(creatives)}))`;
 
   return [removeRenderFunction(code), replaceValue].join('\n');
 }
+export const parseAdSetResponse = (data: Record<string, unknown>) => {
+  const contentType = data?.content_type as Record<string, unknown> | undefined;
+  const details = contentType?.details as Record<string, unknown> | undefined;
+  const code = details?.code as string | undefined;
+
+  const contents = data?.contents as Record<string, unknown>[] | undefined;
+
+  return { code, contents };
+};
 export const parseResponse = (data: Record<string, unknown>) => {
   const code: string | undefined = (
     (
@@ -38,14 +51,16 @@ export const parseResponse = (data: Record<string, unknown>) => {
     )?.details as Record<string, unknown> | undefined
   )?.code as string;
 
-  const creatives: (Record<string, unknown> & { content?:  Record<string, unknown>})[] | undefined = (
+  const creatives:
+    | (Record<string, unknown> & { content?: Record<string, unknown> })[]
+    | undefined = (
     data.matched_ads as Record<string, unknown>[] | undefined
   )?.flatMap((placement) => {
     return (placement.campaigns as Record<string, unknown>[])?.flatMap(
       (campaign) => {
         return (campaign.adGroups as Record<string, unknown>[])?.flatMap(
           (adGroup) => {
-            return (adGroup.creatives as Record<string, unknown>[])
+            return adGroup.creatives as Record<string, unknown>[];
           },
         );
       },

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
   jsonParseWithFallback,
+  parseAdSetResponse,
   parseResponse,
   replacePropsInFunction,
 } from '../../helpers/json';
@@ -12,11 +13,14 @@ import { LivePreview, LiveProvider } from 'react-live-runner';
 export type UserInfo = {
   userId: string;
   info: Record<string, string[]>;
-}
+};
 export type IUsePikachu = {
   code: string | undefined;
   renderCode: string | undefined;
-  creatives: (Record<string, unknown> & { content?: Record<string, unknown>})[] | undefined;
+  creatives:
+    | (Record<string, unknown> & { content?: Record<string, unknown> })[]
+    | undefined;
+  contents: Record<string, unknown>[] | undefined;
   userInfo: UserInfo;
   setUserInfo: React.Dispatch<React.SetStateAction<UserInfo>>;
   component: JSX.Element | undefined;
@@ -28,26 +32,31 @@ export const usePikachu = ({
   eventEndpoint,
   eventTopic,
   options,
-  debug
-}:{
-  endpoint: string,
-  serviceId: string,
-  placementId: string,
-  eventEndpoint?: string,
-  eventTopic?: string,
-  options?: { 
-    threshold: number; 
-    triggerOnce: boolean; 
-    onChange: (inView: boolean, entry: IntersectionObserverEntry) => void
-  },
-  debug?: boolean,
+  useAdSet,
+  debug,
+}: {
+  endpoint: string;
+  serviceId: string;
+  placementId: string;
+  eventEndpoint?: string;
+  eventTopic?: string;
+  options?: {
+    threshold: number;
+    triggerOnce: boolean;
+    onChange: (inView: boolean, entry: IntersectionObserverEntry) => void;
+  };
+  useAdSet?: boolean;
+  debug?: boolean;
 }): IUsePikachu => {
   const [code, setCode] = useState<string | undefined>(undefined);
   const [creatives, setCreatives] = useState<Record<string, unknown>[] | undefined>(
     undefined,
   );
+  const [contents, setContents] = useState<Record<string, unknown>[] | undefined>(
+    undefined,
+  );
   const [renderCode, setRenderCode] = useState<string | undefined>(undefined);
-  const [userInfo, setUserInfo] = useState<UserInfo>({userId: "", info: {}});
+  const [userInfo, setUserInfo] = useState<UserInfo>({ userId: '', info: {} });
   const [component, setComponent] = useState<JSX.Element | undefined>(undefined);
 
   const DefaultOptions = {
@@ -55,9 +64,9 @@ export const usePikachu = ({
     triggerOnce: true,
     onChange: (inView: boolean, entry: IntersectionObserverEntry) => {
       if (!inView) return;
-      
+
       const nodes: HTMLElement[] = [];
-      entry.target.querySelector(".placement")?.childNodes.forEach((node) => {
+      entry.target.querySelector('.placement')?.childNodes.forEach((node) => {
         const nodeId = (node as HTMLElement).id;
         if (!nodeId) return;
         if (userInfo.userId.length == 0) return;
@@ -65,21 +74,21 @@ export const usePikachu = ({
         nodes.push(node as HTMLElement);
       });
       const impressions = nodes.map((node) => {
-        return { 
-          who: userInfo.userId, 
-          what: 'impression', 
+        return {
+          who: userInfo.userId,
+          what: 'impression',
           which: node.id,
-          when: Date.now(), 
+          when: Date.now(),
         };
-      })
-      // send impressions 
+      });
+      // send impressions
       if (debug) {
         console.log(impressions);
       }
       if (eventEndpoint) {
-        const topic = eventTopic || "events";
+        const topic = eventTopic || 'events';
         const url = `${eventEndpoint}/${topic}/${serviceId}`;
-          
+
         if (debug) {
           console.log(url);
           console.log(impressions);
@@ -88,26 +97,28 @@ export const usePikachu = ({
         axios
           .post(`${url}`, impressions)
           .then((res) => console.log(res))
-          .catch((e) => console.log(e))
+          .catch((e) => console.log(e));
       }
       nodes.forEach((node) => {
-        node.addEventListener('click', e => {
+        node.addEventListener('click', (e) => {
           e.stopPropagation();
-          
-          const payload = [{ 
-            who: userInfo.userId, 
-            what: 'click', 
-            which: node.id,
-            when: Date.now(), 
-          }];
+
+          const payload = [
+            {
+              who: userInfo.userId,
+              what: 'click',
+              which: node.id,
+              when: Date.now(),
+            },
+          ];
 
           if (debug) {
             console.log(payload);
           }
           if (eventEndpoint) {
-            const topic = eventTopic || "events";
+            const topic = eventTopic || 'events';
             const url = `${eventEndpoint}/${topic}/${serviceId}`;
-            
+
             if (debug) {
               console.log(url);
               console.log(payload);
@@ -115,14 +126,14 @@ export const usePikachu = ({
             axios
               .post(`${url}`, payload)
               .then((res) => console.log(res))
-              .catch((e) => console.log(e))
+              .catch((e) => console.log(e));
           }
         });
-      })
-    }
+      });
+    },
   };
   const { ref } = useInView(options || DefaultOptions);
-  
+
   const fetchComponent = (userInfo: UserInfo) => {
     axios
       .post(endpoint, {
@@ -134,40 +145,60 @@ export const usePikachu = ({
         if (debug) {
           console.log(data);
         }
-        const { code, creatives } = parseResponse(data as Record<string, unknown>);
-
-        if (debug) {
-          console.log(code);
-          console.log(creatives);
+        let contentValues;
+        let parsedCode;
+        if (useAdSet) {
+          const { code, contents } = parseAdSetResponse(
+            data as Record<string, unknown>,
+          );
+          parsedCode = code;
+          contentValues = contents?.map((content) => {
+            return {
+              id: content.id as string,
+              content: jsonParseWithFallback(content?.values as string),
+            };
+          });
+          if (debug) {
+            console.log(code);
+            console.log(contents);
+          }
+          setCode(code);
+          setContents(contents);
+        } else {
+          const { code, creatives } = parseResponse(data as Record<string, unknown>);
+          parsedCode = code;
+          contentValues = creatives?.map((creative) => {
+            return {
+              id: creative.id as string,
+              content: jsonParseWithFallback(creative?.content?.values as string),
+            };
+          });
+          if (debug) {
+            console.log(code);
+            console.log(creatives);
+          }
+          setCode(code);
+          setCreatives(creatives);
         }
-        setCode(code);
-        setCreatives(creatives);
 
-        if (!code || !creatives) {
+        if (!parsedCode || !contentValues) {
           setRenderCode(undefined);
         } else {
-          const contentValues = (creatives || []).map((creative) => {
-            return {
-              id: creative.id as string, 
-              content: jsonParseWithFallback(creative?.content?.values as string)
-            }}
-          );
-
           const renderCode = replacePropsInFunction({
-            code,
+            code: parsedCode,
             creatives: contentValues,
           });
           if (debug) {
             console.log(renderCode);
           }
           setRenderCode(renderCode);
-          
+
           setComponent(
             <div ref={ref}>
               <LiveProvider code={renderCode}>
                 <LivePreview />
               </LiveProvider>
-            </div>
+            </div>,
           );
         }
       })
@@ -178,7 +209,7 @@ export const usePikachu = ({
     fetchComponent(userInfo);
   }, [endpoint, serviceId, placementId, userInfo]);
 
-  return { code, creatives, renderCode, userInfo, setUserInfo, component };
+  return { code, creatives, contents, renderCode, userInfo, setUserInfo, component };
 };
 
 usePikachu.PropTypes = {

@@ -153,12 +153,13 @@ impl Integrations {
         ad_group_creatives: &'a HashMap<String, HashMap<String, creative::Data>>,
         placement_id: &str, 
     ) -> Option<HashMap<String, &'a HashMap<String, creative::Data>> > {
-        let index = filter_index.get(placement_id)?;
+        // let index = filter_index.get(placement_id)?;
 
-        Some(LocalCreativeFetcher::ad_group_ids_to_creatives(
-            &index.non_filter_ids, 
-            ad_group_creatives
-        ))
+        // Some(LocalCreativeFetcher::ad_group_ids_to_creatives(
+        //     &index.non_filter_ids, 
+        //     ad_group_creatives
+        // ))
+        todo!()
     }
     
     pub async fn fetch_creatives<'a: 'b, 'b>(
@@ -167,7 +168,7 @@ impl Integrations {
         ad_group_creatives: &'a HashMap<String, HashMap<String, creative::Data>>,
         placement_id: &str, 
         user_info: &UserInfo,
-    ) -> Option<HashMap<String, &'a HashMap<String, creative::Data>> > {
+    ) -> Option<HashMap<&'a str, &'a HashMap<String, creative::Data>> > {
         match self.get_creative_fetcher_function(placement_id)? {
             Function::LocalCreativeFetcher { function } => 
                 function.apply(filter_index, ad_group_creatives, placement_id, user_info).await,

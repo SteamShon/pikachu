@@ -204,18 +204,18 @@ impl FilterIndex {
         self.remove_all_dimensions(filters_to_delete);
     }
 
-    fn generate_dimension_candidates(
+    fn generate_dimension_candidates<'a>(
         user_info: &UserInfo,
         dimension: &String,
-        index: &HashMap<DimValue, HashSet<String>>,
+        index: &'a HashMap<DimValue, HashSet<String>>,
         is_not: bool,
-    ) -> HashSet<String> {
-        let mut union: HashSet<String> = HashSet::new();
+    ) -> HashSet<&'a str> {
+        let mut union: HashSet<&str> = HashSet::new();
         // empty key need to be lookup.
         let empty_dim_value = DimValue::new(dimension, "empty", is_not);
         if let Some(internal_ids) = index.get(&empty_dim_value) {
             for internal_id in internal_ids {
-                union.insert(internal_id.clone());
+                union.insert(internal_id);
             }
         }
         if let Some(values) = user_info.get(dimension) {
@@ -223,7 +223,7 @@ impl FilterIndex {
                 let dim_value = DimValue::new(dimension, value, is_not);
                 if let Some(internal_ids) = index.get(&dim_value) {
                     for internal_id in internal_ids {
-                        union.insert(internal_id.clone());
+                        union.insert(internal_id);
                     }
                 }
             }
@@ -231,26 +231,26 @@ impl FilterIndex {
         //println!("{:?} {:?} candidates {:?}", is_not, dimension, union);
         union
     }
-    fn to_ids(internal_ids: &HashSet<String>) -> HashSet<String> {
+    fn to_ids<'a>(internal_ids: &HashSet<&'a str>) -> HashSet<&'a str> {
         let mut ids = HashSet::new();
         for internal_id in internal_ids {
             if let Some((id, _seq)) = internal_id.rsplit_once("_") {
-                ids.insert(String::from(id));
+                ids.insert(id);
             }
         }
         ids
     }
-    fn search_positive_internal_ids(&self, user_info: &UserInfo) -> Option<HashSet<String>> {
+    fn search_positive_internal_ids(&self, user_info: &UserInfo) -> Option<HashSet<&str>> {
         let all_dimensions = &self.all_dimensions;
         let true_index = &self.index;
-        let mut positive_candidates: Option<HashSet<String>> = None;
+        let mut positive_candidates: Option<HashSet<&str>> = None;
 
         for (dimension, _ids) in all_dimensions.iter() {
             let dim_candidates =
                 Self::generate_dimension_candidates(user_info, dimension, true_index, false);
             let intersections = positive_candidates
                 .map(|prev| {
-                    let mut intersections: HashSet<String> = HashSet::new();
+                    let mut intersections = HashSet::new();
                     for common_internal_id in prev.intersection(&dim_candidates) {
                         intersections.insert(common_internal_id.clone());
                     }
@@ -263,10 +263,10 @@ impl FilterIndex {
         //println!("positive candidates: {:?}", positive_candidates);
         positive_candidates
     }
-    fn search_negative_ids(&self, user_info: &UserInfo) -> HashSet<String> {
+    fn search_negative_ids(&self, user_info: &UserInfo) -> HashSet<&str> {
         let all_dimensions = &self.all_dimensions;
         let index = &self.index;
-        let mut union: HashSet<String> = HashSet::new();
+        let mut union = HashSet::new();
 
         for (dimension, _ids) in all_dimensions.iter() {
             let dim_candidates =
@@ -276,12 +276,12 @@ impl FilterIndex {
 
         union
     }
-    pub fn search(&self, user_info: &UserInfo) -> HashSet<String> {
-        let positive_candidates = self.search_positive_internal_ids(user_info);
+    pub fn search(&self, user_info: &UserInfo) -> HashSet<&str> {
+        let positive_candidates = 
+            self.search_positive_internal_ids(user_info).unwrap_or(HashSet::default());
         let negative_candidates = self.search_negative_ids(user_info);
-
-        let matched_ids =
-            &Self::to_ids(&positive_candidates.unwrap_or(HashSet::new())) - &negative_candidates;
+        let ids = &positive_candidates - &negative_candidates;
+        let matched_ids = Self::to_ids(&ids);
 
         //println!("index search: {:?}", matched_ids);
         matched_ids

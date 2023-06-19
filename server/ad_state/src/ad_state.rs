@@ -161,7 +161,7 @@ impl AdState {
     pub fn from(other: &Self) -> Self {
         AdState { ..other.clone() }
     }
-    pub fn get_ad_group(&self, ad_group_id: &String) -> Option<&ad_group::Data> {
+    pub fn get_ad_group(&self, ad_group_id: &str) -> Option<&ad_group::Data> {
         self.ad_groups.get(ad_group_id)
     }
     pub fn get_campaign(&self, ad_group: &ad_group::Data) -> Option<&campaign::Data> {
@@ -194,7 +194,7 @@ impl AdState {
         let index = self.ad_set_index.get(placement_id)?;
         let ad_set_ids = index.search(&user_info);
         for ad_set_id in ad_set_ids {
-            if let Some(ad_set) = self.ad_sets.get(&ad_set_id) {
+            if let Some(ad_set) = self.ad_sets.get(ad_set_id) {
                 if let Some(content) = self.contents.get(&ad_set.content_id) {
                     if is_active_content(content) {
                         contents.push(content);
@@ -265,13 +265,13 @@ impl AdState {
 
     fn ad_group_ids_to_creatives_with_contents<'a>(
         &'a self,
-        ad_group_id_creatives: HashMap<String, &'a HashMap<String, creative::Data>>,
+        ad_group_id_creatives: HashMap<&'a str, &'a HashMap<String, creative::Data>>,
     )  -> Vec<CreativeWithContent<'a>>
     {
         let mut creatives = Vec::new();
 
         for (ad_group_id, creatives_in_ad_group) in ad_group_id_creatives {
-            if let Some(ad_group) = self.get_ad_group(&ad_group_id) {
+            if let Some(ad_group) = self.get_ad_group(ad_group_id) {
                 if !is_active_ad_group(ad_group) {
                     continue;
                 }
@@ -421,7 +421,7 @@ impl AdState {
         &self,
         placement_id: &str,
         user_info: &UserInfo
-    ) -> Option<HashMap<String, &HashMap<String, creative::Data>> > {
+    ) -> Option<HashMap<&str, &HashMap<String, creative::Data>> > {
         self.integrations.fetch_creatives(
             &self.filter_index, 
             &self.creatives, 

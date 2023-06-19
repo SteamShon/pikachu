@@ -1,12 +1,12 @@
 use common::{
-    db::{integration, placement, provider, creative},
-    types::{UserInfo, Stat, CreativeWithContent},
-    util::is_active_provider,
+    db::{integration, placement, provider, creative, ad_set},
+    types::{UserInfo, Stat, CreativeWithContent, AdSetWithContent},
+    util::{is_active_provider, is_active_ad_set},
 };
 use filter::index::FilterIndex;
 use std::collections::{HashMap, HashSet};
 
-use crate::{function::Function, local_creative_fetcher::LocalCreativeFetcher};
+use crate::{function::Function, local_creative_fetcher::LocalCreativeFetcher, local_ad_set_fetcher::LocalAdSetFetcher};
 
 #[derive(Debug, Clone)]
 pub struct Integrations {
@@ -144,8 +144,19 @@ impl Integrations {
             })
             .unwrap_or(false)
     }
+    pub fn is_ad_set_fetcher(integration: &integration::Data) -> bool {
+        integration
+            .provider()
+            .map(|_provider| {
+                    integration.provide == "AD_SET_FETCHER"
+            })
+            .unwrap_or(false)
+    }
     fn get_creative_fetcher_function(&self, placement_id: &str) -> Option<&Function> {
         self.get_integration(placement_id, Self::is_creative_fetcher)
+    }
+    fn get_ad_set_fetcher_function(&self, placement_id: &str) -> Option<&Function> {
+        self.get_integration(placement_id, Self::is_ad_set_fetcher)
     }
     pub async fn fetch_non_filter_creatives<'a: 'b, 'b>(
         &'b self,
@@ -161,7 +172,22 @@ impl Integrations {
             ad_group_creatives
         ))
     }
-    
+    pub async fn fetch_ad_sets<'a: 'b, 'b>(
+        &'b self,
+        ad_set_index: &'a HashMap<String, FilterIndex>,
+        ad_sets: &'a HashMap<String, ad_set::Data>,
+        placement_id: &str, 
+        user_info: &UserInfo,
+    ) -> Option<Vec<&'a ad_set::Data>> {
+        match self.get_ad_set_fetcher_function(placement_id) {
+            Some(Function::LocalAdSetFetcher { function }) => 
+                function.apply(ad_set_index, ad_sets, placement_id, user_info).await,
+            _ => { 
+                let function = LocalAdSetFetcher::default();
+                function.apply(ad_set_index, ad_sets, placement_id, user_info).await
+            }
+        }
+    }
     pub async fn fetch_creatives<'a: 'b, 'b>(
         &'b self,
         filter_index: &'a HashMap<String, FilterIndex>,
@@ -189,6 +215,17 @@ impl Integrations {
     fn get_ranker_function(&self, placement_id: &str) -> Option<&Function> {
         self.get_integration(placement_id, Self::is_ranker_integration)
     }
+    pub fn is_ad_set_ranker_integration(integration: &integration::Data) -> bool {
+        integration
+            .provider()
+            .map(|_provider| {
+                integration.provide == "AD_SET_RANKER"
+            })
+            .unwrap_or(false)
+    }
+    fn get_ad_set_ranker_function(&self, placement_id: &str) -> Option<&Function> {
+        self.get_integration(placement_id, Self::is_ad_set_ranker_integration)
+    }
 
     pub fn rank<'a>(
         &'a self,
@@ -205,6 +242,28 @@ impl Integrations {
                 let mut top_candidates = Vec::new();
                 for candidate in candidates {
                     top_candidates.push((candidate, 0.0));
+                }
+                top_candidates
+            }
+        }
+    }
+    pub fn rank_ad_sets<'a>(
+         &'a self,
+        placement_id: &str,
+        ad_sets_stat: &'a HashMap<String, Stat>,
+        candidates: Vec<&'a ad_set::Data>,
+        k: usize,
+    )-> Vec<(&'a ad_set::Data, f32)> {
+        match self.get_ad_set_ranker_function(placement_id) {
+            Some(Function::AdSetThompsonSamplingRanker { function }) => {
+                function.apply(ad_sets_stat, candidates, k)
+            }
+            _ => {
+                let mut top_candidates = Vec::new();
+                for candidate in candidates {
+                    if is_active_ad_set(candidate) {
+                        top_candidates.push((candidate, 0.0));
+                    }
                 }
                 top_candidates
             }

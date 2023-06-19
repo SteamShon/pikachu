@@ -81,6 +81,7 @@ async fn search_ad_sets(
         &request.service_id,
         &request.placement_id,
         &request.user_info,
+        request.top_k,
     ).await;
 
     HttpResponse::Ok().json(ad_set_search_result)

@@ -14,6 +14,7 @@ use prisma_client_rust::chrono::{DateTime, FixedOffset};
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 
+
 pub struct AdGroup {
     pub data: ad_group::Data,
 }
@@ -185,25 +186,31 @@ impl AdState {
         _service_id: &str,
         placement_id: &str,
         user_info_json: &serde_json::Value,
+        top_k: Option<usize>,
     ) -> Option<AdSetSearchResult> {
         let mut contents = Vec::new();
         let placement = self.placements.get(placement_id)?;
         let content_type = self.content_types.get(&placement.content_type_id)?;
 
         let user_info = parse_user_info(user_info_json).unwrap();
-        let index = self.ad_set_index.get(placement_id)?;
-        let ad_set_ids = index.search(&user_info);
-        for ad_set_id in ad_set_ids {
-            if let Some(ad_set) = self.ad_sets.get(ad_set_id) {
-                if is_active_ad_set(ad_set) {
-                    if let Some(content) = self.contents.get(&ad_set.content_id) {
-                        if is_active_content(content) {
-                            contents.push(content);
-                        }
-                    }
+
+        let ad_sets = self.integrations.fetch_ad_sets(
+            &self.ad_set_index, 
+            &self.ad_sets, 
+            placement_id, 
+            &user_info
+        ).await.unwrap_or(Vec::new());
+        let top_ad_sets = 
+            self.integrations.rank_ad_sets(placement_id, &self.creatives_stat, ad_sets, top_k.unwrap_or(1));
+
+        for (ad_set, _score) in top_ad_sets {
+            if let Some(content) = self.contents.get(&ad_set.content_id) {
+                if is_active_content(content) {
+                    contents.push(content);
                 }
             }
         }
+
         if !is_active_placement(&placement) || !is_active_content_type(&content_type) {
             None
         } else {
@@ -239,35 +246,11 @@ impl AdState {
         let matched_ads = 
             self.placement_campaigns(campaign_ad_groups);
         println!("placements: [{:?}]", matched_ads.len());
-        // let non_filter_creatives_map = self.integrations.fetch_non_filter_creatives(
-        //     &self.filter_index, 
-        //     &self.creatives, 
-        //     placement_id
-        // ).await.unwrap_or(HashMap::new());
-        // let non_filter_creatives = self.ad_group_ids_to_creatives_with_contents(non_filter_creatives_map);
-        // let non_filter_creatives_meta = self.merge_ids_with_ad_metas(placement_id, &user_info, &non_filter_creatives, top_k);
-        // let non_filter_ads = self.build_placement_tree(non_filter_creatives_meta);
         
         SearchResult {
             matched_ads,
             non_filter_ads: Vec::new()
         }
-        
-        // let matched_ads = self.build_placement_tree(creatives_meta);
-        
-        // let non_filter_creatives_map = self.integrations.fetch_non_filter_creatives(
-        //     &self.filter_index, 
-        //     &self.creatives, 
-        //     placement_id
-        // ).await.unwrap_or(HashMap::new());
-        // let non_filter_creatives = self.ad_group_ids_to_creatives_with_contents(&non_filter_creatives_map);
-        // let non_filter_creatives_meta = self.merge_ids_with_ad_metas(&user_info, non_filter_creatives, top_k);
-        // let non_filter_ads = self.build_placement_tree(non_filter_creatives_meta);
-        
-        // SearchResult {
-        //     matched_ads,
-        //     non_filter_ads,
-        // }
     }
 
     fn ad_group_ids_to_creatives_with_contents<'a>(
@@ -432,6 +415,19 @@ impl AdState {
         self.integrations.fetch_creatives(
             &self.filter_index, 
             &self.creatives, 
+            placement_id, 
+            user_info
+        ).await
+    }
+
+    pub async fn fetch_ad_sets(
+        &self,
+        placement_id: &str,
+        user_info: &UserInfo
+    ) -> Option<Vec<&ad_set::Data>> {
+        self.integrations.fetch_ad_sets(
+            &self.ad_set_index, 
+            &self.ad_sets, 
             placement_id, 
             user_info
         ).await

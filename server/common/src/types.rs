@@ -5,7 +5,7 @@ use rand_chacha::ChaCha8Rng;
 use rand_distr::{Beta, Distribution};
 use serde::{Serialize, Deserialize};
 
-use crate::db::{content, creative, ad_group, campaign, placement};
+use crate::db::{content, creative, ad_group, campaign, placement, ad_set};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct DimValue {
@@ -71,7 +71,11 @@ impl Stat {
     }
 }
 
-
+#[derive(Serialize, Debug)]
+pub struct AdSetWithContent<'a> {
+    pub ad_set: &'a ad_set::Data, 
+    pub content: &'a content::Data
+}
 #[derive(Serialize, Debug)]
 pub struct CreativeWithContent<'a> {
     pub creative: &'a creative::Data, 

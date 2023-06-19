@@ -2,14 +2,16 @@ use std::sync::Arc;
 use common::db::{self, integration};
 
 
-use crate::{sms_sender::SmsSender, user_feature::UserFeatureDatabase, local_creative_fetcher::LocalCreativeFetcher, integrations::Integrations, thompson_sampling_ranker::ThompsonSamplingRanker};
+use crate::{sms_sender::SmsSender, user_feature::UserFeatureDatabase, local_creative_fetcher::LocalCreativeFetcher, integrations::Integrations, thompson_sampling_ranker::ThompsonSamplingRanker, local_ad_set_fetcher::LocalAdSetFetcher, ad_set_thompson_sampling_ranker::AdSetThompsonSamplingRanker};
 
 #[derive(Debug, Clone)]
 pub enum Function {
     UserFeature { function: UserFeatureDatabase },
     SMSSender { function: SmsSender },
     LocalCreativeFetcher { function: LocalCreativeFetcher },
+    LocalAdSetFetcher { function: LocalAdSetFetcher },
     ThompsonSamplingRanker { function: ThompsonSamplingRanker },
+    AdSetThompsonSamplingRanker { function: AdSetThompsonSamplingRanker }
 }
 impl Function {
     pub async fn new(
@@ -18,7 +20,9 @@ impl Function {
         let is_user_feature_integration = Integrations::is_user_feature_integration(integration);
         let is_sms_sender_integration = Integrations::is_sms_sender_integration(integration);
         let is_creative_fetcher = Integrations::is_creative_fetcher(integration);
+        let is_ad_set_fetcher = Integrations::is_ad_set_fetcher(integration);
         let is_ranker_integration = Integrations::is_ranker_integration(integration);
+        let is_ad_set_ranker_integration = Integrations::is_ad_set_ranker_integration(integration);
 
         if is_user_feature_integration {
             let database_url = integration
@@ -75,6 +79,12 @@ impl Function {
         } else if is_ranker_integration {
             let function = ThompsonSamplingRanker::default();
             return Some(Function::ThompsonSamplingRanker { function })
+        } else if is_ad_set_fetcher {
+            let function = LocalAdSetFetcher::default();
+            return Some(Function::LocalAdSetFetcher { function })
+        } else if is_ad_set_ranker_integration {
+            let function = AdSetThompsonSamplingRanker::default();
+            return Some(Function::AdSetThompsonSamplingRanker { function })
         } else {
             return None;
         }

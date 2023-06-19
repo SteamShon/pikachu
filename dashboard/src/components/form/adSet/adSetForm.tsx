@@ -63,8 +63,6 @@ function AdSetForm({
     register,
     handleSubmit,
     reset,
-    setValue,
-    getValues,
     formState: { errors },
   } = methods;
 
@@ -72,49 +70,24 @@ function AdSetForm({
     if (initialData) {
       reset({
         ...initialData,
+        contentId: initialData?.contentId,
       });
 
-      handlePlacementChange(initialData.placementId);
-      handleContentChange(initialData.contentId);
-      handleSegmentChange(initialData.segmentId);
+      const { contents, segments } = handlePlacementChange(
+        initialData.placementId
+      );
+      handleContentChange(contents, initialData.contentId);
+      handleSegmentChange(segments, initialData.segmentId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData]);
 
-  useEffect(() => {
-    const contents = service.contentTypes
-      .filter(({ id }) => id === placement?.contentTypeId)
-      .flatMap(({ contents }) => contents);
-    // .filter((content) => !alreadySelectedContent(content));
-    console.log(contents);
-    setContents(contents);
-  }, [placement]);
-
-  useEffect(() => {
-    const segments = (placement?.integrations || []).flatMap(
-      ({ segments }) => segments
-    );
-    console.log(segments);
-    setSegments(segments);
-  }, [placement]);
-
-  useEffect(() => {
-    const contentType = service.contentTypes.find(
-      ({ id }) => id === content?.contentTypeId
-    );
-    setContentType(contentType);
-  }, [content, service.contentTypes]);
-  useEffect(() => {
-    const cubeIntegration = service.integrations.find(
-      ({ id }) => id === segment?.integrationId
-    );
-
-    setCubeIntegration(cubeIntegration);
-  }, [segment, service.integrations]);
-
   const placements = service.placements;
 
-  const alreadySelectedContent = (content: Content) => {
+  const alreadySelectedContent = (
+    content: Content,
+    placement?: typeof service.placements[0]
+  ) => {
     if (initialData) return false;
     if (!placement) return false;
 
@@ -132,14 +105,39 @@ function AdSetForm({
   const handlePlacementChange = (placementId: string) => {
     const placement = findPlacement(placementId);
     setPlacement(placement);
+
+    const contents = service.contentTypes
+      .filter(({ id }) => id === placement?.contentTypeId)
+      .flatMap(({ contents }) => contents)
+      .filter((content) => !alreadySelectedContent(content, placement));
+    setContents(contents);
+
+    const segments = (placement?.integrations || []).flatMap(
+      ({ segments }) => segments
+    );
+    setSegments(segments);
+
+    return { placement, contents, segments };
   };
-  const handleContentChange = (contentId: string) => {
+  const handleContentChange = (contents: Content[], contentId: string) => {
     const content = contents.find(({ id }) => id === contentId);
     setContent(content);
+    const contentType = service.contentTypes.find(
+      ({ id }) => id === content?.contentTypeId
+    );
+    setContentType(contentType);
   };
-  const handleSegmentChange = (segmentId: string | null) => {
+  const handleSegmentChange = (
+    segments: Segment[],
+    segmentId: string | null
+  ) => {
     const segment = segments.find(({ id }) => id === segmentId);
     setSegment(segment);
+
+    const cubeIntegration = service.integrations.find(
+      ({ id }) => id === segment?.integrationId
+    );
+    setCubeIntegration(cubeIntegration);
   };
 
   return (
@@ -177,8 +175,9 @@ function AdSetForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("contentId")}
-                    onChange={(e) => handleContentChange(e.target.value)}
-                    value={initialData?.contentId}
+                    onChange={(e) =>
+                      handleContentChange(contents, e.target.value)
+                    }
                   >
                     <option value="">Please choose</option>
                     {contents.map(({ id, name }) => {
@@ -208,8 +207,9 @@ function AdSetForm({
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <select
                     {...register("segmentId")}
-                    onChange={(e) => handleSegmentChange(e.target.value)}
-                    value={initialData?.segmentId || undefined}
+                    onChange={(e) =>
+                      handleSegmentChange(segments, e.target.value)
+                    }
                   >
                     <option value="">Please choose</option>
                     {segments.map(({ id, name }) => {

@@ -11,6 +11,7 @@ const Home: NextPage = () => {
   const featuredPlacementId = "clgf56kk0000hl408m2ni4yy0";
   const rankingCardPlacementId = "clix718cx000ms4uny65m37ay";
   // "clgf7s3ji0005jl08u8oqg3sj";
+
   const {
     renderCode: featuredRenderCode,
     setUserInfo: featuredSetUserInfo,
@@ -187,27 +188,29 @@ const Home: NextPage = () => {
               {renderRankingCard()}
             </div>
           </div>
-          <div className="text-white">Static Placements</div>
-          <div className="mt-10 font-normal text-[#EFEFEF]">
-            최신 리뷰 한줄평
-          </div>
-          {/* Review */}
-          <div className="mt-2 grid w-full grid-cols-4 gap-4">
-            {renderReviewCard()}
-            {renderReviewCard()}
-            {renderReviewCard()}
-            {renderReviewCard()}
-          </div>
+          <div className="mx-auto mt-20 max-w-2xl justify-center bg-[#101322]">
+            <div className="text-white">Static Placements</div>
+            <div className="mt-10 font-normal text-[#EFEFEF]">
+              최신 리뷰 한줄평
+            </div>
+            {/* Review */}
+            <div className="mt-2 grid w-full grid-cols-4 gap-4">
+              {renderReviewCard()}
+              {renderReviewCard()}
+              {renderReviewCard()}
+              {renderReviewCard()}
+            </div>
 
-          <div className="mt-10 font-normal text-[#EFEFEF]">
-            오늘 이거 볼까요?
-          </div>
-          {/* Today Pick */}
-          <div className="mt-2 grid w-full grid-cols-4 gap-4">
-            {renderTodayPickCard()}
-            {renderTodayPickCard()}
-            {renderTodayPickCard()}
-            {renderTodayPickCard()}
+            <div className="mt-10 font-normal text-[#EFEFEF]">
+              오늘 이거 볼까요?
+            </div>
+            {/* Today Pick */}
+            <div className="mt-2 grid w-full grid-cols-4 gap-4">
+              {renderTodayPickCard()}
+              {renderTodayPickCard()}
+              {renderTodayPickCard()}
+              {renderTodayPickCard()}
+            </div>
           </div>
         </div>
       </div>

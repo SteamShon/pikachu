@@ -1,15 +1,10 @@
-import { useEffect, useState } from 'react';
 import axios from 'axios';
-import {
-  jsonParseWithFallback,
-  parseAdSetResponse,
-  parseResponse,
-  replacePropsInFunction,
-} from '../../helpers/json';
 import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
-import React from 'react';
 import { LivePreview, LiveProvider } from 'react-live-runner';
+import { parseResult, replacePropsInFunction } from '../../helpers/json';
+import sendImpressions, { registerSendClicksCallback } from '../../helpers/track';
 export type UserInfo = {
   userId: string;
   info: Record<string, string[]>;
@@ -61,77 +56,41 @@ export const usePikachu = ({
 
   const DefaultOptions = {
     threshold: 1,
-    triggerOnce: true,
+    // triggerOnce: true,
+    trackVisibility: true,
+    delay: 300,
     onChange: (inView: boolean, entry: IntersectionObserverEntry) => {
       if (!inView) return;
 
       const nodes: HTMLElement[] = [];
-      entry.target.querySelector('.placement')?.childNodes.forEach((node) => {
+      const placements = entry.target.querySelector('.placement');
+      placements?.childNodes.forEach((node) => {
         const nodeId = (node as HTMLElement).id;
         if (!nodeId) return;
         if (userInfo.userId.length == 0) return;
 
         nodes.push(node as HTMLElement);
       });
-      const impressions = nodes.map((node) => {
-        return {
-          who: userInfo.userId,
-          what: 'impression',
-          which: node.id,
-          when: Date.now(),
-        };
+
+      sendImpressions({
+        nodes,
+        userInfo,
+        debug,
+        eventEndpoint,
+        eventTopic,
+        serviceId,
       });
-      // send impressions
-      if (debug) {
-        console.log(impressions);
-      }
-      if (eventEndpoint) {
-        const topic = eventTopic || 'events';
-        const url = `${eventEndpoint}/${topic}/${serviceId}`;
-
-        if (debug) {
-          console.log(url);
-          console.log(impressions);
-        }
-
-        axios
-          .post(`${url}`, impressions)
-          .then((res) => console.log(res))
-          .catch((e) => console.log(e));
-      }
-      nodes.forEach((node) => {
-        node.addEventListener('click', (e) => {
-          e.stopPropagation();
-
-          const payload = [
-            {
-              who: userInfo.userId,
-              what: 'click',
-              which: node.id,
-              when: Date.now(),
-            },
-          ];
-
-          if (debug) {
-            console.log(payload);
-          }
-          if (eventEndpoint) {
-            const topic = eventTopic || 'events';
-            const url = `${eventEndpoint}/${topic}/${serviceId}`;
-
-            if (debug) {
-              console.log(url);
-              console.log(payload);
-            }
-            axios
-              .post(`${url}`, payload)
-              .then((res) => console.log(res))
-              .catch((e) => console.log(e));
-          }
-        });
+      registerSendClicksCallback({
+        nodes,
+        userInfo,
+        debug,
+        eventEndpoint,
+        eventTopic,
+        serviceId,
       });
     },
   };
+
   const { ref } = useInView(options || DefaultOptions);
 
   const fetchComponent = (userInfo: UserInfo) => {
@@ -145,40 +104,18 @@ export const usePikachu = ({
         if (debug) {
           console.log(data);
         }
-        let contentValues;
-        let parsedCode;
-        if (useAdSet) {
-          const { code, contents } = parseAdSetResponse(
-            data as Record<string, unknown>,
-          );
-          parsedCode = code;
-          contentValues = contents?.map((content) => {
-            return {
-              id: content.id as string,
-              content: jsonParseWithFallback(content?.values as string),
-            };
-          });
-          if (debug) {
-            console.log(code);
-            console.log(contents);
-          }
-          setCode(code);
-          setContents(contents);
-        } else {
-          const { code, creatives } = parseResponse(data as Record<string, unknown>);
-          parsedCode = code;
-          contentValues = creatives?.map((creative) => {
-            return {
-              id: creative.id as string,
-              content: jsonParseWithFallback(creative?.content?.values as string),
-            };
-          });
-          if (debug) {
-            console.log(code);
-            console.log(creatives);
-          }
-          setCode(code);
-          setCreatives(creatives);
+        let { parsedCode, contentValues, contents, creatives } = parseResult({
+          useAdSet,
+          data,
+        });
+
+        setCode(parsedCode);
+        setContents(contents);
+        setCreatives(creatives);
+
+        if (debug) {
+          console.log(parsedCode);
+          console.log(contentValues);
         }
 
         if (!parsedCode || !contentValues) {

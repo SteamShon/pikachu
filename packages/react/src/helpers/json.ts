@@ -69,3 +69,31 @@ export const parseResponse = (data: Record<string, unknown>) => {
 
   return { code, creatives };
 };
+
+export function parseResult({
+  useAdSet,
+  data,
+}: {
+  useAdSet: boolean | undefined;
+  data: unknown;
+}) {
+  if (useAdSet) {
+    const { code, contents } = parseAdSetResponse(data as Record<string, unknown>);
+    const contentValues = contents?.map((content) => {
+      return {
+        id: content.id as string,
+        content: jsonParseWithFallback(content?.values as string),
+      };
+    });
+    return { parsedCode: code, contents, contentValues, creatives: undefined };
+  } else {
+    const { code, creatives } = parseResponse(data as Record<string, unknown>);
+    const contentValues = creatives?.map((creative) => {
+      return {
+        id: creative.id as string,
+        content: jsonParseWithFallback(creative?.content?.values as string),
+      };
+    });
+    return { parsedCode: code, contents: undefined, contentValues, creatives };
+  }
+}

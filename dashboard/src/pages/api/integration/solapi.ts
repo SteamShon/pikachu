@@ -89,6 +89,11 @@ async function sendMessages({
   return data;
 }
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  if (req.method !== "POST") {
+    res.status(405).end();
+    return;
+  }
+
   const config = req.body as Record<string, unknown>;
   const details = config["details"] as Prisma.JsonValue | undefined;
   const method = config["method"] as string | undefined;

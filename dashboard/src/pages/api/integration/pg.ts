@@ -154,6 +154,11 @@ async function executeQuery({
 }
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  if (req.method !== "POST") {
+    res.status(405).end();
+    return;
+  }
+
   const config = req.body as Record<string, unknown>;
   const cubeProviderDetails = config["cubeProviderDetails"] as
     | Prisma.JsonValue

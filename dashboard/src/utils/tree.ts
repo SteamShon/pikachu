@@ -1,5 +1,6 @@
 import type {
   AdGroup,
+  AdSet,
   Campaign,
   Content,
   ContentType,
@@ -8,6 +9,7 @@ import type {
   Integration,
   Placement,
   Provider,
+  Segment,
   Service,
 } from "@prisma/client";
 
@@ -33,22 +35,29 @@ export function buildServiceTree(
           })[];
         })[];
       })[];
-      contentType: ContentType | null;
-      integrations: Integration[];
+      contentType: ContentType;
+      integrations: (Integration & {
+        provider: Provider | null;
+        segments: Segment[];
+      })[];
+      adSets: (AdSet & { segment: Segment | null; content: Content })[];
     })[];
     contentTypes: (ContentType & {
       contents: (Content & { creatives: Creative[] })[];
     })[];
     customsets: Customset[];
     providers: Provider[];
-    integrations: Integration[];
+    integrations: (Integration & {
+      provider: Provider | null;
+      segments: Segment[];
+    })[];
   }
 ): Service & {
   placements: Record<string, ReturnType<typeof buildPlacementTree>>;
   contentTypes: Record<string, ReturnType<typeof buildContentTypeTree>>;
   customsets: Record<string, Customset>;
   providers: Record<string, Provider>;
-  integrations: ReturnType<typeof buildIntegraionTree>;
+  integrations: Record<string, ReturnType<typeof buildIntegraionTree>>;
 } {
   const placements = arrayToRecord(
     service.placements.map((placement) => {
@@ -68,7 +77,11 @@ export function buildServiceTree(
     string,
     Provider
   >;
-  const integrations = buildIntegraionTree(service.integrations);
+  const integrations = arrayToRecord(
+    service.integrations.map((integration) => {
+      return buildIntegraionTree(integration);
+    })
+  ) as Record<string, ReturnType<typeof buildIntegraionTree>>;
 
   return {
     ...service,
@@ -89,13 +102,18 @@ export function buildPlacementTree(
         })[];
       })[];
     })[];
-    contentType: ContentType | null;
-    integrations: Integration[];
+    contentType: ContentType;
+    integrations: (Integration & {
+      provider: Provider | null;
+      segments: Segment[];
+    })[];
+    adSets: (AdSet & { segment: Segment | null; content: Content })[];
   }
 ): Placement & {
   campaigns: Record<string, ReturnType<typeof buildCampaignTree>>;
-  contentType: ContentType | null;
-  integrations: ReturnType<typeof buildIntegraionTree>;
+  contentType: ContentType;
+  integrations: Record<string, ReturnType<typeof buildIntegraionTree>>;
+  adSets: Record<string, AdSet & { segment: Segment | null; content: Content }>;
 } {
   const campaigns = arrayToRecord(
     placement.campaigns.map((campaign) => {
@@ -103,9 +121,17 @@ export function buildPlacementTree(
     })
   ) as Record<string, ReturnType<typeof buildCampaignTree>>;
 
-  const integrations = buildIntegraionTree(placement.integrations);
+  const integrations = arrayToRecord(
+    placement.integrations.map((integration) => {
+      return buildIntegraionTree(integration);
+    })
+  ) as Record<string, ReturnType<typeof buildIntegraionTree>>;
 
-  return { ...placement, campaigns, integrations };
+  const adSets = arrayToRecord(placement.adSets) as Record<
+    string,
+    AdSet & { segment: Segment | null; content: Content }
+  >;
+  return { ...placement, campaigns, integrations, adSets };
 }
 
 export function buildCampaignTree(
@@ -181,9 +207,19 @@ export function buildCustomsetsTree(
 ): Record<string, Customset> {
   return arrayToRecord(customsets) as Record<string, Customset>;
 }
-
 export function buildIntegraionTree(
-  integrations: Integration[]
-): Record<string, Integration> {
-  return arrayToRecord(integrations) as Record<string, Integration>;
+  integration: Integration & {
+    provider: Provider | null;
+    segments: Segment[];
+  }
+): Integration & {
+  provider: Provider | null;
+  segments: ReturnType<typeof buildSegmentTree>;
+} {
+  const segments = buildSegmentTree(integration.segments);
+  return { ...integration, segments };
+}
+
+export function buildSegmentTree(segments: Segment[]): Record<string, Segment> {
+  return arrayToRecord(segments) as Record<string, Segment>;
 }

@@ -1,50 +1,51 @@
 import { Dialog, DialogContent } from "@mui/material";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
-import type { integrationRouter } from "../../../server/api/routers/integration";
+import type { segmentRouter } from "../../../server/api/routers/segment";
 import { api } from "../../../utils/api";
-import { buildIntegraionTree, buildServiceTree } from "../../../utils/tree";
-import type { IntegrationSchemaType } from "../../schema/integration";
-import IntegrationForm from "./integrationForm";
+import type { buildServiceTree } from "../../../utils/tree";
+import type { SegmentSchemaType } from "../../schema/segment";
+import SegmentForm from "./segmentForm";
 
-function IntegrationModal({
+function SegmentModal({
   service,
   initialData,
   modalOpen,
   setModalOpen,
   setServiceTree,
 }: {
-  service: Parameters<typeof IntegrationForm>[0]["service"];
-  initialData?: Parameters<typeof IntegrationForm>[0]["initialData"];
+  service: Parameters<typeof SegmentForm>[0]["service"];
+  initialData?: Parameters<typeof SegmentForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
     SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
   >;
 }) {
-  type RouterOutput = inferRouterOutputs<typeof integrationRouter>;
+  type RouterOutput = inferRouterOutputs<typeof segmentRouter>;
   type OutputType = RouterOutput["create"];
   const handleSuccess = (created: OutputType): void => {
     setServiceTree((prev) => {
       if (!prev) return prev;
-      prev.integrations[created.id] = buildIntegraionTree(created);
+      const integration = prev.integrations[created.integrationId];
+
+      if (!integration) return prev;
+      integration.segments[created.id] = created;
       return prev;
     });
     setModalOpen(false);
   };
-  const { mutate: create } = api.integration.create.useMutation({
+  const { mutate: create } = api.segment.create.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
-  const { mutate: update } = api.integration.update.useMutation({
+  const { mutate: update } = api.segment.update.useMutation({
     onSuccess(created) {
       handleSuccess(created);
     },
   });
-  const onSubmit = (input: IntegrationSchemaType) => {
-    console.log(input);
-
+  const onSubmit = (input: SegmentSchemaType) => {
     if (initialData) update(input);
     else create(input);
   };
@@ -57,7 +58,7 @@ function IntegrationModal({
       maxWidth="lg"
     >
       <DialogContent>
-        <IntegrationForm
+        <SegmentForm
           service={service}
           initialData={initialData}
           onSubmit={onSubmit}
@@ -67,4 +68,4 @@ function IntegrationModal({
   );
 }
 
-export default IntegrationModal;
+export default SegmentModal;

@@ -17,7 +17,11 @@ export const placementRouter = createTRPCRouter({
           serviceId,
         },
         include: {
-          integrations: true,
+          integrations: {
+            include: {
+              provider: true,
+            },
+          },
           contentType: {
             include: {
               contents: true,
@@ -66,7 +70,18 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: true,
+          integrations: {
+            include: {
+              provider: true,
+              segments: true,
+            },
+          },
+          adSets: {
+            include: {
+              segment: true,
+              content: true,
+            },
+          },
         },
       });
     }),
@@ -121,7 +136,18 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: true,
+          integrations: {
+            include: {
+              provider: true,
+              segments: true,
+            },
+          },
+          adSets: {
+            include: {
+              segment: true,
+              content: true,
+            },
+          },
         },
       });
       const [, updated] = await prisma.$transaction([removes, update]);
@@ -193,7 +219,18 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: true,
+          integrations: {
+            include: {
+              provider: true,
+              segments: true,
+            },
+          },
+          adSets: {
+            include: {
+              segment: true,
+              content: true,
+            },
+          },
         },
       });
 
@@ -237,7 +274,18 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: true,
+          integrations: {
+            include: {
+              provider: true,
+              segments: true,
+            },
+          },
+          adSets: {
+            include: {
+              segment: true,
+              content: true,
+            },
+          },
         },
       });
 
@@ -286,7 +334,18 @@ export const placementRouter = createTRPCRouter({
               },
             },
           },
-          integrations: true,
+          integrations: {
+            include: {
+              provider: true,
+              segments: true,
+            },
+          },
+          adSets: {
+            include: {
+              segment: true,
+              content: true,
+            },
+          },
         },
       });
 

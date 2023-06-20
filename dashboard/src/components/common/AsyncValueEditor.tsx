@@ -12,7 +12,8 @@ import { fetchValues } from "../../utils/awsS3DuckDB";
 import { extractValue } from "../../utils/json";
 
 const AsyncValueEditor = (props: ValueEditorProps) => {
-  const { integrationDetails } = props.context;
+  const { providerDetails, integrationDetails } = props.context;
+
   const columnType = props.fieldData?.columnType;
   const useSearch = props.fieldData?.useSearch || false;
   const [inputValue, setInputValue] = useState<string | undefined>(undefined);
@@ -32,7 +33,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
 
           const values = (
             await fetchValues({
-              details: integrationDetails,
+              details: providerDetails,
               sql: cubeIntegrationSql,
               fieldName: props.field,
               columnType,
@@ -44,7 +45,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
         })();
       }, 1000),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [integrationDetails, props.field]
+    [providerDetails, integrationDetails, props.field]
   );
 
   useEffect(() => {
@@ -58,7 +59,7 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, inputValue, integrationDetails]);
+  }, [loading, inputValue, providerDetails, integrationDetails]);
 
   const filterOptions = createFilterOptions({
     matchFrom: "any",

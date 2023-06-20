@@ -52,6 +52,8 @@ function AdGroupTable({
   const cubeIntegrations = Object.values(
     serviceTree?.integrations || {}
   ).filter(({ provide }) => provide === "CUBE");
+  const providers = Object.values(serviceTree?.providers || {});
+
   const allCampaigns = Object.values(serviceTree?.placements || {}).flatMap(
     ({ campaigns, ...placement }) => {
       return Object.values(campaigns).map(({ adGroups, ...campaign }) => {
@@ -217,6 +219,7 @@ function AdGroupTable({
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
           campaigns={campaigns}
+          providers={providers}
           cubeIntegrations={cubeIntegrations}
           initialData={adGroup}
           setServiceTree={setServiceTree}

@@ -1,22 +1,21 @@
-import { useEffect, useState } from 'react';
 import axios from 'axios';
-import {
-  jsonParseWithFallback,
-  parseResponse,
-  replacePropsInFunction,
-} from '../../helpers/json';
 import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
-import React from 'react';
 import { LivePreview, LiveProvider } from 'react-live-runner';
+import { parseResult, replacePropsInFunction } from '../../helpers/json';
+import sendImpressions, { registerSendClicksCallback } from '../../helpers/track';
 export type UserInfo = {
   userId: string;
   info: Record<string, string[]>;
-}
+};
 export type IUsePikachu = {
   code: string | undefined;
   renderCode: string | undefined;
-  creatives: (Record<string, unknown> & { content?: Record<string, unknown>})[] | undefined;
+  creatives:
+    | (Record<string, unknown> & { content?: Record<string, unknown> })[]
+    | undefined;
+  contents: Record<string, unknown>[] | undefined;
   userInfo: UserInfo;
   setUserInfo: React.Dispatch<React.SetStateAction<UserInfo>>;
   component: JSX.Element | undefined;
@@ -28,101 +27,72 @@ export const usePikachu = ({
   eventEndpoint,
   eventTopic,
   options,
-  debug
-}:{
-  endpoint: string,
-  serviceId: string,
-  placementId: string,
-  eventEndpoint?: string,
-  eventTopic?: string,
-  options?: { 
-    threshold: number; 
-    triggerOnce: boolean; 
-    onChange: (inView: boolean, entry: IntersectionObserverEntry) => void
-  },
-  debug?: boolean,
+  useAdSet,
+  debug,
+}: {
+  endpoint: string;
+  serviceId: string;
+  placementId: string;
+  eventEndpoint?: string;
+  eventTopic?: string;
+  options?: {
+    threshold: number;
+    triggerOnce: boolean;
+    onChange: (inView: boolean, entry: IntersectionObserverEntry) => void;
+  };
+  useAdSet?: boolean;
+  debug?: boolean;
 }): IUsePikachu => {
   const [code, setCode] = useState<string | undefined>(undefined);
   const [creatives, setCreatives] = useState<Record<string, unknown>[] | undefined>(
     undefined,
   );
+  const [contents, setContents] = useState<Record<string, unknown>[] | undefined>(
+    undefined,
+  );
   const [renderCode, setRenderCode] = useState<string | undefined>(undefined);
-  const [userInfo, setUserInfo] = useState<UserInfo>({userId: "", info: {}});
+  const [userInfo, setUserInfo] = useState<UserInfo>({ userId: '', info: {} });
   const [component, setComponent] = useState<JSX.Element | undefined>(undefined);
 
   const DefaultOptions = {
     threshold: 1,
-    triggerOnce: true,
+    // triggerOnce: true,
+    trackVisibility: true,
+    delay: 300,
     onChange: (inView: boolean, entry: IntersectionObserverEntry) => {
       if (!inView) return;
-      
+
       const nodes: HTMLElement[] = [];
-      entry.target.querySelector(".placement")?.childNodes.forEach((node) => {
+      const placements = entry.target.querySelector('.placement');
+      placements?.childNodes.forEach((node) => {
         const nodeId = (node as HTMLElement).id;
         if (!nodeId) return;
         if (userInfo.userId.length == 0) return;
 
         nodes.push(node as HTMLElement);
       });
-      const impressions = nodes.map((node) => {
-        return { 
-          who: userInfo.userId, 
-          what: 'impression', 
-          which: node.id,
-          when: Date.now(), 
-        };
-      })
-      // send impressions 
-      if (debug) {
-        console.log(impressions);
-      }
-      if (eventEndpoint) {
-        const topic = eventTopic || "events";
-        const url = `${eventEndpoint}/${topic}/${serviceId}`;
-          
-        if (debug) {
-          console.log(url);
-          console.log(impressions);
-        }
 
-        axios
-          .post(`${url}`, impressions)
-          .then((res) => console.log(res))
-          .catch((e) => console.log(e))
-      }
-      nodes.forEach((node) => {
-        node.addEventListener('click', e => {
-          e.stopPropagation();
-          
-          const payload = [{ 
-            who: userInfo.userId, 
-            what: 'click', 
-            which: node.id,
-            when: Date.now(), 
-          }];
-
-          if (debug) {
-            console.log(payload);
-          }
-          if (eventEndpoint) {
-            const topic = eventTopic || "events";
-            const url = `${eventEndpoint}/${topic}/${serviceId}`;
-            
-            if (debug) {
-              console.log(url);
-              console.log(payload);
-            }
-            axios
-              .post(`${url}`, payload)
-              .then((res) => console.log(res))
-              .catch((e) => console.log(e))
-          }
-        });
-      })
-    }
+      sendImpressions({
+        nodes,
+        userInfo,
+        debug,
+        eventEndpoint,
+        eventTopic,
+        serviceId,
+      });
+      registerSendClicksCallback({
+        nodes,
+        userInfo,
+        debug,
+        eventEndpoint,
+        eventTopic,
+        serviceId,
+      });
+    },
   };
+
   const { ref } = useInView(options || DefaultOptions);
-  
+
   const fetchComponent = (userInfo: UserInfo) => {
     axios
       .post(endpoint, {
@@ -134,40 +104,38 @@ export const usePikachu = ({
         if (debug) {
           console.log(data);
         }
-        const { code, creatives } = parseResponse(data as Record<string, unknown>);
+        let { parsedCode, contentValues, contents, creatives } = parseResult({
+          useAdSet,
+          data,
+        });
 
-        if (debug) {
-          console.log(code);
-          console.log(creatives);
-        }
-        setCode(code);
+        setCode(parsedCode);
+        setContents(contents);
         setCreatives(creatives);
 
-        if (!code || !creatives) {
+        if (debug) {
+          console.log(parsedCode);
+          console.log(contentValues);
+        }
+
+        if (!parsedCode || !contentValues) {
           setRenderCode(undefined);
         } else {
-          const contentValues = (creatives || []).map((creative) => {
-            return {
-              id: creative.id as string, 
-              content: jsonParseWithFallback(creative?.content?.values as string)
-            }}
-          );
-
           const renderCode = replacePropsInFunction({
-            code,
+            code: parsedCode,
             creatives: contentValues,
           });
           if (debug) {
             console.log(renderCode);
           }
           setRenderCode(renderCode);
-          
+
           setComponent(
             <div ref={ref}>
               <LiveProvider code={renderCode}>
                 <LivePreview />
               </LiveProvider>
-            </div>
+            </div>,
           );
         }
       })
@@ -178,7 +146,7 @@ export const usePikachu = ({
     fetchComponent(userInfo);
   }, [endpoint, serviceId, placementId, userInfo]);
 
-  return { code, creatives, renderCode, userInfo, setUserInfo, component };
+  return { code, creatives, contents, renderCode, userInfo, setUserInfo, component };
 };
 
 usePikachu.PropTypes = {

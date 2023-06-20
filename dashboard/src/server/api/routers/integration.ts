@@ -14,6 +14,10 @@ export const integrationRouter = createTRPCRouter({
           ...input,
           details: detailsJson,
         },
+        include: {
+          provider: true,
+          segments: true,
+        },
       });
 
       return integration;
@@ -31,6 +35,10 @@ export const integrationRouter = createTRPCRouter({
           ...integration,
           details: detailsJson,
         },
+        include: {
+          provider: true,
+          segments: true,
+        },
       });
     }),
   delete: protectedProcedure
@@ -44,6 +52,10 @@ export const integrationRouter = createTRPCRouter({
       return await prisma.integration.delete({
         where: {
           id,
+        },
+        include: {
+          provider: true,
+          segments: true,
         },
       });
     }),

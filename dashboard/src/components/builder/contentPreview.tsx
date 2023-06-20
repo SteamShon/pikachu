@@ -1,11 +1,11 @@
 // import type { BuilderContent } from "@builder.io/react";
 // import { BuilderComponent } from "@builder.io/react";
-import type { ContentType, Service } from "@prisma/client";
+import type { ContentType } from "@prisma/client";
 import { LiveEditor, LivePreview, LiveProvider } from "react-live";
 import { extractCode } from "../../utils/contentType";
 import { replacePropsInFunction } from "../common/CodeTemplate";
-import SMSPlayground from "./smsPlayground";
 import type { ServiceIntegrations } from "../schema/service";
+import SMSPlayground from "./smsPlayground";
 
 function ContentPreview({
   service,
@@ -22,7 +22,6 @@ function ContentPreview({
   }[];
   showEditor?: boolean;
 }) {
-  console.log(creatives[0]?.content);
   const newCode = replacePropsInFunction({
     code: extractCode(contentType),
     creatives,

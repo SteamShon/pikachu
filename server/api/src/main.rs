@@ -7,7 +7,7 @@ use actix_web::{
     web::{self},
     App, HttpResponse, HttpServer, Responder,
 };
-use ad_state::{ad_state::{AdState, CreativeFeedback}, ad_state_builder::load};
+use ad_state::{ad_state::{AdState, CreativeFeedback, AdSetFeedback}, ad_state_builder::load};
 use arc_swap::ArcSwap;
 use common::db::{self, PrismaClient};
 use dotenv::dotenv;
@@ -70,6 +70,22 @@ async fn update_ad_meta(
 
     HttpResponse::Ok().json(true)
 }
+
+#[post("/search_ad_sets")]
+async fn search_ad_sets(
+    data: web::Data<ArcSwap<Arc<AdState>>>,
+    request: web::Json<Request>,
+) -> impl Responder {
+    let ad_state = data.load();
+    let ad_set_search_result = ad_state.search_ad_sets(
+        &request.service_id,
+        &request.placement_id,
+        &request.user_info,
+        request.top_k,
+    ).await;
+
+    HttpResponse::Ok().json(ad_set_search_result)
+}
 #[post("/search")]
 async fn search(
     data: web::Data<ArcSwap<Arc<AdState>>>,
@@ -130,6 +146,22 @@ async fn update_feedback(
     data.store(Arc::new(Arc::new(new_ad_state)));
     HttpResponse::Ok().json(true)
 }
+
+#[post("/update_ad_set_feedback")]
+async fn update_ad_set_feedback(
+    data: web::Data<ArcSwap<Arc<AdState>>>,
+    request: web::Json<Vec<AdSetFeedback>>,
+) -> impl Responder {
+    let prev = data.load();
+    
+    let mut new_ad_state = AdState {
+        ..prev.as_ref().as_ref().clone()
+    };
+    new_ad_state.update_ad_set_feedback(&request.into_inner());
+
+    data.store(Arc::new(Arc::new(new_ad_state)));
+    HttpResponse::Ok().json(true)
+}
 #[post("/send_sms")]
 async fn send_sms(
     data: web::Data<ArcSwap<Arc<AdState>>>,
@@ -179,10 +211,12 @@ async fn main() -> std::io::Result<()> {
             .app_data(ad_state.clone())
             .app_data(client.clone())
             .service(search)
+            .service(search_ad_sets)
             .service(user_info)
             .service(update_ad_meta)
             .service(all_dimensions)
             .service(update_feedback)
+            .service(update_ad_set_feedback)
             .service(send_sms)
             .wrap(cors)
             .wrap(logger)

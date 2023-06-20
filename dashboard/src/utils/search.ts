@@ -71,7 +71,7 @@ export async function search({
 
   return await axios<{ [x: string]: SearchResult[] }>({
     method: "post",
-    url: (payload.apiServerHost || "http://localhost:8080") + "/search",
+    url: payload.apiServerHost || "http://localhost:8080/search",
     data: {
       service_id: serviceId,
       placement_id: payload.placementId,

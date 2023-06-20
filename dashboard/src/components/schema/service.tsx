@@ -1,4 +1,4 @@
-import { Integration, Service } from "@prisma/client";
+import type { Integration, Service } from "@prisma/client";
 import { z } from "zod";
 
 export const serviceSchema = z.object({

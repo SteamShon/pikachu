@@ -10,6 +10,7 @@ import AdGroupForm from "./adGroupForm";
 
 function AdGroupModal({
   campaigns,
+  providers,
   cubeIntegrations,
   initialData,
   modalOpen,
@@ -17,6 +18,7 @@ function AdGroupModal({
   setServiceTree,
 }: {
   campaigns: Parameters<typeof AdGroupForm>[0]["campaigns"];
+  providers: Parameters<typeof AdGroupForm>[0]["providers"];
   cubeIntegrations: Parameters<typeof AdGroupForm>[0]["cubeIntegrations"];
   initialData?: Parameters<typeof AdGroupForm>[0]["initialData"];
   modalOpen: boolean;
@@ -67,6 +69,7 @@ function AdGroupModal({
       <DialogContent>
         <AdGroupForm
           campaigns={campaigns}
+          providers={providers}
           cubeIntegrations={cubeIntegrations}
           initialData={initialData}
           onSubmit={onSubmit}

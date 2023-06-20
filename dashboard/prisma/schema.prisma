@@ -140,8 +140,8 @@ model Placement {
     serviceId               String?
     campaigns               Campaign[]
     AdvertisersOnPlacements AdvertisersOnPlacements[]
-    contentType             ContentType?              @relation(fields: [contentTypeId], references: [id])
-    contentTypeId           String?
+    contentType             ContentType               @relation(fields: [contentTypeId], references: [id])
+    contentTypeId           String
 
     // createdBy               User                      @relation("createdPlacements", fields: [creatorId], references: [id], onDelete: Cascade)
     // creatorId               String
@@ -151,6 +151,7 @@ model Placement {
     // cube                    Cube?                     @relation(fields: [cubeId], references: [id])
     // cubeId                  String?
     integrations Integration[]
+    adSets       AdSet[]
 
     @@unique([serviceId, name])
     @@index(fields: [updatedAt])
@@ -261,6 +262,7 @@ model Content {
     createdAt     DateTime     @default(now())
     updatedAt     DateTime     @updatedAt
     userId        String?
+    adSets        AdSet[]
 
     @@unique([contentTypeId, name])
     @@index(fields: [updatedAt])
@@ -318,8 +320,44 @@ model Integration {
     serviceId   String
 
     placements Placement[]
+    segments   Segment[]
 
     @@unique([serviceId, name])
+    @@index(fields: [updatedAt])
+}
+
+model Segment {
+    id            String      @id @default(cuid())
+    integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+    integrationId String
+    name          String
+    description   String?
+    where         String?
+    population    String?
+    status        String      @default("CREATED")
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+    adSets        AdSet[]
+
+    @@unique([integrationId, name])
+    @@index(fields: [updatedAt])
+}
+
+model AdSet {
+    id          String    @id @default(cuid())
+    placement   Placement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+    placementId String
+    content     Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+    contentId   String
+    segment     Segment?  @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+    segmentId   String?
+    name        String
+    description String?
+    status      String    @default("CREATED")
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+
+    @@unique([placementId, contentId])
     @@index(fields: [updatedAt])
 }
 

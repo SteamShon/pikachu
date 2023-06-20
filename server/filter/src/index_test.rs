@@ -198,8 +198,8 @@ fn test_new_filter_index() {
         .search_positive_internal_ids(&user_info)
         .unwrap_or(HashSet::new());
     let expected_internal_ids = HashSet::from([
-        format!("{id}_{seq}", seq = "0"),
-        format!("{id}_{seq}", seq = "2"),
+        "AD_1_0",
+        "AD_1_2",
     ]);
     println!("{:?}", internal_ids);
     assert_eq!(internal_ids, expected_internal_ids);
@@ -226,28 +226,32 @@ fn test_update_index_when_filter_changed() {
 
     // prev_filter: None, current_filter: Some
     let mut index = FilterIndex::default();
-    index.update(&vec![TestFilter::from(&no_filter)], &vec![]);
+    {
+        index.update(&vec![TestFilter::from(&no_filter)], &vec![]);
 
-    let mut result = index.search(&user_info);
+        let result = index.search(&user_info);
 
-    assert_eq!(result.contains(id), false);
-    assert_eq!(index.non_filter_ids.contains(id), true);
-    assert_eq!(index.filters.contains_key(id), false);
+        assert_eq!(result.contains(id), false);
+        assert_eq!(index.non_filter_ids.contains(id), true);
+        assert_eq!(index.filters.contains_key(id), false);
+    }
+    {
+        index.update(&vec![filter], &vec![]);
 
-    index.update(&vec![filter], &vec![]);
+        let result = index.search(&user_info);
+        assert_eq!(result.contains(id), true);
+        assert_eq!(index.non_filter_ids.contains(id), false);
+        assert_eq!(index.filters.contains_key(id), true);    
+    }
+    {
+        // prev_filter: Some, current_filter: None
+        index.update(&vec![TestFilter::from(&no_filter)], &vec![]);
+        let result = index.search(&user_info);
 
-    result = index.search(&user_info);
-    assert_eq!(result.contains(id), true);
-    assert_eq!(index.non_filter_ids.contains(id), false);
-    assert_eq!(index.filters.contains_key(id), true);
-
-    // prev_filter: Some, current_filter: None
-    index.update(&vec![TestFilter::from(&no_filter)], &vec![]);
-    result = index.search(&user_info);
-
-    assert_eq!(result.contains(id), false);
-    assert_eq!(index.non_filter_ids.contains(id), true);
-    assert_eq!(index.filters.contains_key(id), false);
+        assert_eq!(result.contains(id), false);
+        assert_eq!(index.non_filter_ids.contains(id), true);
+        assert_eq!(index.filters.contains_key(id), false);
+    }
 }
 #[test]
 fn test_update_index_when_filter_changed_prev_current_both_exist() {
@@ -261,27 +265,32 @@ fn test_update_index_when_filter_changed_prev_current_both_exist() {
         ),
     };
     let filters: Vec<TestFilter> = vec![filter];
-    let mut index = FilterIndex::default();
-    index.update(&filters, &vec![]);
-
-    println!("[BEFORE]: {:?}", index);
     let user_info = HashMap::from([(String::from("age"), HashSet::from([String::from("10")]))]);
-    let mut result = index.search(&user_info);
+    let mut index = FilterIndex::default();
+    {
+        index.update(&filters, &vec![]);
 
-    assert_eq!(result.contains(id), true);
-    filter = TestFilter {
-        id: String::from(id),
-        filter: String::from(
-            r#"
-            {"type": "in", "dimension": "age", "values": ["30"]}
-            "#,
-        ),
-    };
-    index.update(&vec![filter], &vec![]);
-    println!("[AFTER]: {:?}", index);
+        println!("[BEFORE]: {:?}", index);
+        let result = index.search(&user_info);
 
-    result = index.search(&user_info);
-    assert_eq!(result.contains(id), false);
+        assert_eq!(result.contains(id), true);
+    }
+    {
+        filter = TestFilter {
+            id: String::from(id),
+            filter: String::from(
+                r#"
+                {"type": "in", "dimension": "age", "values": ["30"]}
+                "#,
+            ),
+        };
+        index.update(&vec![filter], &vec![]);
+        println!("[AFTER]: {:?}", index);
+
+        let result = index.search(&user_info);
+        assert_eq!(result.contains(id), false);
+    }
+    
 }
 
 #[test]

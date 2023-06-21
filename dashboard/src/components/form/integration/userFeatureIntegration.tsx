@@ -51,7 +51,7 @@ function UserFeatureIntegration({
         payload: {
           sql,
         },
-        method: "executeQuery",
+        route: "executeQuery",
         details: provider?.details,
       });
       setRows(data.rows);

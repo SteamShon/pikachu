@@ -46,23 +46,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const config = req.body as Record<string, unknown>;
   const details = config["details"] as Prisma.JsonValue | undefined;
-  const method = config["method"] as string | undefined;
+  const route = config["route"] as string | undefined;
   const payload = config["payload"] as Record<string, unknown> | undefined;
 
   console.log(config);
 
   const configs = extractConfigs(details);
 
-  if (!configs || !method) {
+  if (!configs || !route) {
     console.log(configs);
     res.status(404).end();
   } else {
     try {
-      if (method === "checkConnection") {
+      if (route === "checkConnection") {
         const result = await checkConnection(configs);
         res.json(result);
         res.status(200).end();
-      } else if (method === "executeDuckDBQuery") {
+      } else if (route === "executeDuckDBQuery") {
         const sql = payload?.sql as string | undefined;
         const result = await executeDuckDBQuery(sql);
         console.log(result);

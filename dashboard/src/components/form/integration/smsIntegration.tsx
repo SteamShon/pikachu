@@ -77,7 +77,7 @@ function SmsIntegration({
     try {
       const result = await axios.post(`/api/integration/solapi`, {
         payload: messages,
-        method: "sendMessages",
+        route: "sendMessages",
         details: provider?.details,
       });
 

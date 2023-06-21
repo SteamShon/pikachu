@@ -30,7 +30,7 @@ export const PROVIDER_TEMPLATES = [
     },
     validate: async (details: Prisma.JsonValue) => {
       const result = await axios.post("/api/integration/awsS3DuckDB", {
-        method: "checkConnection",
+        route: "checkConnection",
         details,
       });
       return result.status === 200;
@@ -74,7 +74,7 @@ export const PROVIDER_TEMPLATES = [
     },
     validate: async (details: Prisma.JsonValue) => {
       const result = await axios.post("/api/integration/pg", {
-        method: "checkConnection",
+        route: "checkConnection",
         details,
       });
       return result.status === 200;

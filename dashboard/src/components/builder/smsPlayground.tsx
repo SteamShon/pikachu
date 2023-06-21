@@ -23,7 +23,7 @@ function SMSPlayground({
 
   const integrations = service.integrations;
 
-  const validate = async (method: string) => {
+  const validate = async (route: string) => {
     if (tos.length === 0) return;
 
     const payload = {
@@ -34,7 +34,7 @@ function SMSPlayground({
 
     const result = await axios.post(`/api/provider/solapi`, {
       integration,
-      method,
+      route,
       payload,
     });
 

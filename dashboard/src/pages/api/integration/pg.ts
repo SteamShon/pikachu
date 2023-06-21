@@ -164,7 +164,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     | Prisma.JsonValue
     | undefined;
   const details = config["details"] as Prisma.JsonValue | undefined;
-  const method = config["method"] as string | undefined;
+  const route = config["route"] as string | undefined;
   const payload = config["payload"] as Record<string, unknown> | undefined;
 
   console.log(config);
@@ -174,20 +174,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     paths: ["DATABASE_URL"],
   }) as string | undefined;
 
-  if (!method || !databaseUrl) {
+  if (!route || !databaseUrl) {
     res.status(404);
   } else {
     try {
-      if (method === "checkConnection") {
+      if (route === "checkConnection") {
         const valid = await checkConnection(databaseUrl);
         res.json(valid);
-      } else if (method === "executeQuery") {
+      } else if (route === "executeQuery") {
         const query = payload?.sql as string | undefined;
         if (query) {
           const result = await executeQuery({ databaseUrl, query });
           res.json(result);
         }
-      } else if (method === "createPartition") {
+      } else if (route === "createPartition") {
         const integrationId = payload?.integrationId as string | undefined;
         const version = payload?.version as string | undefined;
 
@@ -196,7 +196,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           const result = await executeQuery({ databaseUrl, query: sql });
           res.json(result);
         }
-      } else if (method === "upload") {
+      } else if (route === "upload") {
         const integrationId = payload?.integrationId as string | undefined;
         const version = payload?.version as string | undefined;
 

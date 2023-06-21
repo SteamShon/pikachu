@@ -96,7 +96,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const config = req.body as Record<string, unknown>;
   const details = config["details"] as Prisma.JsonValue | undefined;
-  const method = config["method"] as string | undefined;
+  const route = config["route"] as string | undefined;
   const payload = config["payload"] as Record<string, unknown> | undefined;
   console.log(config);
 
@@ -104,16 +104,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(404).end();
   } else {
     try {
-      if (method === "getMessageList") {
+      if (route === "getMessageList") {
         const messageList = await getMessageList({ details });
         res.json(messageList);
       }
-      if (method === "getSenderList") {
+      if (route === "getSenderList") {
         const senderList = await getSenderList({
           details,
         });
         res.json(senderList);
-      } else if (method === "sendMessages") {
+      } else if (route === "sendMessages") {
         const sendResult = await sendMessages({
           details,
           payload,

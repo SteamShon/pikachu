@@ -1,29 +1,29 @@
 // Server side
 // async/await
+import type { Prisma } from "@prisma/client";
 import { Database } from "duckdb-async";
-import type { Integration, Prisma } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
   extractConfigs,
   listFoldersRecursively,
 } from "../../../utils/awsS3DuckDB";
 
-async function checkConnection(configs: ReturnType<typeof extractConfigs>) {
-  if (!configs) {
-    return false;
-  } else {
-    const { s3, buckets } = configs;
-    const bucketName = buckets[0];
-    if (!bucketName) return false;
-    try {
-      await listFoldersRecursively({ s3, bucketName });
-      return true;
-    } catch (e) {
-      console.error(e);
-      return false;
-    }
-  }
-}
+// async function checkConnection(configs: ReturnType<typeof extractConfigs>) {
+//   if (!configs) {
+//     return false;
+//   } else {
+//     const { s3, buckets } = configs;
+//     const bucketName = buckets[0];
+//     if (!bucketName) return false;
+//     try {
+//       await listFoldersRecursively({ s3, bucketName });
+//       return true;
+//     } catch (e) {
+//       console.error(e);
+//       return false;
+//     }
+//   }
+// }
 async function getDuckDB() {
   return await Database.create(":memory:");
 }
@@ -58,11 +58,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(404).end();
   } else {
     try {
-      if (route === "checkConnection") {
-        const result = await checkConnection(configs);
-        res.json(result);
-        res.status(200).end();
-      } else if (route === "executeDuckDBQuery") {
+      // if (route === "checkConnection") {
+      //   const result = await checkConnection(configs);
+      //   res.json(result);
+      //   res.status(200).end();
+      // } else
+      if (route === "executeDuckDBQuery") {
         const sql = payload?.sql as string | undefined;
         const result = await executeDuckDBQuery(sql);
         console.log(result);

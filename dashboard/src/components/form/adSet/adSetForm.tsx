@@ -236,12 +236,13 @@ function AdSetForm({
                           ? parseJsonLogic(segment?.where)
                           : undefined
                       }
+                      disabled={true}
                       onQueryChange={(newQuery) => {
                         console.log(newQuery);
                       }}
-                      onPopulationChange={(newPopulation) => {
-                        console.log(newPopulation);
-                      }}
+                      // onPopulationChange={(newPopulation) => {
+                      //   console.log(newPopulation);
+                      // }}
                     />
                   )}
                 </dd>

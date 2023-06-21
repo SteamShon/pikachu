@@ -578,3 +578,22 @@ export function extractParams(rawSql?: string) {
   }
   return params;
 }
+
+export async function checkConnection(
+  configs: ReturnType<typeof extractConfigs>
+) {
+  if (!configs) {
+    return false;
+  } else {
+    const { s3, buckets } = configs;
+    const bucketName = buckets[0];
+    if (!bucketName) return false;
+    try {
+      await listFoldersRecursively({ s3, bucketName });
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  }
+}

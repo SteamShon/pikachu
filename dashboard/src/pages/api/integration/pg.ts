@@ -7,17 +7,7 @@ import { from as copyFrom } from "pg-copy-streams";
 import { extractConfigs } from "../../../utils/awsS3DuckDB";
 
 async function checkConnection(databaseUrl: string) {
-  const client = new pg.Client(databaseUrl);
-
-  try {
-    await client.connect();
-    return true;
-  } catch (e) {
-    console.log(e);
-    return false;
-  } finally {
-    client.end();
-  }
+  return await executeQuery({ databaseUrl, query: "SELECT 1" });
 }
 
 function partitionBucketPrefix(path: string) {

@@ -12,7 +12,7 @@ import { fetchValues } from "../../utils/awsS3DuckDB";
 import { extractValue } from "../../utils/json";
 
 const AsyncValueEditor = (props: ValueEditorProps) => {
-  const { providerDetails, integrationDetails } = props.context;
+  const { providerDetails, integrationDetails, disabled } = props.context;
 
   const columnType = props.fieldData?.columnType;
   const useSearch = props.fieldData?.useSearch || false;
@@ -70,10 +70,15 @@ const AsyncValueEditor = (props: ValueEditorProps) => {
     <Autocomplete
       id="async-value-editor"
       open={open}
+      readOnly={disabled}
       onOpen={() => {
+        if (disabled) return;
+
         setOpen(true);
       }}
       onClose={() => {
+        if (disabled) return;
+
         setOpen(false);
       }}
       isOptionEqualToValue={(option, value) => option === value}

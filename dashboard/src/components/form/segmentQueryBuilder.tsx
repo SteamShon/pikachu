@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { RuleGroupType } from "react-querybuilder";
 import QueryBuilder from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.scss";
-
 import { QueryBuilderDnD } from "@react-querybuilder/dnd";
 import * as ReactDnD from "react-dnd";
 import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
@@ -25,6 +24,7 @@ function SegmentQueryBuilder({
   integrationDetails,
   providerDetails,
   initialQuery,
+  disabled,
   onQueryChange,
   onPopulationChange,
 }: {
@@ -32,8 +32,9 @@ function SegmentQueryBuilder({
   integrationDetails?: Prisma.JsonValue;
   providerDetails?: Prisma.JsonValue;
   population?: string;
+  disabled?: boolean;
   onQueryChange: (newQuery: RuleGroupType) => void;
-  onPopulationChange: (population: string) => void;
+  onPopulationChange?: (population: string) => void;
 }) {
   const { enqueueSnackbar } = useSnackbar();
   const [query, setQuery] = useState<RuleGroupType>(initialQuery || emptyQuery);
@@ -90,7 +91,9 @@ function SegmentQueryBuilder({
             });
 
             setPopulation(count);
-            onPopulationChange(count);
+            if (onPopulationChange) {
+              onPopulationChange(count);
+            }
           } finally {
             setPopulationLoading(false);
           }
@@ -165,6 +168,7 @@ function SegmentQueryBuilder({
               <QueryBuilder
                 fields={fields}
                 query={query}
+                disabled={disabled || false}
                 onQueryChange={(newQuery) => {
                   setQuery(newQuery);
                   onQueryChange(newQuery);
@@ -172,7 +176,12 @@ function SegmentQueryBuilder({
                 controlElements={{
                   valueEditor: AsyncValueEditor,
                 }}
-                context={{ fields, providerDetails, integrationDetails }}
+                context={{
+                  fields,
+                  providerDetails,
+                  integrationDetails,
+                  disabled: disabled || false,
+                }}
                 controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
                 operators={operators}
               />
@@ -180,20 +189,22 @@ function SegmentQueryBuilder({
           </Grid>
           <Grid item xs={8}></Grid>
           <Grid item xs={3}>
-            <LoadingButton
-              type="button"
-              variant="contained"
-              loadingPosition="end"
-              endIcon={<SendIcon />}
-              onClick={() => {
-                setPopulationLoading(true);
-                fetchPopulation(query);
-              }}
-              loading={populationLoading}
-              className="inline-flex w-full justify-end rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              <span>Calculate Population</span>
-            </LoadingButton>
+            {onPopulationChange !== undefined && (
+              <LoadingButton
+                type="button"
+                variant="contained"
+                loadingPosition="end"
+                endIcon={<SendIcon />}
+                onClick={() => {
+                  setPopulationLoading(true);
+                  fetchPopulation(query);
+                }}
+                loading={populationLoading}
+                className="inline-flex w-full justify-end rounded-md border border-transparent bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+              >
+                <span>Calculate Population</span>
+              </LoadingButton>
+            )}
           </Grid>
           <Grid item xs={1}></Grid>
           {/* <Grid item xs={12}>

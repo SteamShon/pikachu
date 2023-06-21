@@ -3071,17 +3071,17 @@ dotenv@^16.0.3:
   resolved "https://registry.npmjs.org/dotenv/-/dotenv-16.0.3.tgz"
   integrity sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==
 
-duckdb-async@^0.7.1:
-  version "0.7.1"
-  resolved "https://registry.npmjs.org/duckdb-async/-/duckdb-async-0.7.1.tgz"
-  integrity sha512-PhCnR0ia3vfjiqdvjya5sLhRV9oOihWXQ0I5hmmgIBtzriMmWHTlFITAcPDv96zB71hPXRGnoaV3d70N2dk5LQ==
+duckdb-async@^0.8.0:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/duckdb-async/-/duckdb-async-0.8.0.tgz#f920e3ce4836fe16ae8176da39f7eeeace407c71"
+  integrity sha512-8KfNFblbtz4SCYlMzzQD3+pxfgIHe2YIydBe1o4I0QQqrwK2kG0Td34zICV5Un0IgDnNOR8v53ze9ogSzQ5lPA==
   dependencies:
-    duckdb "0.7.1"
+    duckdb "0.8.0"
 
-duckdb@0.7.1:
-  version "0.7.1"
-  resolved "https://registry.npmjs.org/duckdb/-/duckdb-0.7.1.tgz"
-  integrity sha512-RwFqUO83beq68DcK4XnVLNQXa/AGIXtvg5oI1onclfslo5JYnX+5zI5d0iP/WmpjxiUOGl0Z1bcO0pNvhA/CdA==
+duckdb@0.8.0:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/duckdb/-/duckdb-0.8.0.tgz#642889849dcdfd975149389087804f364af51bc8"
+  integrity sha512-hD05w83kdDkmRZoKwFK4PiA2fByczPp49rY6cREh23NoVHXJ3I4VpROsW8vNC9Gx7KP7lZpWvT7rQ/MHvrWI5g==
   dependencies:
     "@mapbox/node-pre-gyp" "^1.0.0"
     node-addon-api "*"

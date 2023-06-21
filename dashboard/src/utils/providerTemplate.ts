@@ -1,5 +1,10 @@
 import type { Prisma } from "@prisma/client";
 import axios from "axios";
+import {
+  checkConnection,
+  extractConfigs,
+  listFoldersRecursively,
+} from "./awsS3DuckDB";
 
 export const PROVIDER_TEMPLATES = [
   {
@@ -29,11 +34,14 @@ export const PROVIDER_TEMPLATES = [
       required: ["aws_access_key_id", "aws_secret_access_key", "buckets"],
     },
     validate: async (details: Prisma.JsonValue) => {
-      const result = await axios.post("/api/integration/awsS3DuckDB", {
-        route: "checkConnection",
-        details,
-      });
-      return result.status === 200;
+      // const result = await axios.post("/api/integration/awsS3DuckDB", {
+      //   route: "checkConnection",
+      //   details,
+      // });
+      // return result.status === 200;
+      const configs = extractConfigs(details);
+      if (!configs) return false;
+      return checkConnection(configs);
     },
   },
   {
@@ -53,11 +61,15 @@ export const PROVIDER_TEMPLATES = [
       required: ["apiKey", "apiSecret"],
     },
     validate: async (details: Prisma.JsonValue) => {
-      const result = await axios.post("/api/integration/solapi", {
-        method: "getMessageList",
-        details,
-      });
-      return result.status === 200;
+      try {
+        const result = await axios.post("/api/integration/solapi", {
+          method: "getMessageList",
+          details,
+        });
+        return result.status === 200;
+      } catch (e) {
+        return false;
+      }
     },
   },
   {
@@ -73,11 +85,15 @@ export const PROVIDER_TEMPLATES = [
       required: ["DATABASE_URL"],
     },
     validate: async (details: Prisma.JsonValue) => {
-      const result = await axios.post("/api/integration/pg", {
-        route: "checkConnection",
-        details,
-      });
-      return result.status === 200;
+      try {
+        const result = await axios.post("/api/integration/pg", {
+          route: "checkConnection",
+          details,
+        });
+        return result.status === 200;
+      } catch (e) {
+        return false;
+      }
     },
   },
 ];

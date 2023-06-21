@@ -1,12 +1,8 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import {
-  AiFillEnvironment,
-  AiOutlineApi,
-  AiOutlinePicture,
-} from "react-icons/ai";
-import { BiSitemap } from "react-icons/bi";
+import { AiFillEnvironment, AiOutlineApi } from "react-icons/ai";
+import { BiGitMerge, BiSitemap } from "react-icons/bi";
 import { BsArrowLeftShort, BsChevronDown, BsDatabase } from "react-icons/bs";
 import { GiBullseye } from "react-icons/gi";
 import { GrGroup, GrResources } from "react-icons/gr";
@@ -72,12 +68,12 @@ function SideMenu() {
       subMenus: [
         {
           title: "integrations",
-          icon: <AiOutlineApi />,
+          icon: <BiGitMerge />,
           link: `/service/${serviceId}/dashboard?step=integrations`,
         },
         {
           title: "segments",
-          icon: <AiOutlineApi />,
+          icon: <GrGroup />,
           link: `/service/${serviceId}/dashboard?step=segments`,
         },
       ],

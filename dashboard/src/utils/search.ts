@@ -17,6 +17,10 @@ export type SearchResult = Placement & {
     })[];
   })[];
 };
+export type AdSetSearchResult = {
+  content_type: ContentType;
+  contents: Content[];
+};
 export function flattenToContents(results: SearchResult[]) {
   results.map((placement) => {
     return placement.campaigns.flatMap((campaign) => {
@@ -70,6 +74,31 @@ export async function search({
   //return Promise.resolve(mockResponse);
 
   return await axios<{ [x: string]: SearchResult[] }>({
+    method: "post",
+    url: payload.apiServerHost || "http://localhost:8080/search",
+    data: {
+      service_id: serviceId,
+      placement_id: payload.placementId,
+      user_info: buildUserInfo(payload),
+    },
+  }).then((res) => {
+    console.log(res);
+    return res.data;
+  });
+}
+
+export async function searchAdSets({
+  serviceId,
+  payload,
+}: {
+  serviceId?: string;
+  payload: SearchRequestSchemaType;
+}): Promise<AdSetSearchResult | undefined> {
+  if (!serviceId) return Promise.resolve(undefined);
+
+  //return Promise.resolve(mockResponse);
+
+  return await axios<AdSetSearchResult>({
     method: "post",
     url: payload.apiServerHost || "http://localhost:8080/search_ad_sets",
     data: {

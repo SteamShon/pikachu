@@ -27,18 +27,22 @@ import { searchRequestSchema } from "../../schema/searchRequest";
 
 function SearchRequestForm({
   placements,
+  placement,
   setMatchedAds,
+  setPlacement,
   onSubmit,
 }: {
   placements: (Placement & {
     integrations: (Integration & { provider: Provider | null })[];
   })[];
+  placement?: typeof placements[0];
   setMatchedAds: Dispatch<SetStateAction<SearchResult[]>>;
+  setPlacement: Dispatch<SetStateAction<typeof placements[0] | undefined>>;
   onSubmit: (input: SearchRequestSchemaType) => void;
 }) {
-  const [placement, setPlacement] = useState<typeof placements[0] | undefined>(
-    undefined
-  );
+  // const [placement, setPlacement] = useState<typeof placements[0] | undefined>(
+  //   undefined
+  // );
   const [metadata, setMetadata] = useState<Record<string, unknown>[]>([]);
   const [dimension, setDimension] = useState<string | undefined>(undefined);
   const [options, setOptions] = useState<string[]>([]);
@@ -175,7 +179,9 @@ function SearchRequestForm({
                   <input
                     className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
                     {...register("apiServerHost")}
-                    defaultValue={"https://pikachu-api-server.fly.dev/search"}
+                    defaultValue={
+                      "https://pikachu-api-server.fly.dev/search_ad_sets"
+                    }
                   />
                 </dd>
               </div>

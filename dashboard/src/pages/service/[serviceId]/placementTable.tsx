@@ -14,8 +14,8 @@ import { buildServiceTree } from "../../../utils/tree";
 
 import type ContentPreview from "../../../components/builder/contentPreview";
 import Stat from "../../../components/chart/Stat";
-import RenderPreview from "./renderPreview";
 import PlacementModal from "../../../components/form/placement/placementModal";
+import RenderPreview from "./renderPreview";
 
 function PlacementTable({
   service,
@@ -161,7 +161,7 @@ function PlacementTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "campaigns",
+                    step: "adSets",
                     placementId: params.row.id,
                   },
                 });
@@ -181,6 +181,7 @@ function PlacementTable({
       setModalOpen(true);
     },
   });
+
   const tabs = [
     {
       label: "Stat",

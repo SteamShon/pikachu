@@ -1,9 +1,12 @@
 import type {
   AdGroup,
+  AdSet,
   Campaign,
+  Content,
   Creative,
   CreativeStat,
   Placement,
+  Segment,
 } from "@prisma/client";
 
 export function defaultDateRange() {
@@ -118,31 +121,30 @@ export function filterTopDatasets({
 
   return { include: results, others };
 }
-export function toLabel({
-  creative,
-  groupByKey,
-}: {
-  creative:
-    | (Creative & {
-        adGroup: AdGroup & {
-          campaign: Campaign & {
-            placement: Placement;
-          };
-        };
-      })
-    | undefined;
-
-  groupByKey: string;
-}) {
+export function toLabel(groupByKey: string, data?: CreativeTree) {
   switch (groupByKey) {
     case "placement":
-      return creative?.adGroup.campaign.placement.name;
+      return data?.adGroup.campaign.placement.name;
     case "campaign":
-      return creative?.adGroup.campaign.name;
+      return data?.adGroup.campaign.name;
     case "adGroup":
-      return creative?.adGroup.name;
+      return data?.adGroup.name;
     case "creative":
-      return creative?.name;
+      return data?.name;
+    default:
+      return undefined;
+  }
+}
+export function toAdSetLabel(groupByKey: string, data?: AdSetTree) {
+  switch (groupByKey) {
+    case "placement":
+      return data?.placement.name;
+    case "adSet":
+      return data?.name;
+    case "content":
+      return data?.content.name;
+    case "segment":
+      return data?.segment?.name;
     default:
       return undefined;
   }
@@ -169,27 +171,36 @@ export function toMetric({
       return undefined;
   }
 }
-export function aggregateLabelTimeCounts({
-  creativeStats,
+type StatContainer<T> = {
+  stat: CreativeStat;
+  data: T;
+};
+type CreativeTree = Creative & {
+  adGroup: AdGroup & {
+    campaign: Campaign & {
+      placement: Placement;
+    };
+  };
+};
+type AdSetTree = AdSet & {
+  placement: Placement;
+  content: Content;
+  segment: Segment | null;
+};
+
+export function aggregateLabelTimeCounts<T>({
+  stats,
   groupByKey,
+  getLabel,
 }: {
-  creativeStats: {
-    stat: CreativeStat;
-    creative:
-      | (Creative & {
-          adGroup: AdGroup & {
-            campaign: Campaign & {
-              placement: Placement;
-            };
-          };
-        })
-      | undefined;
-  }[];
+  stats: StatContainer<T>[];
   groupByKey: string;
+  getLabel: (groupBy: string, data?: T) => string | undefined;
 }): Record<string, Record<string, Record<string, number>>> {
   const topLabels: Record<string, number> = {};
-  const labelTimeStats = creativeStats.reduce((prev, { stat, creative }) => {
-    const label = toLabel({ creative, groupByKey });
+  const labelTimeStats = stats.reduce((prev, { stat, data }) => {
+    const label = getLabel(groupByKey, data);
+    // toLabel({ creative, groupByKey });
 
     if (!prev[`${label}`]) {
       prev[`${label}`] = {};
@@ -239,10 +250,11 @@ export function aggregateToMetric({
   });
   return metrics;
 }
-export function buildDatasets({
+function buildDatasetsInner<T>({
   startDate,
   endDate,
-  creativeStats,
+  stats,
+  getLabel,
   groupByKey,
   metricKey,
   offset,
@@ -250,18 +262,8 @@ export function buildDatasets({
 }: {
   startDate?: string;
   endDate?: string;
-  creativeStats: {
-    stat: CreativeStat;
-    creative:
-      | (Creative & {
-          adGroup: AdGroup & {
-            campaign: Campaign & {
-              placement: Placement;
-            };
-          };
-        })
-      | undefined;
-  }[];
+  stats: StatContainer<T>[];
+  getLabel: (groupBy: string, data?: T) => string | undefined;
   groupByKey: string;
   metricKey: string;
   offset?: number;
@@ -274,8 +276,9 @@ export function buildDatasets({
     getTimeString
   );
   const aggregated = aggregateLabelTimeCounts({
-    creativeStats,
+    stats,
     groupByKey,
+    getLabel,
   });
   const labelTimeStats = aggregateToMetric({ aggr: aggregated, metricKey });
 
@@ -304,4 +307,61 @@ export function buildDatasets({
     datasets,
     numOfLabels,
   };
+}
+export function buildDatasets({
+  startDate,
+  endDate,
+  stats,
+  groupByKey,
+  metricKey,
+  offset,
+  limit,
+}: {
+  startDate?: string;
+  endDate?: string;
+  stats: { data: CreativeTree; stat: CreativeStat }[];
+  groupByKey: string;
+  metricKey: string;
+  offset?: number;
+  limit?: number;
+}) {
+  return buildDatasetsInner({
+    startDate,
+    endDate,
+    stats,
+    getLabel: toLabel,
+    groupByKey,
+    metricKey,
+    offset,
+    limit,
+  });
+}
+
+export function buildAdSetDatasets({
+  startDate,
+  endDate,
+  stats,
+  groupByKey,
+  metricKey,
+  offset,
+  limit,
+}: {
+  startDate?: string;
+  endDate?: string;
+  stats: { data: AdSetTree; stat: CreativeStat }[];
+  groupByKey: string;
+  metricKey: string;
+  offset?: number;
+  limit?: number;
+}) {
+  return buildDatasetsInner({
+    startDate,
+    endDate,
+    stats,
+    getLabel: toAdSetLabel,
+    groupByKey,
+    metricKey,
+    offset,
+    limit,
+  });
 }

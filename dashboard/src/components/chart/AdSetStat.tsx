@@ -1,8 +1,8 @@
 import type { Service } from "@prisma/client";
 import { api } from "../../utils/api";
-import StatChart from "./StatChart";
+import AdSetStatChart from "./AdSetStatChart";
 
-function Stat({
+function AdSetStat({
   service,
   defaultGroupByKey,
 }: {
@@ -11,14 +11,14 @@ function Stat({
 }) {
   if (!service) return <></>;
 
-  const { data: creativeStats } = api.placement.getStats.useQuery({
+  const { data: adSetStats } = api.placement.getAdSetStats.useQuery({
     serviceId: service.id,
   });
   return (
     <>
-      {creativeStats && (
-        <StatChart
-          stats={creativeStats}
+      {adSetStats && (
+        <AdSetStatChart
+          stats={adSetStats}
           defaultGroupByKey={defaultGroupByKey}
         />
       )}
@@ -26,4 +26,4 @@ function Stat({
   );
 }
 
-export default Stat;
+export default AdSetStat;

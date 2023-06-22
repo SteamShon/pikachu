@@ -209,7 +209,7 @@ function RenderPreview({
                     service={service}
                     contentType={adSetSearchResult?.content_type}
                     creatives={(adSetSearchResult?.contents || []).map(
-                      (content) => toNewCreative(content.values)
+                      (content) => toNewCreative({ id: content.values })
                     )}
                     showEditor={false}
                   />

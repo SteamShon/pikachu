@@ -16,6 +16,7 @@ import type ContentPreview from "../../../components/builder/contentPreview";
 import Stat from "../../../components/chart/Stat";
 import PlacementModal from "../../../components/form/placement/placementModal";
 import RenderPreview from "./renderPreview";
+import AdSetStat from "../../../components/chart/AdSetStat";
 
 function PlacementTable({
   service,
@@ -187,7 +188,8 @@ function PlacementTable({
       label: "Stat",
       component: (
         <>
-          <Stat service={service} defaultGroupByKey="placement" />
+          {/* <Stat service={service} defaultGroupByKey="placement" /> */}
+          <AdSetStat service={service} defaultGroupByKey="placement" />
         </>
       ),
     },

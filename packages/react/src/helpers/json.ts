@@ -33,13 +33,15 @@ export function replacePropsInFunction({
   return [removeRenderFunction(code), replaceValue].join('\n');
 }
 export const parseAdSetResponse = (data: Record<string, unknown>) => {
-  const contentType = data?.content_type as Record<string, unknown> | undefined;
+  const contentType = data?.contentType as Record<string, unknown> | undefined;
   const details = contentType?.details as Record<string, unknown> | undefined;
   const code = details?.code as string | undefined;
 
-  const contents = data?.contents as Record<string, unknown>[] | undefined;
+  const adSets = data?.adSets as
+    | { adSet: Record<string, unknown>; content: Record<string, unknown> }[]
+    | undefined;
 
-  return { code, contents };
+  return { code, adSets };
 };
 export const parseResponse = (data: Record<string, unknown>) => {
   const code: string | undefined = (
@@ -78,14 +80,14 @@ export function parseResult({
   data: unknown;
 }) {
   if (useAdSet) {
-    const { code, contents } = parseAdSetResponse(data as Record<string, unknown>);
-    const contentValues = contents?.map((content) => {
+    const { code, adSets } = parseAdSetResponse(data as Record<string, unknown>);
+    const contentValues = adSets?.map(({ adSet, content }) => {
       return {
-        id: content.id as string,
+        id: adSet.id as string,
         content: jsonParseWithFallback(content?.values as string),
       };
     });
-    return { parsedCode: code, contents, contentValues, creatives: undefined };
+    return { parsedCode: code, adSets, contentValues, creatives: undefined };
   } else {
     const { code, creatives } = parseResponse(data as Record<string, unknown>);
     const contentValues = creatives?.map((creative) => {
@@ -94,6 +96,6 @@ export function parseResult({
         content: jsonParseWithFallback(creative?.content?.values as string),
       };
     });
-    return { parsedCode: code, contents: undefined, contentValues, creatives };
+    return { parsedCode: code, adSets: undefined, contentValues, creatives };
   }
 }

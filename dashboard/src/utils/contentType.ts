@@ -47,7 +47,7 @@ export function extractModelName(contentType?: ContentType | null) {
   }) as string | undefined;
 }
 
-export function toNewCreative(values: string | undefined) {
+export function toNewCreative(values?: string | undefined) {
   return {
     id: uuidv4(),
     content: jsonParseWithFallback(values),

@@ -87,11 +87,17 @@ impl<'a> Default for SearchResult<'a> {
         Self { matched_ads: Default::default(), non_filter_ads: Default::default() }
     }
 }
-
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdSetContent<'a> {
+    pub ad_set: &'a ad_set::Data,
+    pub content: &'a content::Data,
+}
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AdSetSearchResult<'a> {
     pub content_type: &'a content_type::Data,
-    pub contents: Vec<&'a content::Data>
+    pub ad_sets: Vec<AdSetContent<'a>>
 }
 
 #[derive(Debug, Clone)]
@@ -196,7 +202,7 @@ impl AdState {
         user_info_json: &serde_json::Value,
         top_k: Option<usize>,
     ) -> Option<AdSetSearchResult> {
-        let mut contents = Vec::new();
+        let mut ad_set_contents = Vec::new();
         let placement = self.placements.get(placement_id)?;
         let content_type = self.content_types.get(&placement.content_type_id)?;
 
@@ -214,7 +220,10 @@ impl AdState {
         for (ad_set, _score) in top_ad_sets {
             if let Some(content) = self.contents.get(&ad_set.content_id) {
                 if is_active_content(content) {
-                    contents.push(content);
+                    ad_set_contents.push(AdSetContent {
+                        ad_set,
+                        content
+                    });
                 }
             }
         }
@@ -222,7 +231,7 @@ impl AdState {
         if !is_active_placement(&placement) || !is_active_content_type(&content_type) {
             None
         } else {
-            Some(AdSetSearchResult { content_type, contents })
+            Some(AdSetSearchResult { content_type, ad_sets: ad_set_contents })
         }
     }
     pub async fn search(

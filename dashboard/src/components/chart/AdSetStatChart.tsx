@@ -1,10 +1,4 @@
-import type {
-  AdGroup,
-  Campaign,
-  Creative,
-  CreativeStat,
-  Placement,
-} from "@prisma/client";
+import type { inferRouterOutputs } from "@trpc/server";
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -17,10 +11,11 @@ import {
 } from "chart.js";
 import { useState } from "react";
 import { Line } from "react-chartjs-2";
+import { AiFillStepBackward, AiFillStepForward } from "react-icons/ai";
 import Datepicker from "react-tailwindcss-datepicker";
 import type { DateValueType } from "react-tailwindcss-datepicker/dist/types";
-import { buildDatasets, defaultDateRange } from "../../utils/chart";
-import { AiFillStepForward, AiFillStepBackward } from "react-icons/ai";
+import type { placementRouter } from "../../server/api/routers/placement";
+import { buildAdSetDatasets, defaultDateRange } from "../../utils/chart";
 
 ChartJS.register(
   CategoryScale,
@@ -32,20 +27,14 @@ ChartJS.register(
   Legend
 );
 
-function StatChart({
+type RouterOutput = inferRouterOutputs<typeof placementRouter>;
+type OutputType = RouterOutput["getAdSetStats"];
+
+function AdSetStatChart({
   stats,
   defaultGroupByKey,
 }: {
-  stats: {
-    stat: CreativeStat;
-    data: Creative & {
-      adGroup: AdGroup & {
-        campaign: Campaign & {
-          placement: Placement;
-        };
-      };
-    };
-  }[];
+  stats: OutputType;
   defaultGroupByKey: string;
 }) {
   const [dateRange, setDateRange] = useState<DateValueType>(defaultDateRange());
@@ -54,7 +43,7 @@ function StatChart({
   const [groupByKey, setGroupByKey] = useState(defaultGroupByKey);
   const [metricKey, setMetricKey] = useState("impressionCount");
 
-  const { labels, datasets, numOfLabels } = buildDatasets({
+  const { labels, datasets, numOfLabels } = buildAdSetDatasets({
     startDate: dateRange?.startDate as string,
     endDate: dateRange?.endDate as string,
     stats,
@@ -179,4 +168,4 @@ function StatChart({
   );
 }
 
-export default StatChart;
+export default AdSetStatChart;

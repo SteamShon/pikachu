@@ -15,7 +15,12 @@ export type IUsePikachu = {
   creatives:
     | (Record<string, unknown> & { content?: Record<string, unknown> })[]
     | undefined;
-  contents: Record<string, unknown>[] | undefined;
+  adSets:
+    | {
+        adSet: Record<string, unknown>;
+        content: Record<string, unknown>;
+      }[]
+    | undefined;
   userInfo: UserInfo;
   setUserInfo: React.Dispatch<React.SetStateAction<UserInfo>>;
   component: JSX.Element | undefined;
@@ -47,9 +52,13 @@ export const usePikachu = ({
   const [creatives, setCreatives] = useState<Record<string, unknown>[] | undefined>(
     undefined,
   );
-  const [contents, setContents] = useState<Record<string, unknown>[] | undefined>(
-    undefined,
-  );
+  const [adSets, setAdSets] = useState<
+    | {
+        adSet: Record<string, unknown>;
+        content: Record<string, unknown>;
+      }[]
+    | undefined
+  >(undefined);
   const [renderCode, setRenderCode] = useState<string | undefined>(undefined);
   const [userInfo, setUserInfo] = useState<UserInfo>({ userId: '', info: {} });
   const [component, setComponent] = useState<JSX.Element | undefined>(undefined);
@@ -104,13 +113,13 @@ export const usePikachu = ({
         if (debug) {
           console.log(data);
         }
-        let { parsedCode, contentValues, contents, creatives } = parseResult({
+        let { parsedCode, contentValues, adSets, creatives } = parseResult({
           useAdSet,
           data,
         });
 
         setCode(parsedCode);
-        setContents(contents);
+        setAdSets(adSets);
         setCreatives(creatives);
 
         if (debug) {
@@ -146,7 +155,7 @@ export const usePikachu = ({
     fetchComponent(userInfo);
   }, [endpoint, serviceId, placementId, userInfo]);
 
-  return { code, creatives, contents, renderCode, userInfo, setUserInfo, component };
+  return { code, creatives, adSets, renderCode, userInfo, setUserInfo, component };
 };
 
 usePikachu.PropTypes = {

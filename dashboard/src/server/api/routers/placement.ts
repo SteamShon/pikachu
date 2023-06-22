@@ -434,7 +434,46 @@ export const placementRouter = createTRPCRouter({
       });
 
       return stats.map((stat) => {
-        return { stat, creative: creativeIds[stat.creativeId] };
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return { stat, data: creativeIds[stat.creativeId]! };
+      });
+    }),
+  getAdSetStats: protectedProcedure
+    .input(z.object({ serviceId: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const { serviceId } = input;
+      const adSets = await prisma.adSet.findMany({
+        where: {
+          placement: {
+            serviceId,
+          },
+        },
+        include: {
+          placement: true,
+          content: true,
+          segment: true,
+        },
+      });
+
+      const adSetIds = adSets.reduce((prev, adSet) => {
+        prev[`${adSet.id}`] = adSet;
+        return prev;
+      }, {} as Record<string, typeof adSets[0]>);
+
+      const stats = await prisma.creativeStat.findMany({
+        where: {
+          creativeId: {
+            in: Object.keys(adSetIds),
+          },
+        },
+        orderBy: {
+          creativeId: "desc",
+        },
+      });
+
+      return stats.map((stat) => {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return { stat, data: adSetIds[stat.creativeId]! };
       });
     }),
 });

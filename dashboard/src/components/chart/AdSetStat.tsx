@@ -1,14 +1,14 @@
 import type {
-  AdGroup,
-  Campaign,
-  Creative,
+  AdSet,
+  Content,
   Placement,
+  Segment,
   Service,
 } from "@prisma/client";
 import { api } from "../../utils/api";
 import StatChart from "./StatChart";
 
-function Stat({
+function AdSetStat({
   service,
   defaultGroupByKey,
 }: {
@@ -17,38 +17,36 @@ function Stat({
 }) {
   if (!service) return <></>;
 
-  const { data: creativeStats } = api.placement.getStats.useQuery({
+  const { data: adSetStats } = api.placement.getAdSetStats.useQuery({
     serviceId: service.id,
   });
 
   const getLabel = (
     groupByKey: string,
-    data?: Creative & {
-      adGroup: AdGroup & {
-        campaign: Campaign & {
-          placement: Placement;
-        };
-      };
+    data?: AdSet & {
+      placement: Placement;
+      content: Content;
+      segment: Segment | null;
     }
   ) => {
     switch (groupByKey) {
       case "placement":
-        return data?.adGroup.campaign.placement.name;
-      case "campaign":
-        return data?.adGroup.campaign.name;
-      case "adGroup":
-        return data?.adGroup.name;
-      case "creative":
+        return data?.placement.name;
+      case "adSet":
         return data?.name;
+      case "content":
+        return data?.content.name;
+      case "segment":
+        return data?.segment?.name;
       default:
         return undefined;
     }
   };
   return (
     <>
-      {creativeStats && (
+      {adSetStats && (
         <StatChart
-          stats={creativeStats}
+          stats={adSetStats}
           defaultGroupByKey={defaultGroupByKey}
           getLabel={getLabel}
         />
@@ -57,4 +55,4 @@ function Stat({
   );
 }
 
-export default Stat;
+export default AdSetStat;

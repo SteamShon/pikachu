@@ -214,10 +214,10 @@
   resolved "https://registry.yarnpkg.com/@rushstack/eslint-patch/-/eslint-patch-1.2.0.tgz#8be36a1f66f3265389e90b5f9c9962146758f728"
   integrity sha512-sXo/qW2/pAcmT43VoRKOJbDOfV3cYpq3szSVfIThQXNt+E4DfKj361vaAt3c88U5tPUxzEswam7GW48PJqtKAg==
 
-"@steamshon/pikachu-react@^0.0.11":
-  version "0.0.11"
-  resolved "https://registry.yarnpkg.com/@steamshon/pikachu-react/-/pikachu-react-0.0.11.tgz#9dfff9a37a58c6202f2276283964ed66223f5b9d"
-  integrity sha512-Ge5Ud2Rq+QKqOxsqd3XIuYvZQC3fyaC63op1PN1kcqKqgMhOaB/hTRs27imcmtEta85keEPqEIHZSkOslfr5TA==
+"@steamshon/pikachu-react@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@steamshon/pikachu-react/-/pikachu-react-0.1.1.tgz#08eb66744135c80c054c0caa371db2836c986a6a"
+  integrity sha512-/zOZTR2m+11wdZUkh4i7seAc9MQtswGagp7/RPyolze/fmwpEXc6G7oSQfWwTil6wcTZKosubm01xAKeykwxNQ==
   dependencies:
     axios "^1.3.5"
     prop-types "^15.7.2"

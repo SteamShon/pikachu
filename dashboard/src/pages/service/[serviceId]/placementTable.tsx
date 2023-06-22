@@ -13,7 +13,7 @@ import { api } from "../../../utils/api";
 import { buildServiceTree } from "../../../utils/tree";
 
 import type ContentPreview from "../../../components/builder/contentPreview";
-import Stat from "../../../components/chart/Stat";
+import AdSetStat from "../../../components/chart/AdSetStat";
 import PlacementModal from "../../../components/form/placement/placementModal";
 import RenderPreview from "./renderPreview";
 
@@ -187,7 +187,8 @@ function PlacementTable({
       label: "Stat",
       component: (
         <>
-          <Stat service={service} defaultGroupByKey="placement" />
+          {/* <Stat service={service} defaultGroupByKey="placement" /> */}
+          <AdSetStat service={service} defaultGroupByKey="placement" />
         </>
       ),
     },

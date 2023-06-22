@@ -55,6 +55,7 @@ function RenderPreview({
       })
         .then((res) => {
           enqueueSnackbar("search API success.", { variant: "success" });
+          console.log(res);
           setAdSetSearchResult(res);
         })
         .catch((e) => console.error(e));
@@ -140,7 +141,7 @@ function RenderPreview({
         </Accordion>
       </div>
       <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-        <Accordion>
+        <Accordion expanded={placement !== undefined}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"
@@ -154,7 +155,9 @@ function RenderPreview({
         </Accordion>
       </div>
       <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-        <Accordion>
+        <Accordion
+          expanded={adSetSearchResult !== undefined || matchedAds !== undefined}
+        >
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"
@@ -170,7 +173,9 @@ function RenderPreview({
         </Accordion>
       </div>
       <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-        <Accordion>
+        <Accordion
+          expanded={adSetSearchResult !== undefined || matchedAds !== undefined}
+        >
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"
@@ -207,9 +212,9 @@ function RenderPreview({
                 <div>
                   <ContentPreview
                     service={service}
-                    contentType={adSetSearchResult?.content_type}
-                    creatives={(adSetSearchResult?.contents || []).map(
-                      (content) => toNewCreative(content.values)
+                    contentType={adSetSearchResult?.contentType}
+                    creatives={(adSetSearchResult?.adSets || []).map(
+                      ({ content }) => toNewCreative(content.values)
                     )}
                     showEditor={false}
                   />

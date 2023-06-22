@@ -1,5 +1,6 @@
 import type {
   AdGroup,
+  AdSet,
   Campaign,
   Content,
   ContentType,
@@ -18,8 +19,8 @@ export type SearchResult = Placement & {
   })[];
 };
 export type AdSetSearchResult = {
-  content_type: ContentType;
-  contents: Content[];
+  contentType: ContentType;
+  adSets: { adSet: AdSet; content: Content }[];
 };
 export function flattenToContents(results: SearchResult[]) {
   results.map((placement) => {

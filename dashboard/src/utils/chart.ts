@@ -9,6 +9,11 @@ import type {
   Segment,
 } from "@prisma/client";
 
+type StatWithData<T> = {
+  stat: CreativeStat;
+  data: T;
+};
+
 export function defaultDateRange() {
   const now = new Date();
   const endDate = new Date(now.toDateString());
@@ -121,34 +126,7 @@ export function filterTopDatasets({
 
   return { include: results, others };
 }
-export function toLabel(groupByKey: string, data?: CreativeTree) {
-  switch (groupByKey) {
-    case "placement":
-      return data?.adGroup.campaign.placement.name;
-    case "campaign":
-      return data?.adGroup.campaign.name;
-    case "adGroup":
-      return data?.adGroup.name;
-    case "creative":
-      return data?.name;
-    default:
-      return undefined;
-  }
-}
-export function toAdSetLabel(groupByKey: string, data?: AdSetTree) {
-  switch (groupByKey) {
-    case "placement":
-      return data?.placement.name;
-    case "adSet":
-      return data?.name;
-    case "content":
-      return data?.content.name;
-    case "segment":
-      return data?.segment?.name;
-    default:
-      return undefined;
-  }
-}
+
 export function toMetric({
   counts,
   metricKey,
@@ -171,29 +149,13 @@ export function toMetric({
       return undefined;
   }
 }
-type StatContainer<T> = {
-  stat: CreativeStat;
-  data: T;
-};
-type CreativeTree = Creative & {
-  adGroup: AdGroup & {
-    campaign: Campaign & {
-      placement: Placement;
-    };
-  };
-};
-type AdSetTree = AdSet & {
-  placement: Placement;
-  content: Content;
-  segment: Segment | null;
-};
 
 export function aggregateLabelTimeCounts<T>({
   stats,
   groupByKey,
   getLabel,
 }: {
-  stats: StatContainer<T>[];
+  stats: StatWithData<T>[];
   groupByKey: string;
   getLabel: (groupBy: string, data?: T) => string | undefined;
 }): Record<string, Record<string, Record<string, number>>> {
@@ -250,7 +212,7 @@ export function aggregateToMetric({
   });
   return metrics;
 }
-function buildDatasetsInner<T>({
+export function buildDatasets<T>({
   startDate,
   endDate,
   stats,
@@ -262,7 +224,7 @@ function buildDatasetsInner<T>({
 }: {
   startDate?: string;
   endDate?: string;
-  stats: StatContainer<T>[];
+  stats: StatWithData<T>[];
   getLabel: (groupBy: string, data?: T) => string | undefined;
   groupByKey: string;
   metricKey: string;
@@ -307,61 +269,4 @@ function buildDatasetsInner<T>({
     datasets,
     numOfLabels,
   };
-}
-export function buildDatasets({
-  startDate,
-  endDate,
-  stats,
-  groupByKey,
-  metricKey,
-  offset,
-  limit,
-}: {
-  startDate?: string;
-  endDate?: string;
-  stats: { data: CreativeTree; stat: CreativeStat }[];
-  groupByKey: string;
-  metricKey: string;
-  offset?: number;
-  limit?: number;
-}) {
-  return buildDatasetsInner({
-    startDate,
-    endDate,
-    stats,
-    getLabel: toLabel,
-    groupByKey,
-    metricKey,
-    offset,
-    limit,
-  });
-}
-
-export function buildAdSetDatasets({
-  startDate,
-  endDate,
-  stats,
-  groupByKey,
-  metricKey,
-  offset,
-  limit,
-}: {
-  startDate?: string;
-  endDate?: string;
-  stats: { data: AdSetTree; stat: CreativeStat }[];
-  groupByKey: string;
-  metricKey: string;
-  offset?: number;
-  limit?: number;
-}) {
-  return buildDatasetsInner({
-    startDate,
-    endDate,
-    stats,
-    getLabel: toAdSetLabel,
-    groupByKey,
-    metricKey,
-    offset,
-    limit,
-  });
 }

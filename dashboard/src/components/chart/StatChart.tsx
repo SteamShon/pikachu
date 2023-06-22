@@ -1,10 +1,4 @@
-import type {
-  AdGroup,
-  Campaign,
-  Creative,
-  CreativeStat,
-  Placement,
-} from "@prisma/client";
+import type { CreativeStat } from "@prisma/client";
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -17,10 +11,10 @@ import {
 } from "chart.js";
 import { useState } from "react";
 import { Line } from "react-chartjs-2";
+import { AiFillStepBackward, AiFillStepForward } from "react-icons/ai";
 import Datepicker from "react-tailwindcss-datepicker";
 import type { DateValueType } from "react-tailwindcss-datepicker/dist/types";
 import { buildDatasets, defaultDateRange } from "../../utils/chart";
-import { AiFillStepForward, AiFillStepBackward } from "react-icons/ai";
 
 ChartJS.register(
   CategoryScale,
@@ -32,21 +26,17 @@ ChartJS.register(
   Legend
 );
 
-function StatChart({
+function StatChart<T>({
   stats,
   defaultGroupByKey,
+  getLabel,
 }: {
   stats: {
     stat: CreativeStat;
-    data: Creative & {
-      adGroup: AdGroup & {
-        campaign: Campaign & {
-          placement: Placement;
-        };
-      };
-    };
+    data: T;
   }[];
   defaultGroupByKey: string;
+  getLabel: (groupBy: string, data?: T) => string | undefined;
 }) {
   const [dateRange, setDateRange] = useState<DateValueType>(defaultDateRange());
   const [limit, setLimit] = useState(5);
@@ -58,6 +48,7 @@ function StatChart({
     startDate: dateRange?.startDate as string,
     endDate: dateRange?.endDate as string,
     stats,
+    getLabel,
     groupByKey,
     metricKey,
     offset: counter * limit,

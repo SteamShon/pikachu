@@ -3,7 +3,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { adGroupRouter } from "../../../server/api/routers/adGroup";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 import { buildAdGroupTree } from "../../../utils/tree";
 import type { CreativeWithAdGroupIdAndContentIdType } from "../../schema/creative";
 import CreativeForm from "./creativeForm";
@@ -24,7 +24,7 @@ function CreativeModal({
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   type RouterOutput = inferRouterOutputs<typeof adGroupRouter>;

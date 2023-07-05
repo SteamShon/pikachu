@@ -3,7 +3,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { contentRouter } from "../../../server/api/routers/content";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 import { buildContentTypeTree } from "../../../utils/tree";
 import type { ContentWithContentTypeSchemaType } from "../../schema/content";
 import ContentForm from "./contentForm";
@@ -22,7 +22,7 @@ function ContentModal({
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   type RouterOutput = inferRouterOutputs<typeof contentRouter>;

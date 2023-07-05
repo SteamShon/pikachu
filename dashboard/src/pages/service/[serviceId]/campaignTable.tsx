@@ -11,7 +11,7 @@ import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type CampaignForm from "../../../components/form/campaign/campaignForm";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 import { buildPlacementTree } from "../../../utils/tree";
 import type { Service } from "@prisma/client";
 
@@ -24,9 +24,9 @@ function CampaignTable({
   setServiceTree,
 }: {
   service: Service;
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  serviceTree?: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();

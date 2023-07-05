@@ -11,7 +11,7 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type ProviderForm from "../../../components/form/provider/providerForm";
 import ProviderModal from "../../../components/form/provider/providerModal";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 
 function ProviderTable({
   service,
@@ -19,9 +19,9 @@ function ProviderTable({
   setServiceTree,
 }: {
   service: Parameters<typeof ProviderForm>[0]["service"];
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  serviceTree?: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();

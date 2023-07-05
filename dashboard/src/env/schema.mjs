@@ -24,6 +24,7 @@ export const serverSchema = z.object({
   // BUILDER_PRIVATE_KEY: z.string(),
   POSTHOG_KEY: z.string().optional(),
   POSTHOG_HOST: z.string().optional(),
+  EVENT_PUBLISH_URI: z.string().optional(),
 });
 
 /**

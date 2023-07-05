@@ -59,6 +59,35 @@ export const integrationRouter = createTRPCRouter({
         },
       });
     }),
+  placements: protectedProcedure
+    .input(z.object({ integrationId: z.string().optional() }))
+    .query(async ({ input }) => {
+      const { integrationId } = input;
+      if (!integrationId) return [];
+
+      return await prisma.placement.findMany({
+        where: {
+          integrations: {
+            some: {
+              id: integrationId,
+            },
+          },
+        },
+        include: {
+          contentType: {
+            include: {
+              contents: true,
+            },
+          },
+          adSets: {
+            include: {
+              content: true,
+              segment: true,
+            },
+          },
+        },
+      });
+    }),
   // addIntegrations: protectedProcedure
   //   .input(integrationsSchema)
   //   .mutation(async ({ input }) => {

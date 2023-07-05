@@ -14,7 +14,7 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type CreativeForm from "../../../components/form/creative/creativeForm";
 
 import { jsonParseWithFallback } from "../../../utils/json";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 import { buildAdGroupTree } from "../../../utils/tree";
 import CreativeModal from "../../../components/form/creative/creativeModal";
 import { api } from "../../../utils/api";
@@ -24,9 +24,9 @@ function CreativeTable({
   setServiceTree,
 }: {
   service: Parameters<typeof ContentPreview>[0]["service"];
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  serviceTree?: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();

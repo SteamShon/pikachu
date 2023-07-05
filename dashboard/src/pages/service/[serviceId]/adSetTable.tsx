@@ -11,17 +11,19 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type AdSetForm from "../../../components/form/adSet/adSetForm";
 import AdSetModal from "../../../components/form/adSet/adSetModal";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
+import { fromServiceTree } from "../../../utils/tree";
 
 function AdSetTable({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   service,
   serviceTree,
   setServiceTree,
 }: {
   service: Parameters<typeof AdSetForm>[0]["service"];
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  serviceTree?: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();
@@ -153,14 +155,16 @@ function AdSetTable({
             }}
           />
         </div>
-        <AdSetModal
-          key="segmentModal"
-          modalOpen={modalOpen}
-          setModalOpen={setModalOpen}
-          service={service}
-          initialData={adSet}
-          setServiceTree={setServiceTree}
-        />
+        {serviceTree && (
+          <AdSetModal
+            key="adSetModal"
+            modalOpen={modalOpen}
+            setModalOpen={setModalOpen}
+            service={fromServiceTree(serviceTree)}
+            initialData={adSet}
+            setServiceTree={setServiceTree}
+          />
+        )}
       </div>
     </>
   );

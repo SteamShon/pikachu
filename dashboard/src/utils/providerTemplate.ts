@@ -1,10 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import axios from "axios";
-import {
-  checkConnection,
-  extractConfigs,
-  listFoldersRecursively,
-} from "./awsS3DuckDB";
+import { checkConnection, extractConfigs } from "./awsS3DuckDB";
 
 export const PROVIDER_TEMPLATES = [
   {
@@ -63,8 +59,8 @@ export const PROVIDER_TEMPLATES = [
     validate: async (details: Prisma.JsonValue) => {
       try {
         const result = await axios.post("/api/integration/solapi", {
-          method: "getMessageList",
-          details,
+          route: "getMessageList",
+          providerDetails: details,
         });
         return result.status === 200;
       } catch (e) {

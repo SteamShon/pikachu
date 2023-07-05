@@ -6,7 +6,7 @@ import ServiceMenu from "../../../components/ServiceMenu";
 import SideMenu from "../../../components/SideMenu";
 import Loading from "../../../components/common/Loading";
 import { api } from "../../../utils/api";
-import { buildServiceTree } from "../../../utils/tree";
+import { toServiceTree } from "../../../utils/tree";
 import AdGroupTable from "./adGroupTable";
 import CampaignTable from "./campaignTable";
 import ContentTable from "./contentTable";
@@ -24,6 +24,7 @@ import RenderPreview from "./renderPreview";
 import ProviderTable from "./providerTable";
 import SegmentTable from "./segmentTable";
 import AdSetTable from "./adSetTable";
+import JobTable from "./jobTable";
 
 function Dashboard() {
   const router = useRouter();
@@ -31,7 +32,7 @@ function Dashboard() {
   const { serviceId, step } = router.query;
 
   const [tree, setTree] = useState<
-    ReturnType<typeof buildServiceTree> | undefined
+    ReturnType<typeof toServiceTree> | undefined
   >(undefined);
 
   const { data: service, isLoading } = api.service.get.useQuery(
@@ -45,7 +46,7 @@ function Dashboard() {
 
   useEffect(() => {
     if (service) {
-      setTree(buildServiceTree(service));
+      setTree(toServiceTree(service));
     }
   }, [service]);
 
@@ -412,6 +413,19 @@ function Dashboard() {
       table: () =>
         service ? (
           <AdSetTable
+            service={service}
+            setServiceTree={setTree}
+            serviceTree={tree}
+          />
+        ) : null,
+    },
+    {
+      label: "jobs",
+      description: `jobs`,
+      paths: [],
+      table: () =>
+        service ? (
+          <JobTable
             service={service}
             setServiceTree={setTree}
             serviceTree={tree}

@@ -23,7 +23,7 @@ async fn fetch_services(
         .await
         .unwrap()
 }
-async fn fetch_placements(
+pub async fn fetch_placements(
     client: Arc<PrismaClient>,
     last_updated_at: DateTime<FixedOffset>,
 ) -> Vec<placement::Data> {

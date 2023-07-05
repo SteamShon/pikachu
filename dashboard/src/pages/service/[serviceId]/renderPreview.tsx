@@ -8,20 +8,15 @@ import {
 
 import { useSnackbar } from "notistack";
 import { useState } from "react";
+import { CodeEditor } from "react-live-runner";
 import ContentPreview from "../../../components/builder/contentPreview";
-import PlacementData from "../../../components/form/placement/placementData";
 import SearchRequestForm from "../../../components/form/placement/searchRequestForm";
 import type { SearchRequestSchemaType } from "../../../components/schema/searchRequest";
 import { api } from "../../../utils/api";
-import {
-  AdSetSearchResult,
-  SearchResult,
-  searchAdSets,
-} from "../../../utils/search";
-import { buildUserInfo, search } from "../../../utils/search";
-import { CodeEditor } from "react-live-runner";
-import { jsonParseWithFallback } from "../../../utils/json";
 import { toNewCreative } from "../../../utils/contentType";
+import { jsonParseWithFallback } from "../../../utils/json";
+import type { AdSetSearchResult, SearchResult } from "../../../utils/search";
+import { buildUserInfo, search, searchAdSets } from "../../../utils/search";
 
 function RenderPreview({
   service,

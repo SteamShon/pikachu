@@ -24,6 +24,20 @@ function Test(creatives) {
         <>
           <div key={id} id={id} className="creative flex border-spacing-1 p-4">
             {/* modify here to code how to each creative will be rendered */}
+            <div className="w-20">
+              <a href={content.redirectUrl} target="_blank">
+                <img
+                  alt="Featured"
+                  src={content.image}
+                />
+              </a>
+            </div>
+            <div className="w-30 ml-4 text-2xl">
+                {index+1}
+            </div>            
+            <div className="w-30 ml-4 mt-1 font-medium">
+                {content.title}
+            </div>
           </div>
         </>
       );

@@ -12,7 +12,7 @@ import type IntegrationForm from "../../../components/form/integration/integrati
 import type SegmentForm from "../../../components/form/segment/segmentForm";
 import SegmentModal from "../../../components/form/segment/segmentModal";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 
 function SegmentTable({
   service,
@@ -20,9 +20,9 @@ function SegmentTable({
   setServiceTree,
 }: {
   service: Parameters<typeof IntegrationForm>[0]["service"];
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  serviceTree?: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();

@@ -1,19 +1,28 @@
 // import type { BuilderContent } from "@builder.io/react";
 // import { BuilderComponent } from "@builder.io/react";
-import type { ContentType } from "@prisma/client";
+import type {
+  ContentType,
+  Integration,
+  Provider,
+  Service,
+} from "@prisma/client";
 import { LiveEditor, LivePreview, LiveProvider } from "react-live";
 import { extractCode } from "../../utils/contentType";
 import { replacePropsInFunction } from "../common/CodeTemplate";
-import type { ServiceIntegrations } from "../schema/service";
-import SMSPlayground from "./smsPlayground";
+
+import { toSmsContentTypeDetails } from "../../utils/smsContentType";
+import SMSContentPreview from "./smsContentPreview";
 
 function ContentPreview({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   service,
   contentType,
   creatives,
   showEditor,
 }: {
-  service: ServiceIntegrations;
+  service: Service & {
+    integrations: (Integration & { provider: Provider | null })[];
+  };
   contentType?: ContentType;
   creatives: {
     id: string;
@@ -31,9 +40,11 @@ function ContentPreview({
     if (contentType?.type === "SMS") {
       return (
         <>
-          <SMSPlayground
-            service={service}
-            values={creatives[0]?.content || {}}
+          <SMSContentPreview
+            contentTypeDetails={
+              toSmsContentTypeDetails(contentType?.details) || {}
+            }
+            contentValues={creatives[0]?.content}
           />
         </>
       );

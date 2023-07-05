@@ -64,7 +64,10 @@ export const contentTypeRouter = createTRPCRouter({
           contentTypes: {
             update: {
               where: {
-                id: contentType.id,
+                serviceId_name: {
+                  serviceId,
+                  name: contentType.name,
+                },
               },
               data: {
                 ...contentType,

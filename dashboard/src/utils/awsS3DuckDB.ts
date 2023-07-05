@@ -83,19 +83,16 @@ export type TreeNode = {
   path: string;
   children: TreeNode[];
 };
-export function prependS3ConfigsOnQuery({
+export function s3ConfigsStatement({
   details,
-  query,
 }: {
   details?: Prisma.JsonValue | null;
-  query: string;
 }) {
   if (!details) return undefined;
 
   const configs = extractConfigs(details);
   if (!configs) return undefined;
   const { region, accessKeyId, secretAccessKey } = configs;
-
   return `
   INSTALL httpfs;
   LOAD httpfs;
@@ -105,7 +102,20 @@ export function prependS3ConfigsOnQuery({
   SET s3_region='${region}';
   SET s3_access_key_id='${accessKeyId}';
   SET s3_secret_access_key='${secretAccessKey}';
+  `;
+}
+export function prependS3ConfigsOnQuery({
+  details,
+  query,
+}: {
+  details?: Prisma.JsonValue | null;
+  query: string;
+}) {
+  const statement = s3ConfigsStatement({ details });
+  if (!statement) return undefined;
 
+  return `
+  ${statement}
   ${query}
   `;
 }
@@ -330,7 +340,7 @@ export async function executeQuery({
     executeQueryInner
   );
 }
-export async function describe({
+export async function describeTable({
   cubeSql,
   details,
 }: {

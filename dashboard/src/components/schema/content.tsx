@@ -15,6 +15,18 @@ export const contentSchema = z.object({
   values: z.record(z.unknown()),
   //values: jsonSchema,
 });
+// .transform((o) => {
+//   const newValues = Object.entries(o.values).reduce((prev, [k, v]) => {
+//     if (!v || v === "") return prev;
+//     prev[k] = v;
+//     return prev;
+//   }, {} as Record<string, unknown>);
+
+//   return {
+//     ...o,
+//     values: newValues,
+//   };
+// });
 
 export type ContentSchemaType = z.infer<typeof contentSchema>;
 

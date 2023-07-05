@@ -25,6 +25,7 @@ export const getIncludes = {
         include: {
           provider: true,
           segments: true,
+          jobs: true,
         },
       },
       adSets: {
@@ -56,6 +57,7 @@ export const getIncludes = {
       placements: true,
       provider: true,
       segments: true,
+      jobs: true,
     },
   },
 };

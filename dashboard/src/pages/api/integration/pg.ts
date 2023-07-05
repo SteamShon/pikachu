@@ -5,6 +5,7 @@ import { pipeline } from "node:stream/promises";
 import pg from "pg";
 import { from as copyFrom } from "pg-copy-streams";
 import { extractConfigs } from "../../../utils/awsS3DuckDB";
+import { executeQuery } from "../../../utils/pg";
 
 async function checkConnection(databaseUrl: string) {
   return await executeQuery({ databaseUrl, query: "SELECT 1" });
@@ -122,25 +123,6 @@ async function upload({
     client.end();
   }
   return result;
-}
-
-async function executeQuery({
-  databaseUrl,
-  query,
-}: {
-  databaseUrl: string;
-  query: string;
-}) {
-  const client = new pg.Client(databaseUrl);
-
-  try {
-    await client.connect();
-    const result = await client.query(query);
-    console.log(result);
-    return result;
-  } finally {
-    client.end();
-  }
 }
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {

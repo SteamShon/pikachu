@@ -10,14 +10,18 @@ import QueryResultTable from "../common/QueryResultTable";
 function SqlPreview({
   details,
   sql,
+  buttonType,
 }: {
   details?: Prisma.JsonValue;
-  sql: string;
+  sql?: string;
+  buttonType?: "button" | "reset" | "submit";
 }) {
   const [rows, setRows] = useState<{ [x: string]: unknown }[]>([]);
   const [loading, setLoading] = useState(false);
 
   const runQuery = async () => {
+    if (!sql) return;
+
     setLoading(true);
     const withLimit = `${sql} LIMIT 100`;
     const result = await executeQuery({
@@ -35,7 +39,7 @@ function SqlPreview({
       </div>
       <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
         <LoadingButton
-          type="submit"
+          type={buttonType || "submit"}
           variant="contained"
           loadingPosition="end"
           endIcon={<SendIcon />}

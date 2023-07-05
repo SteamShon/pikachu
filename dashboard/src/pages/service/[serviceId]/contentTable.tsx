@@ -14,7 +14,7 @@ import type ContentForm from "../../../components/form/content/contentForm";
 import ContentModal from "../../../components/form/content/contentModal";
 import { api } from "../../../utils/api";
 import { toNewCreative } from "../../../utils/contentType";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 import { buildContentTypeTree } from "../../../utils/tree";
 
 function ContentTable({
@@ -23,9 +23,9 @@ function ContentTable({
   setServiceTree,
 }: {
   service: Parameters<typeof ContentForm>[0]["service"];
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  serviceTree?: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();
@@ -105,15 +105,13 @@ function ContentTable({
       headerName: "Preview",
       flex: 4,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        if (params.row?.contentType?.type === "DISPLAY") {
-          return (
-            <ContentPreview
-              service={service}
-              contentType={params.row?.contentType}
-              creatives={[toNewCreative(params.row.values)]}
-            />
-          );
-        }
+        return (
+          <ContentPreview
+            service={service}
+            contentType={params.row?.contentType}
+            creatives={[toNewCreative(params.row.values)]}
+          />
+        );
       },
     },
     {

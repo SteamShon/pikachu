@@ -7,6 +7,7 @@ import type {
   Creative,
   Customset,
   Integration,
+  Job,
   Placement,
   Provider,
   Segment,
@@ -24,8 +25,78 @@ function arrayToRecord(array?: Item[]): Record<string, unknown> {
     return prev;
   }, {} as Record<string, unknown>);
 }
+export function fromServiceTree(serviceTree: ReturnType<typeof toServiceTree>) {
+  const flattenIntegrations = (
+    integrations: Record<
+      string,
+      Integration & {
+        provider: Provider | null;
+        segments: Record<string, Segment>;
+        jobs: Record<string, Job>;
+      }
+    >
+  ) => {
+    return Object.values(integrations).map(
+      ({ segments, jobs, ...integration }) => {
+        return {
+          ...integration,
+          segments: Object.values(segments),
+          jobs: Object.values(jobs),
+        };
+      }
+    );
+  };
+  const {
+    integrations,
+    providers,
+    customsets,
+    contentTypes,
+    placements,
+    ...service
+  } = serviceTree;
+  const newIntegrations = flattenIntegrations(integrations);
+  const newProviders = Object.values(providers);
+  const newCustomsets = Object.values(customsets);
+  const newContentTypes = Object.values(contentTypes).map(
+    ({ contents, ...contentType }) => {
+      return { ...contentType, contents: Object.values(contents) };
+    }
+  );
 
-export function buildServiceTree(
+  const newPlacements = Object.values(placements).map(
+    ({ adSets, campaigns, contentType, integrations, ...placement }) => {
+      const newCampaigns = Object.values(campaigns).flatMap(
+        ({ adGroups, ...campaign }) => {
+          const newAdGroups = Object.values(adGroups).flatMap(
+            ({ creatives, ...adGroup }) => {
+              return { ...adGroup, creatives: Object.values(creatives) };
+            }
+          );
+          return { ...campaign, adGroups: newAdGroups };
+        }
+      );
+      const newIntegrations = flattenIntegrations(integrations);
+      const newAdSets = Object.values(adSets);
+      return {
+        ...placement,
+        contentType,
+        integrations: newIntegrations,
+        adSets: newAdSets,
+        campaigns: newCampaigns,
+      };
+    }
+  );
+
+  return {
+    ...service,
+    placements: newPlacements,
+    contentTypes: newContentTypes,
+    customsets: newCustomsets,
+    providers: newProviders,
+    integrations: newIntegrations,
+  };
+}
+export function toServiceTree(
   service: Service & {
     placements: (Placement & {
       campaigns: (Campaign & {
@@ -39,6 +110,7 @@ export function buildServiceTree(
       integrations: (Integration & {
         provider: Provider | null;
         segments: Segment[];
+        jobs: Job[];
       })[];
       adSets: (AdSet & { segment: Segment | null; content: Content })[];
     })[];
@@ -50,6 +122,7 @@ export function buildServiceTree(
     integrations: (Integration & {
       provider: Provider | null;
       segments: Segment[];
+      jobs: Job[];
     })[];
   }
 ): Service & {
@@ -106,6 +179,7 @@ export function buildPlacementTree(
     integrations: (Integration & {
       provider: Provider | null;
       segments: Segment[];
+      jobs: Job[];
     })[];
     adSets: (AdSet & { segment: Segment | null; content: Content })[];
   }
@@ -211,15 +285,21 @@ export function buildIntegraionTree(
   integration: Integration & {
     provider: Provider | null;
     segments: Segment[];
+    jobs: Job[];
   }
 ): Integration & {
   provider: Provider | null;
   segments: ReturnType<typeof buildSegmentTree>;
+  jobs: ReturnType<typeof buildJobTree>;
 } {
   const segments = buildSegmentTree(integration.segments);
-  return { ...integration, segments };
+  const jobs = buildJobTree(integration.jobs);
+  return { ...integration, segments, jobs };
 }
 
 export function buildSegmentTree(segments: Segment[]): Record<string, Segment> {
   return arrayToRecord(segments) as Record<string, Segment>;
+}
+export function buildJobTree(jobs: Job[]): Record<string, Job> {
+  return arrayToRecord(jobs) as Record<string, Job>;
 }

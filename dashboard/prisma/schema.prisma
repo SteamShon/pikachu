@@ -151,7 +151,9 @@ model Placement {
     // cube                    Cube?                     @relation(fields: [cubeId], references: [id])
     // cubeId                  String?
     integrations Integration[]
+    // integrations PlacementIntegrations[]
     adSets       AdSet[]
+    jobs         Job[]
 
     @@unique([serviceId, name])
     @@index(fields: [updatedAt])
@@ -320,10 +322,41 @@ model Integration {
     serviceId   String
 
     placements Placement[]
+    // placements PlacementIntegrations[]
     segments   Segment[]
+    jobs       Job[]
 
     @@unique([serviceId, name])
     @@index(fields: [updatedAt])
+}
+
+// model PlacementIntegrations {
+//     id            String      @id @default(cuid())
+//     placement     Placement   @relation(fields: [placementId], references: [id], onDelete: Cascade)
+//     placementId   String
+//     integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+//     integrationId String
+//     status        String      @default("CREATED")
+//     createdAt     DateTime    @default(now())
+//     updatedAt     DateTime    @updatedAt
+
+//     @@unique([placementId, integrationId])
+// }
+
+model Job {
+    id            String      @id @default(cuid())
+    integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+    integrationId String
+    placement     Placement   @relation(fields: [placementId], references: [id], onDelete: Cascade)
+    placementId   String
+    name          String
+    description   String?
+    details       Json        @default("{}")
+    status        String      @default("CREATED")
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+
+    @@unique([integrationId, name])
 }
 
 model Segment {

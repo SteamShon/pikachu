@@ -12,7 +12,7 @@ import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type CustomsetForm from "../../../components/form/customset/customsetForm";
 
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 import { buildCustomsetsTree } from "../../../utils/tree";
 import CustomsetModal from "../../../components/form/customset/customsetModal";
 
@@ -22,9 +22,9 @@ function CustomsetTable({
   setServiceTree,
 }: {
   service: Service;
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  serviceTree?: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();

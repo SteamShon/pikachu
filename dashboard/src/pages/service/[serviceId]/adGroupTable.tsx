@@ -13,7 +13,7 @@ import Stat from "../../../components/chart/Stat";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type AdGroupForm from "../../../components/form/adGroup/adGroupForm";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 import { buildCampaignTree } from "../../../utils/tree";
 import AdGroupModal from "../../../components/form/adGroup/adGroupModal";
 
@@ -23,9 +23,9 @@ function AdGroupTable({
   setServiceTree,
 }: {
   service: Service;
-  serviceTree: ReturnType<typeof buildServiceTree>;
+  serviceTree: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();

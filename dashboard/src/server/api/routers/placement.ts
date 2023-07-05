@@ -223,6 +223,7 @@ export const placementRouter = createTRPCRouter({
             include: {
               provider: true,
               segments: true,
+              jobs: true,
             },
           },
           adSets: {
@@ -278,6 +279,7 @@ export const placementRouter = createTRPCRouter({
             include: {
               provider: true,
               segments: true,
+              jobs: true,
             },
           },
           adSets: {

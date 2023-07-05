@@ -18,25 +18,14 @@ import CustomLoadingButton from "../../common/CustomLoadingButton";
 import type { AdSetSchemaType } from "../../schema/adSet";
 import { adSetSchema } from "../../schema/adSet";
 import SegmentQueryBuilder from "../segmentQueryBuilder";
+import { fromServiceTree } from "../../../utils/tree";
 
 function AdSetForm({
   service,
   initialData,
   onSubmit,
 }: {
-  service: Service & {
-    placements: (Placement & {
-      integrations: (Integration & {
-        provider: Provider | null;
-        segments: Segment[];
-      })[];
-      adSets: (AdSet & { segment: Segment | null; content: Content })[];
-    })[];
-    contentTypes: (ContentType & {
-      contents: Content[];
-    })[];
-    integrations: (Integration & { provider: Provider | null })[];
-  };
+  service: ReturnType<typeof fromServiceTree>;
   initialData?: AdSet;
   onSubmit: (input: AdSetSchemaType) => void;
 }) {

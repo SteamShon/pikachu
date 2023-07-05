@@ -5,7 +5,7 @@ import { useFormContext } from "react-hook-form";
 import { jsonParseWithFallback } from "../../../utils/json";
 import Badge from "../../common/Badge";
 import type IntegrationForm from "./integrationForm";
-import ContentTypeInfoBuilder from "../contentType/contentTypeInfoBuilder";
+import ContentTypeDetailsBuilder from "../contentType/contentTypeDetailsBuilder";
 
 function PikachuApiIntegration({
   service,
@@ -70,7 +70,7 @@ function PikachuApiIntegration({
         </dl>
       </div>
       <div className="border-t border-gray-200">
-        <ContentTypeInfoBuilder
+        <ContentTypeDetailsBuilder
           title="Payload Schema"
           hideCodeEditor={true}
           fieldPrefix={name}

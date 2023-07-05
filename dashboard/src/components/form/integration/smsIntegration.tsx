@@ -3,7 +3,7 @@ import {
   materialRenderers,
 } from "@jsonforms/material-renderers";
 import { JsonForms } from "@jsonforms/react";
-import type { Provider } from "@prisma/client";
+import type { Integration, Prisma, Provider } from "@prisma/client";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
@@ -31,10 +31,12 @@ const SMS_TEST_SCHEMA = {
   required: ["from", "to", "text"],
 };
 function SmsIntegration({
+  service,
   initialData,
   provider,
   name,
 }: {
+  service: Parameters<typeof IntegrationForm>[0]["service"];
   initialData: Parameters<typeof IntegrationForm>[0]["initialData"];
   provider?: Provider;
   name: string;
@@ -44,26 +46,36 @@ function SmsIntegration({
     JSON.stringify(SMS_TEST_SCHEMA)
   );
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+  const [cubeIntegration, setCubeIntegration] = useState<
+    typeof service.integrations[0] | undefined
+  >(undefined);
+  const cubeIntegrations = (service?.integrations || []).filter(
+    ({ provide }) => provide === "CUBE"
+  );
 
   const methods = useFormContext();
-  const { control, reset, register, getValues } = methods;
+  const { control, reset, register, getValues, setValue } = methods;
 
   useEffect(() => {
     const details = initialData?.details as {
       [x: string]: unknown;
     };
     if (initialData) {
+      setFormSchema(details.schema as string);
+      setFormValues(details.values as Record<string, unknown>);
+      const cubeIntegration = details.integration as Integration | undefined;
       reset({
         ...initialData,
       });
-      setFormSchema(details.schema as string);
-      setFormValues(details.values as Record<string, unknown>);
+      setValue(`${name}.cubeIntegrationId`, cubeIntegration?.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData]);
 
   const validate = async () => {
     const payload = getValues(`${name}.values`) as Record<string, unknown>;
+    const uri = getValues(`${name}.uri`) as string;
+    const integrationDetails = { uri } as Prisma.JsonValue;
 
     const from = payload.from as string;
     const text = payload.text as string;
@@ -78,7 +90,8 @@ function SmsIntegration({
       const result = await axios.post(`/api/integration/solapi`, {
         payload: messages,
         route: "sendMessages",
-        details: provider?.details,
+        providerDetails: provider?.details,
+        integrationDetails,
       });
 
       setChecked(result.status === 200);
@@ -87,6 +100,13 @@ function SmsIntegration({
     }
   };
 
+  const handleCubeIntegrationChange = (cubeIntegrationId: string) => {
+    const cubeIntegration = cubeIntegrations.find(
+      ({ id }) => id === cubeIntegrationId
+    );
+    setCubeIntegration(cubeIntegration);
+    setValue(`${name}.cubeIntegration`, cubeIntegration);
+  };
   return (
     <div className="overflow-hidden bg-white shadow sm:rounded-lg">
       <input type="hidden" value={formSchema} {...register(`${name}.schema`)} />
@@ -99,6 +119,26 @@ function SmsIntegration({
                 className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
                 {...register(`${name}.uri`)}
               />
+            </dd>
+          </div>
+          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt className="text-sm font-medium text-gray-500">
+              Cube Integration
+            </dt>
+            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+              <select
+                {...register(`${name}.cubeIntegrationId`)}
+                onChange={(e) => handleCubeIntegrationChange(e.target.value)}
+              >
+                <option value="">Please choose</option>
+                {cubeIntegrations?.map(({ name, id }) => {
+                  return (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  );
+                })}
+              </select>
             </dd>
           </div>
           <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">

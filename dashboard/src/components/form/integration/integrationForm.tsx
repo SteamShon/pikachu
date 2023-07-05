@@ -53,8 +53,6 @@ function IntegrationForm({
     formState: { errors },
   } = methods;
 
-  console.log(errors);
-
   useEffect(() => {
     if (!initialData) return;
 
@@ -90,7 +88,7 @@ function IntegrationForm({
       name: "SMS",
       component: (
         <SmsIntegration
-          // service={service}
+          service={service}
           initialData={initialData}
           provider={provider}
           name="details"

@@ -4,7 +4,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { serviceRouter } from "../../../server/api/routers/service";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 import { buildCustomsetsTree } from "../../../utils/tree";
 import type { CustomsetWithServiceSchemaType } from "../../schema/customset";
 import CustomsetForm from "./customsetForm";
@@ -22,7 +22,7 @@ function CustomsetModal({
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   type RouterOutput = inferRouterOutputs<typeof customsetRouter>;

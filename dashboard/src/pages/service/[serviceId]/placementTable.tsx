@@ -10,7 +10,7 @@ import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type PlacementForm from "../../../components/form/placement/placementForm";
 import { api } from "../../../utils/api";
-import { buildServiceTree } from "../../../utils/tree";
+import { toServiceTree } from "../../../utils/tree";
 
 import type ContentPreview from "../../../components/builder/contentPreview";
 import AdSetStat from "../../../components/chart/AdSetStat";
@@ -23,9 +23,9 @@ function PlacementTable({
   setServiceTree,
 }: {
   service: Parameters<typeof ContentPreview>[0]["service"];
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  serviceTree?: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();
@@ -43,7 +43,7 @@ function PlacementTable({
     onSuccess(deleted) {
       setServiceTree((prev) => {
         if (!prev) return undefined;
-        return buildServiceTree(deleted);
+        return toServiceTree(deleted);
       });
       setModalOpen(false);
     },

@@ -2,6 +2,9 @@ pub mod meta;
 pub mod processor;
 pub mod publisher;
 pub mod util;
+pub mod handler;
+pub mod stat_processor;
+pub mod message_send_processor;
 
 use std::{env, sync::Arc};
 
@@ -15,12 +18,12 @@ use actix_web::{
 use common::db;
 use dotenv::dotenv;
 use futures::future::join_all;
-use processor::Processor;
+
 use publisher::Publisher;
 use serde_json::json;
 use tokio::runtime::Builder;
 
-use crate::publisher::Event;
+use crate::{publisher::Event, handler::{initialize_stat_processor_runner, initialize_message_send_processor_runner}};
 
 #[post("/publishes/{topic}/{service_id}")]
 async fn publishes<'a>(
@@ -84,7 +87,21 @@ async fn main() -> std::io::Result<()> {
         .build()
         .unwrap();
     println!("{:?}", database_url);
-    Processor::new(&rt, client, group_id, topic, &kafka_configs);
+    initialize_stat_processor_runner(
+        &rt, 
+        &kafka_configs,
+        topic, 
+        &group_id,
+        client.clone(), 
+    );
+    initialize_message_send_processor_runner(
+        &rt,
+        &kafka_configs,
+        "sms",
+        &group_id,
+        client.clone(),
+    ).await;
+    // Processor::new(&rt, client, group_id, topic, &kafka_configs);
 
     HttpServer::new(move || {
         let cors = Cors::permissive();

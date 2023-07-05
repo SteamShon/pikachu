@@ -3,7 +3,8 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { integrationRouter } from "../../../server/api/routers/integration";
 import { api } from "../../../utils/api";
-import { buildIntegraionTree, buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
+import { buildIntegraionTree } from "../../../utils/tree";
 import type { IntegrationSchemaType } from "../../schema/integration";
 import IntegrationForm from "./integrationForm";
 
@@ -19,7 +20,7 @@ function IntegrationModal({
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   type RouterOutput = inferRouterOutputs<typeof integrationRouter>;
@@ -43,8 +44,6 @@ function IntegrationModal({
     },
   });
   const onSubmit = (input: IntegrationSchemaType) => {
-    console.log(input);
-
     if (initialData) update(input);
     else create(input);
   };

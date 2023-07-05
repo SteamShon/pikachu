@@ -1,24 +1,38 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Content, ContentType, Service } from "@prisma/client";
+import type {
+  Content,
+  ContentType,
+  Integration,
+  Provider,
+  Segment,
+  Service,
+} from "@prisma/client";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import type { ContentTypeSchemaType } from "../../schema/contentType";
 import { contentTypeSchema } from "../../schema/contentType";
-import ContentTypeInfoBuilder from "./contentTypeInfoBuilder";
+import ContentTypeDetailsBuilder from "./contentTypeDetailsBuilder";
+import SMSContentTypeDetailsBuilder from "./smsContentTypeDetailsBuilder";
 
 function ContentTypeForm({
   service,
   initialData,
   onSubmit,
 }: {
-  service: Service;
+  service: Service & {
+    integrations: (Integration & {
+      provider: Provider | null;
+      segments: Segment[];
+    })[];
+  };
   initialData?: ContentType & {
     contents: Content[];
   };
   onSubmit: (input: ContentTypeSchemaType & { serviceId: string }) => void;
 }) {
-  const [source, setSource] = useState<string | undefined>(undefined);
+  const [, setSource] = useState<string | undefined>(undefined);
   const [type, setType] = useState<string | undefined>(undefined);
+
   // eslint-disable-next-line @typescript-eslint/ban-types
   const details = initialData?.details as { [x: string]: {} };
   const methods = useForm<ContentTypeSchemaType & { serviceId: string }>({
@@ -55,13 +69,18 @@ function ContentTypeForm({
       case "SMS":
         return (
           <>
-            <ContentTypeInfoBuilder details={initialData?.details} />
+            <SMSContentTypeDetailsBuilder
+              service={service}
+              contentType={initialData}
+              fieldPrefix="details"
+            />
+            {/* <ContentTypeInfoBuilder details={initialData?.details} />; */}
           </>
         );
       default:
         return (
           <>
-            <ContentTypeInfoBuilder details={initialData?.details} />;
+            <ContentTypeDetailsBuilder details={initialData?.details} />;
           </>
         );
     }
@@ -164,9 +183,9 @@ function ContentTypeForm({
             <div className="mx-auto max-w-lg text-center">
               <h1 className="text-2xl font-bold sm:text-3xl">Details</h1>
 
-              <p className="mt-4 text-gray-500">
+              {/* <p className="mt-4 text-gray-500">
                 Define schema, defaultValues, rendering code.
-              </p>
+              </p> */}
             </div>
 
             <div className="mx-auto mt-8 mb-0 space-y-4">

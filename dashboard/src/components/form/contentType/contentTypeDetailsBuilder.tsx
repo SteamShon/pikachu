@@ -13,7 +13,7 @@ import { extractValue, jsonParseWithFallback } from "../../../utils/json";
 import CodeEditor from "../../builder/codeEditor";
 import { removeRenderFunction } from "../../common/CodeTemplate";
 
-function ContentTypeInfoBuilder({
+function ContentTypeDetailsBuilder({
   title,
   fieldPrefix,
   hideCodeEditor,
@@ -187,4 +187,4 @@ function ContentTypeInfoBuilder({
   );
 }
 
-export default ContentTypeInfoBuilder;
+export default ContentTypeDetailsBuilder;

@@ -17,6 +17,7 @@ export const integrationRouter = createTRPCRouter({
         include: {
           provider: true,
           segments: true,
+          jobs: true,
         },
       });
 
@@ -38,6 +39,7 @@ export const integrationRouter = createTRPCRouter({
         include: {
           provider: true,
           segments: true,
+          jobs: true,
         },
       });
     }),
@@ -56,6 +58,35 @@ export const integrationRouter = createTRPCRouter({
         include: {
           provider: true,
           segments: true,
+        },
+      });
+    }),
+  placements: protectedProcedure
+    .input(z.object({ integrationId: z.string().optional() }))
+    .query(async ({ input }) => {
+      const { integrationId } = input;
+      if (!integrationId) return [];
+
+      return await prisma.placement.findMany({
+        where: {
+          integrations: {
+            some: {
+              id: integrationId,
+            },
+          },
+        },
+        include: {
+          contentType: {
+            include: {
+              contents: true,
+            },
+          },
+          adSets: {
+            include: {
+              content: true,
+              segment: true,
+            },
+          },
         },
       });
     }),

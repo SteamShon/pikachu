@@ -3,10 +3,7 @@
 import type { Prisma } from "@prisma/client";
 import { Database } from "duckdb-async";
 import type { NextApiRequest, NextApiResponse } from "next";
-import {
-  extractConfigs,
-  listFoldersRecursively,
-} from "../../../utils/awsS3DuckDB";
+import { extractConfigs } from "../../../utils/awsS3DuckDB";
 
 // async function checkConnection(configs: ReturnType<typeof extractConfigs>) {
 //   if (!configs) {
@@ -38,6 +35,7 @@ async function executeDuckDBQuery(query?: string) {
     console.log(error);
   }
 }
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "POST") {
     res.status(405).end();

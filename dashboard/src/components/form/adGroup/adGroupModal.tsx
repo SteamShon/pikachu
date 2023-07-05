@@ -3,7 +3,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { campaignRouter } from "../../../server/api/routers/campaign";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 import { buildCampaignTree } from "../../../utils/tree";
 import type { AdGroupWithCampaignSchemaType } from "../../schema/adGroup";
 import AdGroupForm from "./adGroupForm";
@@ -24,7 +24,7 @@ function AdGroupModal({
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   type RouterOutput = inferRouterOutputs<typeof campaignRouter>;

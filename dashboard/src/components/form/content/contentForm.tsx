@@ -12,13 +12,16 @@ import {
   toNewCreativeFromObject,
 } from "../../../utils/contentType";
 import { jsonParseWithFallback } from "../../../utils/json";
+import { toSmsContentTypeDetails } from "../../../utils/smsContentType";
 import ContentPreview from "../../builder/contentPreview";
+
 import CustomLoadingButton from "../../common/CustomLoadingButton";
 import type {
   ContentSchemaType,
   ContentWithContentTypeSchemaType,
 } from "../../schema/content";
 import { contentWithContentTypeSchema } from "../../schema/content";
+import SMSContentValuesForm from "./smsContentValuesForm";
 
 function ContentForm({
   service,
@@ -31,6 +34,7 @@ function ContentForm({
   initialData?: Content & { contentType: ContentType };
   onSubmit: (input: ContentSchemaType & { contentTypeId: string }) => void;
 }) {
+  console.log(contentTypes);
   const [contentType, setContentType] = useState<
     typeof contentTypes[0] | undefined
   >(undefined);
@@ -48,6 +52,7 @@ function ContentForm({
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = methods;
 
@@ -81,15 +86,18 @@ function ContentForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData]);
 
+  // useEffect(() => {
+  //   setSchema(extractSchema(contentType));
+  // }, [contentType]);
+
   const handleContentTypeSelect = async (contentTypeId: string) => {
-    const newContenType = contentTypes.find(
+    const newContentType = contentTypes.find(
       (contentType) => contentType.id === contentTypeId
     );
-    setContentType(newContenType);
-    setSchema(extractSchema(newContenType));
-  };
 
-  const needUpdate = false;
+    setContentType(newContentType);
+    setSchema(extractSchema(newContentType));
+  };
 
   return (
     <>
@@ -99,29 +107,6 @@ function ContentForm({
             <div className="px-4 py-5 sm:px-6">
               <h3 className="text-lg font-medium leading-6 text-gray-900">
                 Content
-                {needUpdate ? (
-                  <span className="inline-flex items-center justify-end rounded-full bg-red-100 px-2.5 py-0.5 text-red-700">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke-width="1.5"
-                      stroke="currentColor"
-                      className="-ml-1 mr-1.5 h-4 w-4"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-                      />
-                    </svg>
-
-                    <p className="whitespace-nowrap text-sm">
-                      {" "}
-                      outdated. Save again
-                    </p>
-                  </span>
-                ) : null}
               </h3>
             </div>
             <div className="border-t border-gray-200">
@@ -133,7 +118,6 @@ function ContentForm({
                   <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                     <select
                       {...register("contentTypeId")}
-                      defaultValue={initialData?.contentTypeId || undefined}
                       disabled={initialData ? true : false}
                       onChange={(e) => handleContentTypeSelect(e.target.value)}
                     >
@@ -207,20 +191,51 @@ function ContentForm({
                         control={control}
                         rules={{ required: true }}
                         render={({ field }) => (
-                          <JsonForms
-                            schema={jsonParseWithFallback(schema)}
-                            //uischema={uiSchema}
-                            data={defaultValues}
-                            renderers={materialRenderers}
-                            cells={materialCells}
-                            onChange={({ data }) => {
-                              if (Object.keys(data).length === 0) return;
+                          <>
+                            {contentType?.type === "SMS" ? (
+                              <SMSContentValuesForm
+                                contentTypeDetails={
+                                  toSmsContentTypeDetails(
+                                    contentType?.details
+                                  ) || {}
+                                }
+                                service={service}
+                                contentValues={
+                                  initialData?.values
+                                    ? jsonParseWithFallback(initialData?.values)
+                                    : undefined
+                                }
+                                fieldPrefix="values"
+                                setValue={(key: string, value: unknown) =>
+                                  setValue(`values.${key}`, value)
+                                }
+                              />
+                            ) : (
+                              <>
+                                <JsonForms
+                                  schema={jsonParseWithFallback(schema)}
+                                  //uischema={uiSchema}
+                                  data={defaultValues}
+                                  renderers={materialRenderers}
+                                  cells={materialCells}
+                                  onChange={({ data }) => {
+                                    if (Object.keys(data).length === 0) return;
 
-                              field.onChange(data);
-                              //setValue("values", data);
-                              setDefaultValues(data);
-                            }}
-                          />
+                                    field.onChange(data);
+                                    //setValue("values", data);
+                                    setDefaultValues(data);
+                                  }}
+                                />
+                                <ContentPreview
+                                  service={service}
+                                  contentType={contentType}
+                                  creatives={[
+                                    toNewCreativeFromObject(defaultValues),
+                                  ]}
+                                />
+                              </>
+                            )}
+                          </>
                         )}
                       />
                     </dd>
@@ -237,11 +252,6 @@ function ContentForm({
           </div>
         </form>
       </FormProvider>
-      <ContentPreview
-        service={service}
-        contentType={contentType}
-        creatives={[toNewCreativeFromObject(defaultValues)]}
-      />
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useSnackbar } from "notistack";
 import type { Dispatch, SetStateAction } from "react";
 import type { adSetRouter } from "../../../server/api/routers/adSet";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { fromServiceTree, toServiceTree } from "../../../utils/tree";
 import type { AdSetSchemaType } from "../../schema/adSet";
 import AdSetForm from "./adSetForm";
 
@@ -15,12 +15,12 @@ function AdSetModal({
   setModalOpen,
   setServiceTree,
 }: {
-  service: Parameters<typeof AdSetForm>[0]["service"];
+  service: ReturnType<typeof fromServiceTree>;
   initialData?: Parameters<typeof AdSetForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const { enqueueSnackbar } = useSnackbar();

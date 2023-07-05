@@ -1,10 +1,9 @@
 import { Dialog, DialogContent } from "@mui/material";
-import type { Service } from "@prisma/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Dispatch, SetStateAction } from "react";
 import type { contentTypeRouter } from "../../../server/api/routers/contentType";
 import { api } from "../../../utils/api";
-import type { buildServiceTree } from "../../../utils/tree";
+import type { toServiceTree } from "../../../utils/tree";
 import { buildContentTypesTree } from "../../../utils/tree";
 import type { ContentTypeSchemaType } from "../../schema/contentType";
 import ContentTypeForm from "./contentTypeForm";
@@ -16,12 +15,12 @@ function ContentTypeModal({
   setModalOpen,
   setServiceTree,
 }: {
-  service: Service;
+  service: Parameters<typeof ContentTypeForm>[0]["service"];
   initialData?: Parameters<typeof ContentTypeForm>[0]["initialData"];
   modalOpen: boolean;
   setModalOpen: Dispatch<SetStateAction<boolean>>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   type RouterOutput = inferRouterOutputs<typeof contentTypeRouter>;

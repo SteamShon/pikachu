@@ -9,6 +9,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
+import type { Placement } from "@prisma/client";
 import moment from "moment";
 import { useRouter } from "next/router";
 import type { Dispatch, SetStateAction } from "react";
@@ -16,6 +17,7 @@ import { useState } from "react";
 import ContentPreview from "../../../components/builder/contentPreview";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type ContentTypeForm from "../../../components/form/contentType/contentTypeForm";
+import ContentTypeModal from "../../../components/form/contentType/contentTypeModal";
 import { api } from "../../../utils/api";
 import {
   extractDefaultValues,
@@ -23,19 +25,17 @@ import {
   toNewCreative,
 } from "../../../utils/contentType";
 import { jsonParseWithFallback } from "../../../utils/json";
-import type { buildServiceTree } from "../../../utils/tree";
-import { buildContentTypesTree } from "../../../utils/tree";
-import ContentTypeModal from "../../../components/form/contentType/contentTypeModal";
+import { fromServiceTree, toServiceTree } from "../../../utils/tree";
 
 function ContentTypeTable({
   service,
   serviceTree,
   setServiceTree,
 }: {
-  service: Parameters<typeof ContentPreview>[0]["service"];
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  service: Parameters<typeof ContentTypeForm>[0]["service"];
+  serviceTree?: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();
@@ -49,17 +49,27 @@ function ContentTypeTable({
     onSuccess(deleted) {
       setServiceTree((prev) => {
         if (!prev) return prev;
-        prev.contentTypes = buildContentTypesTree(deleted.contentTypes);
+        delete prev.contentTypes[deleted.id];
         return prev;
       });
       setModalOpen(false);
     },
   });
+  const placements = Object.values(serviceTree?.placements || {})
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    .map(({ campaigns, ...placement }) => {
+      return { ...placement };
+    })
+    .reduce((prev, placement) => {
+      prev[placement.contentTypeId] = placement;
+      return prev;
+    }, {} as Record<string, Placement>);
 
   const rows = serviceTree?.contentTypes
     ? Object.values(serviceTree.contentTypes).map((contentType) => {
         return {
           ...contentType,
+          placement: placements[contentType.id],
           contents: Object.values(contentType.contents),
         };
       })
@@ -69,13 +79,9 @@ function ContentTypeTable({
     {
       field: "name",
       headerName: "Name",
-      flex: 1,
-    },
-    {
-      field: "description",
-      headerName: "Description",
       flex: 2,
     },
+
     {
       field: "status",
       headerName: "Status",
@@ -86,34 +92,44 @@ function ContentTypeTable({
       headerName: "Source",
       flex: 1,
     },
-
+    {
+      field: "type",
+      headerName: "Type",
+      flex: 1,
+    },
     {
       field: "schema",
       headerName: "Schema",
       flex: 1,
       renderCell: (params: GridRenderCellParams<Date>) => {
-        return params.row.source === "builder.io" ? null : (
-          <JsonForms
-            schema={jsonParseWithFallback(extractSchema(params.row))}
-            //uischema={uiSchema}
-            data={jsonParseWithFallback(extractDefaultValues(params.row))}
-            renderers={materialRenderers}
-            cells={materialCells}
-          />
+        return (
+          <>
+            {params.row.type === "DISPLAY" && (
+              <JsonForms
+                schema={jsonParseWithFallback(extractSchema(params.row))}
+                //uischema={uiSchema}
+                data={jsonParseWithFallback(extractDefaultValues(params.row))}
+                renderers={materialRenderers}
+                cells={materialCells}
+              />
+            )}
+          </>
         );
       },
     },
     {
       field: "preview",
       headerName: "Preview",
-      flex: 4,
+      flex: 3,
       renderCell: (params: GridRenderCellParams<Date>) => {
         return (
-          <ContentPreview
-            service={service}
-            contentType={params.row}
-            creatives={[toNewCreative(extractDefaultValues(params.row))]}
-          />
+          <>
+            <ContentPreview
+              service={service}
+              contentType={params.row}
+              creatives={[toNewCreative(extractDefaultValues(params.row))]}
+            />
+          </>
         );
       },
     },
@@ -144,7 +160,15 @@ function ContentTypeTable({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
+
                 if (confirm("Are you sure?")) {
+                  if (params.row.placement) {
+                    alert(
+                      `placement ${params.row.placement.name} is using this. make sure update placement not to use this contentType first then you can delete this.`
+                    );
+                    return;
+                  }
+
                   deleteContentType({
                     serviceId: service.id,
                     id: params.row.id,
@@ -220,14 +244,16 @@ function ContentTypeTable({
             }}
           />
         </div>
-        <ContentTypeModal
-          key="contentTypeModal"
-          service={service}
-          initialData={contentType}
-          modalOpen={modalOpen}
-          setModalOpen={setModalOpen}
-          setServiceTree={setServiceTree}
-        />
+        {serviceTree && (
+          <ContentTypeModal
+            key="contentTypeModal"
+            service={fromServiceTree(serviceTree)}
+            initialData={contentType}
+            modalOpen={modalOpen}
+            setModalOpen={setModalOpen}
+            setServiceTree={setServiceTree}
+          />
+        )}
       </div>
     </>
   );

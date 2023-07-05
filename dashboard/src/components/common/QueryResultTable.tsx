@@ -3,7 +3,7 @@ import { GridToolbar } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 
 function QueryResultTable({ rows }: { rows: { [x: string]: unknown }[] }) {
-  const keys = rows[0] ? Object.keys(rows[0]) : [];
+  const keys = rows?.[0] ? Object.keys(rows[0]) : [];
   const columns: GridColDef[] = keys.map((key) => {
     return {
       field: key,

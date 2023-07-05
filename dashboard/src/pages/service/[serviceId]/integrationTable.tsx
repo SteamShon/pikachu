@@ -1,6 +1,5 @@
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import SouthIcon from "@mui/icons-material/South";
 import type { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import moment from "moment";
@@ -10,9 +9,10 @@ import { useState } from "react";
 import GridCustomToolbar from "../../../components/common/GridCustomToolbar";
 import type IntegrationForm from "../../../components/form/integration/integrationForm";
 
-import type { buildServiceTree } from "../../../utils/tree";
-import { api } from "../../../utils/api";
 import IntegrationModal from "../../../components/form/integration/integrationModal";
+import { api } from "../../../utils/api";
+import type { toServiceTree } from "../../../utils/tree";
+import { fromServiceTree } from "../../../utils/tree";
 
 function IntegrationTable({
   service,
@@ -20,9 +20,9 @@ function IntegrationTable({
   setServiceTree,
 }: {
   service: Parameters<typeof IntegrationForm>[0]["service"];
-  serviceTree?: ReturnType<typeof buildServiceTree>;
+  serviceTree?: ReturnType<typeof toServiceTree>;
   setServiceTree: Dispatch<
-    SetStateAction<ReturnType<typeof buildServiceTree> | undefined>
+    SetStateAction<ReturnType<typeof toServiceTree> | undefined>
   >;
 }) {
   const router = useRouter();
@@ -74,7 +74,7 @@ function IntegrationTable({
       headerName: "Provider",
       flex: 1,
       renderCell: (params) => {
-        return params.row.provider.name;
+        return params.row.provider?.name;
       },
     },
     {
@@ -139,7 +139,7 @@ function IntegrationTable({
             >
               <EditIcon />
             </button>
-            <button
+            {/* <button
               type="button"
               className="p-1 text-blue-400"
               onClick={() => {
@@ -147,14 +147,15 @@ function IntegrationTable({
                   pathname: router.pathname,
                   query: {
                     ...router.query,
-                    step: "campaigns",
-                    placementId: params.row.id,
+                    step: "jobs",
+                    integrationId: params.row.id,
+                    jobId: undefined,
                   },
                 });
               }}
             >
               <SouthIcon />
-            </button>
+            </button> */}
           </div>
         );
       },
@@ -185,14 +186,16 @@ function IntegrationTable({
             }}
           />
         </div>
-        <IntegrationModal
-          key="integrationModal"
-          modalOpen={modalOpen}
-          setModalOpen={setModalOpen}
-          service={service}
-          initialData={integration}
-          setServiceTree={setServiceTree}
-        />
+        {serviceTree && (
+          <IntegrationModal
+            key="integrationModal"
+            modalOpen={modalOpen}
+            setModalOpen={setModalOpen}
+            service={fromServiceTree(serviceTree)}
+            initialData={integration}
+            setServiceTree={setServiceTree}
+          />
+        )}
       </div>
     </>
   );

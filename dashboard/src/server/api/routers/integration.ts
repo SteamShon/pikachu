@@ -17,6 +17,7 @@ export const integrationRouter = createTRPCRouter({
         include: {
           provider: true,
           segments: true,
+          jobs: true,
         },
       });
 
@@ -38,6 +39,7 @@ export const integrationRouter = createTRPCRouter({
         include: {
           provider: true,
           segments: true,
+          jobs: true,
         },
       });
     }),

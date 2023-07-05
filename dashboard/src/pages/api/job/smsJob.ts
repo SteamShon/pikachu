@@ -72,8 +72,10 @@ async function publishEvents({
     const what = "received_sms_message";
     // publish events
     const now = Date.now();
+    let maxValue = "";
+
     const events = (rows || []).map((row) => {
-      toColumnValueMax = toColumnValueMax
+      maxValue = toColumnValueMax
         ? toColumnValueMax > row.to_column
           ? toColumnValueMax
           : row.to_column
@@ -94,10 +96,10 @@ async function publishEvents({
     });
     axios.post(PUBLISH_URI, events);
     console.log(events);
-    return { toColumnValueMax, publishCount: events.length };
+    return { maxValue, publishCount: events.length };
   } catch (error) {
     console.log(error);
-    return { toColumnValueMax, publishCount: -1 };
+    return { maxValue: "", publishCount: -1 };
   }
 }
 async function publishToQueue(
@@ -109,15 +111,16 @@ async function publishToQueue(
   let count = 0;
 
   while (!finished) {
-    const { toColumnValueMax: maxValue, publishCount } = await publishEvents({
-      cubeIntegrationProviderDetails,
-      windowSize,
-      toColumnValueMax,
-    });
-    toColumnValueMax = maxValue;
-    finished = publishCount <= 0;
+    const result: { maxValue: string; publishCount: number } =
+      await publishEvents({
+        cubeIntegrationProviderDetails,
+        windowSize,
+        toColumnValueMax,
+      });
+    toColumnValueMax = result.maxValue;
+    finished = result.publishCount <= 0;
     if (!finished) {
-      count += publishCount;
+      count += result.publishCount;
     }
   }
 

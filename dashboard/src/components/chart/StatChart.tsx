@@ -122,9 +122,9 @@ function StatChart<T>({
             defaultValue={defaultGroupByKey}
           >
             <option value="placement">Placement</option>
-            <option value="campaign">Campaign</option>
-            <option value="adGroup">AdGroup</option>
-            <option value="creative">Creative</option>
+            <option value="adSet">AdSet</option>
+            <option value="content">Content</option>
+            <option value="segment">Segment</option>
           </select>
         </div>
         <div className="inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">

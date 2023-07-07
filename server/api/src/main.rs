@@ -1,4 +1,3 @@
-
 use actix_cors::Cors;
 use actix_web::{
     get,
@@ -7,7 +6,10 @@ use actix_web::{
     web::{self},
     App, HttpResponse, HttpServer, Responder,
 };
-use ad_state::{ad_state::{AdState, CreativeFeedback, AdSetFeedback}, ad_state_builder::load};
+use ad_state::{
+    ad_state::{AdSetFeedback, AdState, CreativeFeedback},
+    ad_state_builder::load,
+};
 use arc_swap::ArcSwap;
 use common::db::{self, PrismaClient};
 use dotenv::dotenv;
@@ -26,24 +28,24 @@ struct Request {
     service_id: String,
     placement_id: String,
     user_info: Value,
-    top_k: Option<usize>
+    top_k: Option<usize>,
 }
 
 #[derive(Deserialize)]
-struct SMSRequest{
-    placement_id: String, 
-    payload: Value
+struct SMSRequest {
+    placement_id: String,
+    payload: Value,
 }
 // copy prev shared state into new struct on heap. then atomically replace Arc using ArcSwap
 async fn load_ad_meta(
-    data: web::Data<ArcSwap<Arc<AdState>>>, 
-    client: web::Data<PrismaClient>
+    data: web::Data<ArcSwap<Arc<AdState>>>,
+    client: web::Data<PrismaClient>,
 ) -> () {
     let prev = data.load();
     let mut new_ad_state = AdState {
         ..prev.as_ref().as_ref().clone()
     };
-    
+
     load(&mut new_ad_state, client.clone().into_inner()).await;
     let new_ad_state_arc = Arc::new(Arc::new(new_ad_state));
     data.store(new_ad_state_arc);
@@ -77,12 +79,14 @@ async fn search_ad_sets(
     request: web::Json<Request>,
 ) -> impl Responder {
     let ad_state = data.load();
-    let ad_set_search_result = ad_state.search_ad_sets(
-        &request.service_id,
-        &request.placement_id,
-        &request.user_info,
-        request.top_k,
-    ).await;
+    let ad_set_search_result = ad_state
+        .search_ad_sets(
+            &request.service_id,
+            &request.placement_id,
+            &request.user_info,
+            request.top_k,
+        )
+        .await;
 
     HttpResponse::Ok().json(ad_set_search_result)
 }
@@ -92,12 +96,14 @@ async fn search(
     request: web::Json<Request>,
 ) -> impl Responder {
     let ad_state = data.load();
-    let matched_ad_groups = ad_state.search(
-        &request.service_id,
-        &request.placement_id,
-        &request.user_info,
-        request.top_k,
-    ).await;
+    let matched_ad_groups = ad_state
+        .search(
+            &request.service_id,
+            &request.placement_id,
+            &request.user_info,
+            request.top_k,
+        )
+        .await;
 
     HttpResponse::Ok().json(matched_ad_groups)
 }
@@ -137,7 +143,7 @@ async fn update_feedback(
     request: web::Json<Vec<CreativeFeedback>>,
 ) -> impl Responder {
     let prev = data.load();
-    
+
     let mut new_ad_state = AdState {
         ..prev.as_ref().as_ref().clone()
     };
@@ -153,7 +159,7 @@ async fn update_ad_set_feedback(
     request: web::Json<Vec<AdSetFeedback>>,
 ) -> impl Responder {
     let prev = data.load();
-    
+
     let mut new_ad_state = AdState {
         ..prev.as_ref().as_ref().clone()
     };

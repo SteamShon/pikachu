@@ -1,14 +1,19 @@
-use std::{sync::Arc, collections::HashMap};
-use common::{db::{
-    ad_group, campaign, content, content_type, creative, placement, service,
-    PrismaClient, integration, ad_set,
-}, util::{is_active_ad_group, is_active_ad_set}};
-use integrations::integrations::Integrations;
-use crate::{ad_state::{AdState, AdGroup, AdSet}};
+use crate::ad_state::{AdGroup, AdSet, AdState};
 use common::db::provider;
+use common::{
+    db::{
+        ad_group, ad_set, campaign, content, content_type, creative, integration, placement,
+        service, PrismaClient,
+    },
+    util::{is_active_ad_group, is_active_ad_set},
+};
 use filter::index::FilterIndex;
-use prisma_client_rust::{chrono::{DateTime, FixedOffset}, Direction};
-
+use integrations::integrations::Integrations;
+use prisma_client_rust::{
+    chrono::{DateTime, FixedOffset},
+    Direction,
+};
+use std::{collections::HashMap, sync::Arc};
 
 async fn fetch_services(
     client: Arc<PrismaClient>,
@@ -30,10 +35,7 @@ pub async fn fetch_placements(
     client
         .placement()
         .find_many(vec![placement::updated_at::gt(last_updated_at)])
-        .with(
-            placement::integrations::fetch(vec![])
-            .with(integration::provider::fetch())
-        )
+        .with(placement::integrations::fetch(vec![]).with(integration::provider::fetch()))
         .order_by(placement::updated_at::order(Direction::Desc))
         .exec()
         .await
@@ -175,7 +177,7 @@ pub fn update_services(ad_state: &mut AdState, new_services: &Vec<service::Data>
 }
 pub fn update_placements(ad_state: &mut AdState, new_placements: &Vec<placement::Data>) -> () {
     let placements = &mut ad_state.placements;
-    
+
     if let Some(latest_updated_placement) = new_placements.first() {
         let update_info = &mut ad_state.update_info;
         update_info.placements = latest_updated_placement.updated_at;
@@ -233,8 +235,7 @@ pub fn update_ad_groups(ad_state: &mut AdState, new_ad_groups: &Vec<ad_group::Da
     for ad_group in new_ad_groups {
         ad_groups.insert(ad_group.id.clone(), ad_group.clone());
     }
-    let placement_ad_groups = 
-        ad_group_grouped_by_placement(ad_state, new_ad_groups);
+    let placement_ad_groups = ad_group_grouped_by_placement(ad_state, new_ad_groups);
     for (placement_id, ad_groups) in placement_ad_groups.iter() {
         let index = ad_state
             .filter_index
@@ -285,7 +286,10 @@ pub fn update_contents(ad_state: &mut AdState, new_contents: &Vec<content::Data>
         contents.insert(content.id.clone(), content.clone());
     }
 }
-pub fn update_content_types(ad_state: &mut AdState, new_content_types: &Vec<content_type::Data>) -> () {
+pub fn update_content_types(
+    ad_state: &mut AdState,
+    new_content_types: &Vec<content_type::Data>,
+) -> () {
     let content_types = &mut ad_state.content_types;
     if let Some(latest_updated_content_type) = new_content_types.first() {
         let update_info = &mut ad_state.update_info;
@@ -316,9 +320,7 @@ pub fn update_ad_sets(ad_state: &mut AdState, new_ad_sets: &Vec<ad_set::Data>) -
         ad_sets.insert(ad_set.id.clone(), ad_set.clone());
     }
 
-
-    let placement_ad_sets = 
-        ad_set_grouped_by_placement(ad_state, new_ad_sets);
+    let placement_ad_sets = ad_set_grouped_by_placement(ad_state, new_ad_sets);
     for (placement_id, ad_sets) in placement_ad_sets.iter() {
         let index = ad_state
             .ad_set_index
@@ -342,7 +344,6 @@ pub fn update_ad_sets(ad_state: &mut AdState, new_ad_sets: &Vec<ad_set::Data>) -
 
         index.update(&inserts, &deletes);
     }
-
 }
 // pub async fn update_providers(ad_state: &mut AdState, new_providers: &Vec<provider::Data>) -> () {
 //     let providers = &mut ad_state.providers;
@@ -354,7 +355,7 @@ pub fn update_ad_sets(ad_state: &mut AdState, new_ad_sets: &Vec<ad_set::Data>) -
 //         if is_active_provider(provider) {
 //             providers.insert(provider.id.clone(), provider.clone());
 
-//             if let Some(database_url) = 
+//             if let Some(database_url) =
 //                 provider.details
 //                     .get("DATABASE_URL")
 //                     .map(|v| v.as_str().unwrap()) {
@@ -394,8 +395,7 @@ pub async fn fetch_and_update_services(
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
 ) -> () {
-    let last_updated_at_value = 
-        last_updated_at.unwrap_or(ad_state.update_info.services);
+    let last_updated_at_value = last_updated_at.unwrap_or(ad_state.update_info.services);
     let new_services = fetch_services(client, last_updated_at_value).await;
     println!("[new_services]: {:?}", new_services.len());
     update_services(ad_state, &new_services);
@@ -405,8 +405,7 @@ pub async fn fetch_and_update_placements(
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
 ) -> Vec<placement::Data> {
-    let last_updated_at_value = 
-        last_updated_at.unwrap_or(ad_state.update_info.placements);
+    let last_updated_at_value = last_updated_at.unwrap_or(ad_state.update_info.placements);
     let new_placements = fetch_placements(client, last_updated_at_value).await;
     println!("[new_placements]: {:?}", new_placements.len());
     update_placements(ad_state, &new_placements);
@@ -419,8 +418,7 @@ pub async fn fetch_and_update_campaigns(
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
 ) -> () {
-    let last_updated_at_value = 
-        last_updated_at.unwrap_or(ad_state.update_info.campaigns);
+    let last_updated_at_value = last_updated_at.unwrap_or(ad_state.update_info.campaigns);
     let new_campaigns = fetch_campaigns(client, last_updated_at_value).await;
     println!("[new_campaigns]: {:?}", new_campaigns.len());
     update_campaigns(ad_state, &new_campaigns);
@@ -430,8 +428,7 @@ pub async fn fetch_and_update_ad_groups(
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
 ) -> () {
-    let last_updated_at_value = 
-        last_updated_at.unwrap_or(ad_state.update_info.ad_groups);
+    let last_updated_at_value = last_updated_at.unwrap_or(ad_state.update_info.ad_groups);
     let new_ad_groups = fetch_ad_groups(client, last_updated_at_value).await;
     println!("[new_ad_groups]: {:?}", new_ad_groups.len());
     update_ad_groups(ad_state, &new_ad_groups);
@@ -441,8 +438,7 @@ pub async fn fetch_and_update_creatives(
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
 ) -> () {
-    let last_updated_at_value = 
-        last_updated_at.unwrap_or(ad_state.update_info.creatives);
+    let last_updated_at_value = last_updated_at.unwrap_or(ad_state.update_info.creatives);
     let new_creatives = fetch_creatives(client, last_updated_at_value).await;
     println!("[new_creatives]: {:?}", new_creatives.len());
     update_creatives(ad_state, &new_creatives);
@@ -452,8 +448,7 @@ pub async fn fetch_and_update_contents(
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
 ) -> () {
-    let last_updated_at_value = 
-        last_updated_at.unwrap_or(ad_state.update_info.contents);
+    let last_updated_at_value = last_updated_at.unwrap_or(ad_state.update_info.contents);
     let new_contents = fetch_contents(client, last_updated_at_value).await;
     println!("[new_contents]: {:?}", new_contents.len());
     update_contents(ad_state, &new_contents);
@@ -463,8 +458,7 @@ pub async fn fetch_and_update_content_types(
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
 ) -> () {
-    let last_updated_at_value = 
-        last_updated_at.unwrap_or(ad_state.update_info.content_types);
+    let last_updated_at_value = last_updated_at.unwrap_or(ad_state.update_info.content_types);
     let new_content_types = fetch_content_types(client, last_updated_at_value).await;
     println!("[new_content_typess]: {:?}", new_content_types.len());
     update_content_types(ad_state, &new_content_types);
@@ -474,7 +468,7 @@ pub async fn fetch_and_update_content_types(
 //     client: Arc<PrismaClient>,
 //     last_updated_at: Option<DateTime<FixedOffset>>,
 // ) -> () {
-//     let last_updated_at_value = 
+//     let last_updated_at_value =
 //         last_updated_at.unwrap_or(ad_state.update_info.segments);
 //     let fetched = fetch_segments(client, last_updated_at_value).await;
 //     println!("[new_segments]: {:?}", fetched.len());
@@ -485,8 +479,7 @@ pub async fn fetch_and_update_ad_sets(
     client: Arc<PrismaClient>,
     last_updated_at: Option<DateTime<FixedOffset>>,
 ) -> () {
-    let last_updated_at_value = 
-        last_updated_at.unwrap_or(ad_state.update_info.ad_sets);
+    let last_updated_at_value = last_updated_at.unwrap_or(ad_state.update_info.ad_sets);
     let fetched = fetch_ad_sets(client, last_updated_at_value).await;
     println!("[new_ad_sets]: {:?}", fetched.len());
     update_ad_sets(ad_state, &fetched);
@@ -497,7 +490,7 @@ pub async fn fetch_and_update_ad_sets(
 //     client: Arc<PrismaClient>,
 //     last_updated_at: Option<DateTime<FixedOffset>>,
 // ) -> () {
-//     let last_updated_at_value = 
+//     let last_updated_at_value =
 //         last_updated_at.unwrap_or(ad_state.update_info.providers);
 //     let new_providers = fetch_providers(client, last_updated_at_value).await;
 //     println!("[new_providers]: {:?}", new_providers.len());
@@ -514,27 +507,21 @@ pub async fn fetch_and_update_ad_sets(
 //     self.update_integrations(new_integrations);
 // }
 
-pub async fn load(
-    ad_state: &mut AdState, 
-    client: Arc<PrismaClient>
-) {
+pub async fn load(ad_state: &mut AdState, client: Arc<PrismaClient>) {
     fetch_and_update_services(ad_state, client.clone(), None).await;
     let placements = fetch_and_update_placements(ad_state, client.clone(), None).await;
     fetch_and_update_campaigns(ad_state, client.clone(), None).await;
     fetch_and_update_ad_groups(ad_state, client.clone(), None).await;
     fetch_and_update_creatives(ad_state, client.clone(), None).await;
     fetch_and_update_contents(ad_state, client.clone(), None).await;
-    fetch_and_update_content_types(ad_state, client.clone(), None)
-        .await;
+    fetch_and_update_content_types(ad_state, client.clone(), None).await;
     fetch_and_update_ad_sets(ad_state, client.clone(), None).await;
-    
-    // integrations 
-    let last_updated_at_value = 
-        ad_state.update_info.integrations;
+
+    // integrations
+    let last_updated_at_value = ad_state.update_info.integrations;
     let providers = fetch_providers(client, last_updated_at_value).await;
     let integrations = Integrations::new(&placements, &providers).await;
     ad_state.set_integrations(integrations);
-    
 
     println!("{:?}", ad_state);
 }

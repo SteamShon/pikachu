@@ -8,6 +8,7 @@ import CustomLoadingButton from "../../common/CustomLoadingButton";
 import MyLoadingButton from "../../common/MyLoadingButton";
 import type { JobSchemaType } from "../../schema/job";
 import { jobSchema } from "../../schema/job";
+import { generateJobSql } from "../../../utils/smsJob";
 
 function JobForm({
   service,
@@ -18,7 +19,6 @@ function JobForm({
   initialData?: Job;
   onSubmit: (input: JobSchemaType) => void;
 }) {
-  console.log(initialData);
   const [integration, setIntegration] = useState<
     typeof service.integrations[0] | undefined
   >(undefined);
@@ -43,6 +43,7 @@ function JobForm({
     if (initialData) {
       // eslint-disable-next-line @typescript-eslint/ban-types
       const details = initialData.details as { [x: string]: {} };
+
       reset({ ...initialData, details });
       const integration = service.integrations.find(
         ({ id }) => id === initialData.integrationId
@@ -52,6 +53,9 @@ function JobForm({
         ({ id }) => id === initialData.placementId
       );
       setPlacement(placement);
+
+      setValue("details.placement", placement);
+      setValue("details.integration", integration);
     }
   }, [initialData, reset, service.integrations, service.placements]);
 
@@ -71,13 +75,18 @@ function JobForm({
   };
 
   const runJob = async () => {
-    const job = getValues();
+    const job = getValues() as Job;
+
     try {
-      const { data } = await axios.post(`/api/job/smsJob`, {
-        jobId: job.id,
-        route: "processJob",
+      const { data: processResult } = await axios.post(`/api/job/sms/process`, {
+        job,
       });
-      console.log(data);
+      const result = processResult as Record<string, unknown>;
+      setValue("details.result", JSON.stringify(result));
+      // const { data: publishResult } = await axios.post(`/api/job/sms/publish`, {
+      //   job,
+      // });
+      // console.log(publishResult);
     } catch (e) {
       console.log(e);
     }
@@ -227,6 +236,23 @@ function JobForm({
                     rows={3}
                     {...register("details.schedule")}
                     placeholder="* * * * *"
+                  />
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div className="border-t border-gray-200">
+            <dl>
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">
+                  Details.Result
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <textarea
+                    className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+                    rows={3}
+                    {...register("details.result")}
+                    placeholder="result of running this job"
                   />
                 </dd>
               </div>

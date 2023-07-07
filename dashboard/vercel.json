@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/job/smsJob",
+      "path": "/api/job/sms/process",
       "schedule": "0 9 * * *"
     }
   ]

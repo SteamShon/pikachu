@@ -1,3 +1,5 @@
+use crate::publisher::Publisher;
+use crate::{handler::Processor, publisher::Event};
 use async_trait::async_trait;
 use chrono::prelude::*;
 use chrono::Duration;
@@ -7,15 +9,10 @@ use common::db::PrismaClient;
 use prisma_client_rust::PrismaValue;
 use prisma_client_rust::Raw;
 use rdkafka::producer::FutureProducer;
-use rdkafka::{
-    message::BorrowedMessage,
-    Message,
-};
+use rdkafka::{message::BorrowedMessage, Message};
 use serde::Deserialize;
 use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
-use crate::{publisher::Event, handler::Processor};
-use crate::publisher::Publisher;
 
 #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 struct StatKey {
@@ -95,9 +92,9 @@ fn aggregate_events(events: &Vec<Event>) -> HashMap<StatKey, (i64, i64)> {
     aggr
 }
 async fn aggregate_events_then_publish(
-    producer: &FutureProducer, 
-    topic: &str, 
-    events: &Vec<Event>
+    producer: &FutureProducer,
+    topic: &str,
+    events: &Vec<Event>,
 ) {
     let aggr = aggregate_events(events);
     let stats = to_stats(&aggr);
@@ -165,7 +162,7 @@ async fn update_storage(
                 PrismaValue::Int(click_count.clone()),
             ],
         );
-        
+
         queries.push(client._query_raw::<creative_stat::Data>(query));
     }
 
@@ -189,16 +186,15 @@ async fn publish_stored_stats(
                         }
                     }
                 }
-                
             }
         }
     }
 }
 
 pub async fn process(
-    client: Arc<PrismaClient>, 
-    producer: &Option<FutureProducer>, 
-    messages: &Vec<BorrowedMessage<'_>>
+    client: Arc<PrismaClient>,
+    producer: &Option<FutureProducer>,
+    messages: &Vec<BorrowedMessage<'_>>,
 ) -> Vec<bool> {
     let stored_stats_topic = "events-stat";
     let mut events = Vec::new();
@@ -219,18 +215,14 @@ pub async fn process(
     messages.iter().map(|_m| true).collect()
 }
 
-
-pub struct StatProcessor{
+pub struct StatProcessor {
     pub client: Arc<PrismaClient>,
     pub producer: Arc<Option<FutureProducer>>,
 }
 
 #[async_trait]
 impl Processor for StatProcessor {
-    async fn process(
-        &self,
-        messages: &Vec<BorrowedMessage<'_>>
-    ) -> Vec<bool> {
+    async fn process(&self, messages: &Vec<BorrowedMessage<'_>>) -> Vec<bool> {
         process(self.client.clone(), &self.producer, messages).await
     }
 }

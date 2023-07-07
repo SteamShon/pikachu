@@ -1,12 +1,18 @@
 use super::AdState;
 
-use common::{db::{ad_group, campaign, content, content_type, creative, placement, service}, types::{AdGroupCreatives, CreativeWithContent}};
+use crate::ad_state_builder::{
+    update_ad_groups, update_campaigns, update_content_types, update_contents, update_creatives,
+    update_placements, update_services,
+};
+use common::{
+    db::{ad_group, campaign, content, content_type, creative, placement, service},
+    types::{AdGroupCreatives, CreativeWithContent},
+};
 use integrations::integrations::Integrations;
-use crate::ad_state_builder::{update_contents, update_creatives, update_ad_groups, update_campaigns, update_placements, update_services, update_content_types};
 use lazy_static::lazy_static;
 use prisma_client_rust::chrono::FixedOffset;
 use serde_json::json;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 
 lazy_static! {
     pub static ref NOW: prisma_client_rust::chrono::DateTime<FixedOffset> =
@@ -130,10 +136,10 @@ fn init_test_ad_state(ad_state: &mut AdState) {
     update_creatives(ad_state, &vec![CREATIVE.clone()]);
     update_contents(ad_state, &vec![CONTENT.clone()]);
     update_content_types(ad_state, &vec![CONTENT_TYPE.clone()]);
-    
+
     // fetch_and_update_ad_sets(ad_state, client.clone(), None).await;
-    
-    // integrations 
+
+    // integrations
     let integrations = Integrations::default();
     ad_state.set_integrations(integrations);
 }
@@ -155,43 +161,38 @@ async fn test_ad_state_and_search_result_after_update() {
     });
     let mut ad_state = AdState::default();
     init_test_ad_state(&mut ad_state);
-    
+
     let placement_id = PLACEMENT.id.clone();
     let campaign_id = CAMPAIGN.id.clone();
-    
+
     // before update.
     {
         let ad_group_id = String::from(AD_GROUP.id.clone());
-        let inner = HashMap::from([
-            (CREATIVE.id.clone(), CREATIVE.clone())
-        ]);
-        let ad_group_id_creatives = HashMap::from([
-            (ad_group_id.as_str(), &inner)
-        ]);
-        let creatives = 
-            ad_state.ad_group_ids_to_creatives_with_contents(ad_group_id_creatives);
+        let inner = HashMap::from([(CREATIVE.id.clone(), CREATIVE.clone())]);
+        let ad_group_id_creatives = HashMap::from([(ad_group_id.as_str(), &inner)]);
+        let creatives = ad_state.ad_group_ids_to_creatives_with_contents(ad_group_id_creatives);
 
-        let ad_group_creatives = 
-            ad_state.ad_group_creatives(&placement_id, creatives, None);
-        
-        let campaign_ad_groups = 
-            ad_state.campaign_ad_groups(ad_group_creatives);
-        
-        let campaign_opt = 
-            campaign_ad_groups
-                .iter()
-                .find(|campaign_ad_groups| {
-                campaign_ad_groups.campaign.id == campaign_id
-            });
+        let ad_group_creatives = ad_state.ad_group_creatives(&placement_id, creatives, None);
+
+        let campaign_ad_groups = ad_state.campaign_ad_groups(ad_group_creatives);
+
+        let campaign_opt = campaign_ad_groups
+            .iter()
+            .find(|campaign_ad_groups| campaign_ad_groups.campaign.id == campaign_id);
         assert_eq!(campaign_opt.is_some(), true);
         let campaign = campaign_opt.unwrap();
-        
-        for AdGroupCreatives { 
-            ad_group, 
-            creatives
-        } in &campaign.ad_groups {
+
+        for AdGroupCreatives {
+            ad_group,
+            creatives,
+        } in &campaign.ad_groups
+        {
             assert_eq!(ad_group.name, AD_GROUP.name);
-            for CreativeWithContent { creative, content: _ } in creatives {
+            for CreativeWithContent {
+                creative,
+                content: _,
+            } in creatives
+            {
                 assert_eq!(creative.name, CREATIVE.name);
             }
         }
@@ -199,7 +200,9 @@ async fn test_ad_state_and_search_result_after_update() {
         // search result: match since user_info {"age": 10} matches to original
         // filter {"in": [{"var": "age"}, ["10"]]}
 
-        let search_result = ad_state.search(&SERVICE.id, &placement_id, &user_info_json, None).await;
+        let search_result = ad_state
+            .search(&SERVICE.id, &placement_id, &user_info_json, None)
+            .await;
         assert_eq!(search_result.matched_ads.len() > 0, true);
     }
     {
@@ -220,38 +223,36 @@ async fn test_ad_state_and_search_result_after_update() {
             ..CREATIVE.clone()
         };
         let ad_group_id = String::from(new_ad_group.id.clone());
-        let inner = HashMap::from([
-            (new_creative.id.clone(), new_creative.clone())
-        ]);
-        let ad_group_id_creatives = HashMap::from([
-            (ad_group_id.as_str(), &inner)
-        ]);
+        let inner = HashMap::from([(new_creative.id.clone(), new_creative.clone())]);
+        let ad_group_id_creatives = HashMap::from([(ad_group_id.as_str(), &inner)]);
         // after update
         update_ad_groups(&mut ad_state, &vec![new_ad_group]);
         update_creatives(&mut ad_state, &vec![new_creative]);
         println!("{:?}", ad_state.filter_index);
-    
-        let creatives = 
-            ad_state.ad_group_ids_to_creatives_with_contents(ad_group_id_creatives);
 
-        let ad_group_creatives = 
-            ad_state.ad_group_creatives(&placement_id, creatives, None);
+        let creatives = ad_state.ad_group_ids_to_creatives_with_contents(ad_group_id_creatives);
+
+        let ad_group_creatives = ad_state.ad_group_creatives(&placement_id, creatives, None);
 
         for AdGroupCreatives {
             ad_group,
-            creatives
-        } in ad_group_creatives {
+            creatives,
+        } in ad_group_creatives
+        {
             assert_eq!(ad_group.name, *new_ad_group_name);
-            for CreativeWithContent { 
+            for CreativeWithContent {
                 creative,
                 content: _,
-            } in creatives {
+            } in creatives
+            {
                 assert_eq!(creative.name, *new_creative_name);
             }
         }
         // after update, ad_group should not matched since filter changed from
         // age.10 to age.30 and user_info has age.10
-        let search_result = ad_state.search(&SERVICE.id, &placement_id, &user_info_json, None).await;
+        let search_result = ad_state
+            .search(&SERVICE.id, &placement_id, &user_info_json, None)
+            .await;
         assert_eq!(search_result.matched_ads.len() == 0, true);
     }
 }
@@ -268,10 +269,11 @@ async fn test_update_ad_group_filter_and_status_change() {
     init_test_ad_state(&mut ad_state);
 
     // result should contain AD_GROUP since age.10
-    let search_result = 
-        ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None).await;
+    let search_result = ad_state
+        .search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None)
+        .await;
     assert_eq!(search_result.matched_ads.len() > 0, true);
-    
+
     // update ad_group's status to exlucde it from index.
     let new_ad_group_name = &String::from("new_ad_group_1");
     let mut new_ad_group = ad_group::Data {
@@ -284,8 +286,9 @@ async fn test_update_ad_group_filter_and_status_change() {
     update_ad_groups(&mut ad_state, &vec![new_ad_group]);
     // after update, AD_GROUP should be excluded from result since
     // our index suppose to exlude filters_to_delete.
-    let search_result = 
-        ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None).await;
+    let search_result = ad_state
+        .search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None)
+        .await;
     assert_eq!(search_result.matched_ads.len() == 0, true);
 
     // back to status published.
@@ -298,7 +301,8 @@ async fn test_update_ad_group_filter_and_status_change() {
     update_ad_groups(&mut ad_state, &vec![new_ad_group]);
     // after update, AD_GROUP should be included in result.
     // since ad_group's status has been change back to published.
-    let search_result = 
-        ad_state.search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None).await;
+    let search_result = ad_state
+        .search(&SERVICE.id, &PLACEMENT.id, &user_info_json, None)
+        .await;
     assert_eq!(search_result.matched_ads.len() > 0, true);
 }

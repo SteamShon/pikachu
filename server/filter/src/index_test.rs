@@ -1,8 +1,8 @@
 use super::*;
 
+use crate::serde;
 use serde_json::Value;
 use std::collections::HashSet;
-use crate::serde;
 
 struct TestFilter {
     id: String,
@@ -197,10 +197,7 @@ fn test_new_filter_index() {
     let internal_ids = filter_index
         .search_positive_internal_ids(&user_info)
         .unwrap_or(HashSet::new());
-    let expected_internal_ids = HashSet::from([
-        "AD_1_0",
-        "AD_1_2",
-    ]);
+    let expected_internal_ids = HashSet::from(["AD_1_0", "AD_1_2"]);
     println!("{:?}", internal_ids);
     assert_eq!(internal_ids, expected_internal_ids);
 }
@@ -241,7 +238,7 @@ fn test_update_index_when_filter_changed() {
         let result = index.search(&user_info);
         assert_eq!(result.contains(id), true);
         assert_eq!(index.non_filter_ids.contains(id), false);
-        assert_eq!(index.filters.contains_key(id), true);    
+        assert_eq!(index.filters.contains_key(id), true);
     }
     {
         // prev_filter: Some, current_filter: None
@@ -290,7 +287,6 @@ fn test_update_index_when_filter_changed_prev_current_both_exist() {
         let result = index.search(&user_info);
         assert_eq!(result.contains(id), false);
     }
-    
 }
 
 #[test]

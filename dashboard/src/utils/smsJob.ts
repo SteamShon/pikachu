@@ -3,12 +3,19 @@ import type {
   Content,
   ContentType,
   Integration,
+  Job,
   Placement,
   Provider,
   Segment,
 } from "@prisma/client";
 import { parseJsonLogic } from "react-querybuilder";
-import { formatQueryCustom } from "./awsS3DuckDB";
+import {
+  formatQueryCustom,
+  listFoldersMultiSequential,
+  loadS3,
+  prependS3ConfigsOnQuery,
+  s3ConfigsStatement,
+} from "./awsS3DuckDB";
 import { extractValue, jsonParseWithFallback } from "./json";
 import type { SMSContentTypeDetail } from "./smsContentType";
 import { toSmsContentTypeDetails } from "./smsContentType";
@@ -116,7 +123,7 @@ function buildMessageColumnExpr(input: PlacementAdSetsInput) {
 }
 function buildMatchColumnExpr(input: PlacementAdSetsInput) {
   const { filter, id } = input;
-  return `IF (${filter}, true, false) AS ${id}`;
+  return `IF (${filter}, '${id}', null) AS ad_set_id`;
 }
 function buildValuesColumnExpr(input: PlacementAdSetsInput) {
   const { values } = input;
@@ -173,33 +180,28 @@ export function buildProcessSql({
   if (!details?.from) return undefined;
 
   return `
-  DROP TABLE IF EXISTS pivotted;
-  DROP TABLE IF EXISTS unpivotted;
+  DROP TABLE IF EXISTS unionned;
   DROP TABLE IF EXISTS deduplicated;
   DROP TABLE IF EXISTS result;
 
-  CREATE TABLE pivotted AS (
-    SELECT  *, ${selectExprs}
-    FROM    (
-        ${cubeSql}
-    )
-  );
-
-  CREATE TABLE unpivotted AS (
-    UNPIVOT pivotted
-    ON ${placementAdSetsInput.map(({ id }) => id).join(", ")}
-    INTO
-        NAME ad_set_id
-        VALUE matched
+  CREATE TABLE unionned AS (
+    ${selectExprs.map((expr) => {
+      return `SELECT ${expr} FROM (${cubeSql})`;
+    }).join(`
+      UNION ALL 
+    `)}
   );
 
   CREATE TABLE deduplicated AS (
     SELECT  *
     FROM    (
-        SELECT  *, 
-                row_number() OVER (PARTITION BY to_column ORDER BY to_column) AS seq
-        FROM    unpivotted
-        WHERE   matched
+      SELECT  *,
+              row_number() OVER (PARTITION BY ad_set_id, to_column ORDER BY to_column) AS seq
+      FROM    (
+          SELECT  *
+          FROM    unionned
+          WHERE   ad_set_id is not null
+      )
     )
     WHERE   seq = 1
   );
@@ -218,5 +220,86 @@ export function buildProcessSql({
   );
 
   COPY (SELECT * FROM result) TO '${s3OutputPath}' (FORMAT PARQUET, PARTITION_BY (placement_id, ad_set_id), OVERWRITE_OR_IGNORE);
+  `;
+}
+
+export async function generateJobSql(job: Job) {
+  const placement = extractValue({
+    object: job.details,
+    paths: ["placement"],
+  }) as unknown as Placement & {
+    contentType: ContentType;
+    adSets: (AdSet & { segment: Segment | null; content: Content })[];
+  };
+  const smsIntegration = extractValue({
+    object: job.details,
+    paths: ["integration"],
+  }) as (Integration & { provider: Provider }) | undefined;
+  const cubeIntegration = extractValue({
+    object: smsIntegration?.details,
+    paths: ["cubeIntegration"],
+  }) as (Integration & { provider: Provider }) | undefined;
+
+  if (!cubeIntegration) return undefined;
+
+  const jobInput = parseJobInput(placement);
+  if (!jobInput) return undefined;
+
+  const s3OutputPath = `s3://pikachu-dev/jobs/processed/${job.id}`;
+
+  const query = buildProcessSql({ cubeIntegration, jobInput, s3OutputPath });
+  if (!query) return undefined;
+
+  const details = cubeIntegration?.provider?.details;
+  const processSql = prependS3ConfigsOnQuery({
+    details,
+    query,
+    extensions: [],
+  });
+  const resultStatement = s3ConfigsStatement({ details, extensions: [] });
+
+  const what = "received_sms_message";
+  const seedPaths = jobInput.placementAdSetsInput.map(({ placementId, id }) => {
+    return `${s3OutputPath}/placement_id=${placementId}/ad_set_id=${id}`;
+  });
+  const s3 = loadS3(details);
+  if (!s3) return undefined;
+
+  const bucket = "pikachu-dev";
+  const s3OutputPaths = await listFoldersMultiSequential({
+    s3,
+    bucket,
+    seedPaths,
+  });
+
+  // const s3OutputPaths = [
+  //   "s3://pikachu-dev/partitioned/result/placement_id=cljpfsquk0006mj08cypcvjj9/ad_set_id=cljpfzttf000el308977x7wie/data_0.parquet",
+  // ];
+  console.log(s3OutputPaths);
+  if (!s3OutputPaths) return undefined;
+
+  const resultSql = generateJobResultSql({ what, s3OutputPaths });
+
+  return { processSql, resultStatement, resultSql };
+}
+
+function generateJobResultSql({
+  what,
+  s3OutputPaths,
+}: {
+  what: string;
+  s3OutputPaths: string[];
+}) {
+  //TODO: change placement_id, from_column, message as struct type then
+  // select them as props column once duckdb-rs support Struct type.
+  return `
+  SELECT  datediff('milliseconds', TIMESTAMP '1970-01-01 00:00:00', CAST(now() AS TIMESTAMP)) AS when,
+          to_column AS who,
+          '${what}' AS what, 
+          ad_set_id AS which,
+          placement_id,
+          from_column,
+          message
+  FROM    read_parquet([${s3OutputPaths.map((p) => `'${p}'`).join(", ")}])
   `;
 }

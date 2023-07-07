@@ -159,7 +159,7 @@
 //                         "impressionCount" = "CreativeStat"."impressionCount"::bigint + EXCLUDED."impressionCount"::bigint,
 //                         "clickCount" = "CreativeStat"."clickCount"::bigint + EXCLUDED."clickCount"::bigint,
 //                         "updatedAt" = EXCLUDED."updatedAt"
-//                     RETURNING 
+//                     RETURNING
 //                         "timeUnit",
 //                         "time",
 //                         "creativeId",

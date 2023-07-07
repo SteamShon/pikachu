@@ -7,16 +7,7 @@ use prisma_client_rust::Direction;
 use rdkafka::{message::BorrowedMessage, Message};
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc};
-// return {
-//         when: now,
-//         who: row.to_column,
-//         what,
-//         which: row.ad_set_id,
-//         props: {
-//           placementId: row.placement_id,
-//           from: row.from_column,
-//         },
-//       };
+
 pub struct MessageSendRequest {
     placement_id: String,
     ad_set_id: String,
@@ -125,6 +116,6 @@ impl Processor for MessageSendProcessor {
             }
         }
 
-        messages.iter().map(|m| true).collect()
+        messages.iter().map(|_| true).collect()
     }
 }

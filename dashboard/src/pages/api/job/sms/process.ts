@@ -15,6 +15,9 @@ import { executeQuery } from "../../../../utils/pg";
 import { env } from "../../../../env/server.mjs";
 import { generateJobSql } from "../../../../utils/smsJob";
 import axios from "axios";
+const eventServerHost = env.EVENT_SERVER_HOST || `http://localhost:8181`;
+const executeBatchEndpoint = `${eventServerHost}/duckdb/execute_batch`;
+const querySinkToKafkaEndpoint = `${eventServerHost}/duckdb/query_sink_to_kafka`;
 
 async function fetchJobs(jobId?: string) {
   try {
@@ -80,7 +83,7 @@ async function generateJobResult(job: Job) {
   const { processSql } = query;
   try {
     const { data: processData } = await axios.post(
-      `http://localhost:8181/duckdb/execute_batch`,
+      executeBatchEndpoint,
       {
         statement: processSql,
       },
@@ -104,7 +107,7 @@ async function publishJobResult(job: Job) {
   const { resultStatement, resultSql } = query;
   try {
     const { data: resultData } = await axios.post(
-      `http://localhost:8181/duckdb/query_sink_to_kafka`,
+      querySinkToKafkaEndpoint,
       {
         statement: resultStatement,
         query: resultSql,

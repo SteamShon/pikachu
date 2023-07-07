@@ -85,19 +85,24 @@ export type TreeNode = {
 };
 export function s3ConfigsStatement({
   details,
+  extensions,
 }: {
   details?: Prisma.JsonValue | null;
+  extensions?: string[];
 }) {
   if (!details) return undefined;
 
   const configs = extractConfigs(details);
   if (!configs) return undefined;
   const { region, accessKeyId, secretAccessKey } = configs;
+  const exts = (extensions || ["httpfs", "json"]).map((ext) => {
+    return `
+    INSTALL ${ext};
+    LOAD ${ext};
+    `;
+  });
   return `
-  INSTALL httpfs;
-  LOAD httpfs;
-  INSTALL json;
-  LOAD json;
+  ${exts.join()}
 
   SET s3_region='${region}';
   SET s3_access_key_id='${accessKeyId}';
@@ -107,11 +112,13 @@ export function s3ConfigsStatement({
 export function prependS3ConfigsOnQuery({
   details,
   query,
+  extensions,
 }: {
   details?: Prisma.JsonValue | null;
   query: string;
+  extensions?: string[];
 }) {
-  const statement = s3ConfigsStatement({ details });
+  const statement = s3ConfigsStatement({ details, extensions });
   if (!statement) return undefined;
 
   return `
@@ -125,7 +132,9 @@ export function loadS3(details?: Prisma.JsonValue | null): S3 | undefined {
   const s3Region = extractS3Region(details);
   const s3AccessKeyId = extractS3AccessKeyId(details);
   const s3SecretAccessKey = extractS3SecretAccessKey(details);
-
+  console.log(s3Region);
+  console.log(s3AccessKeyId);
+  console.log(s3SecretAccessKey);
   if (!s3Region || !s3AccessKeyId || !s3SecretAccessKey) return undefined;
 
   return new S3({
@@ -222,6 +231,46 @@ export async function listFoldersRecursively({
   // } while (continuationToken);
 
   return folders;
+}
+
+export async function listFoldersMultiSequential({
+  s3,
+  bucket,
+  seedPaths,
+}: {
+  s3: S3;
+  bucket: string;
+  seedPaths: string[];
+}) {
+  const allPaths: S3.Object[] = [];
+  try {
+    for (const seedPath of seedPaths) {
+      const { bucket, prefix } = partitionBucketPrefix(seedPath);
+      // console.log(seedPath);
+      // console.log(bucket, prefix);
+      if (!bucket) continue;
+
+      const paths = await listFoldersRecursively({
+        s3,
+        bucketName: bucket,
+        prefix,
+      });
+      // console.log(paths);
+      paths.forEach((p) => allPaths.push(p));
+    }
+
+    const newPaths = [
+      ...new Set(
+        allPaths.map((p) => {
+          return `s3://${bucket}/${p.Key}`;
+        })
+      ),
+    ];
+    return newPaths;
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
 }
 
 export function partitionBucketPrefix(path: string) {

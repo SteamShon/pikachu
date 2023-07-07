@@ -1,12 +1,12 @@
+pub mod handler;
+pub mod message_send_processor;
 pub mod meta;
 pub mod processor;
 pub mod publisher;
-pub mod util;
-pub mod handler;
 pub mod stat_processor;
-pub mod message_send_processor;
+pub mod util;
 
-use std::{env, sync::Arc};
+use std::{collections::HashMap, env, sync::Arc};
 
 use actix_cors::Cors;
 use actix_web::{
@@ -20,10 +20,103 @@ use dotenv::dotenv;
 use futures::future::join_all;
 
 use publisher::Publisher;
+use serde::Deserialize;
 use serde_json::json;
 use tokio::runtime::Builder;
 
-use crate::{publisher::Event, handler::{initialize_stat_processor_runner, initialize_message_send_processor_runner}};
+use crate::{
+    handler::{initialize_message_send_processor_runner, initialize_stat_processor_runner},
+    publisher::Event,
+};
+use duckdb::{Connection, Result};
+
+#[derive(Deserialize, Debug)]
+struct DuckDBStatement {
+    statement: String,
+}
+#[derive(Deserialize, Debug)]
+struct DuckDBQuery {
+    statement: String,
+    query: String,
+}
+
+async fn duckdb_query_sink_to_kafka_inner<'a>(
+    data: web::Data<Publisher<'a>>,
+    request: web::Json<DuckDBQuery>,
+    topic: &str,
+    which_publish_counts: &mut HashMap<String, i32>,
+) -> Result<(), duckdb::Error> {
+    let conn = Connection::open_in_memory()?;
+    let stmt = &request.statement;
+    conn.execute_batch(stmt)?;
+
+    let query = &request.query;
+    let mut stmt = conn.prepare(query)?;
+
+    let events = stmt.query_map([], |row| {
+        //TODO: Chagne this to get value from row directly once
+        // duckdb-rs support Struct Type.
+        let placement_id: String = row.get("placement_id")?;
+        let from: String = row.get("from_column")?;
+        let text: String = row.get("message")?;
+        let props = Some(json!({
+            "placement_id": placement_id,
+            "from": from,
+            "text": text
+        }));
+
+        Ok(Event {
+            when: row.get("when")?,
+            who: row.get("who")?,
+            what: row.get("what")?,
+            which: row.get("which")?,
+            props,
+        })
+    })?;
+
+    for event in events {
+        if let Ok(e) = event {
+            // println!("Event: {:?}", e);
+            if let Ok(_) = data.publish(topic, &e).await {
+                *which_publish_counts.entry(e.which).or_insert_with(|| 0) += 1;
+            }
+        }
+    }
+
+    Ok(())
+}
+#[post("/duckdb/query_sink_to_kafka")]
+async fn duckdb_query_sink_to_kafka<'a>(
+    data: web::Data<Publisher<'a>>,
+    request: web::Json<DuckDBQuery>,
+) -> impl Responder {
+    let which_publish_counts = &mut HashMap::new();
+    match duckdb_query_sink_to_kafka_inner(data, request, "sms", which_publish_counts).await {
+        Ok(_) => HttpResponse::Ok().json(json!({
+            "statusText": "success",
+            "counts": which_publish_counts
+        })),
+        Err(e) => HttpResponse::InternalServerError().json(json!({
+            "statusText": "error",
+            "counts": which_publish_counts,
+            "error": format!("{:?}", e)
+        })),
+    }
+}
+#[post("/duckdb/execute_batch")]
+async fn duckdb_execute_batch(request: web::Json<DuckDBStatement>) -> impl Responder {
+    let conn = Connection::open_in_memory().expect("connection");
+    let stmt = &request.statement;
+    match conn.execute_batch(stmt.as_str()) {
+        Ok(_) => HttpResponse::Ok().json(json!({
+            "statusText": "success"
+        })),
+        Err(e) => HttpResponse::InternalServerError().json(json!({
+            "statusText": "error",
+            "error": format!("{:?}", e)
+        })),
+    }
+}
 
 #[post("/publishes/{topic}/{service_id}")]
 async fn publishes<'a>(
@@ -87,20 +180,9 @@ async fn main() -> std::io::Result<()> {
         .build()
         .unwrap();
     println!("{:?}", database_url);
-    initialize_stat_processor_runner(
-        &rt, 
-        &kafka_configs,
-        topic, 
-        &group_id,
-        client.clone(), 
-    );
-    initialize_message_send_processor_runner(
-        &rt,
-        &kafka_configs,
-        "sms",
-        &group_id,
-        client.clone(),
-    ).await;
+    initialize_stat_processor_runner(&rt, &kafka_configs, topic, &group_id, client.clone());
+    initialize_message_send_processor_runner(&rt, &kafka_configs, "sms", &group_id, client.clone())
+        .await;
     // Processor::new(&rt, client, group_id, topic, &kafka_configs);
 
     HttpServer::new(move || {
@@ -110,6 +192,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(data.clone())
             .service(publishes)
+            .service(duckdb_execute_batch)
+            .service(duckdb_query_sink_to_kafka)
             .wrap(cors)
             .wrap(logger)
     })

@@ -1,8 +1,15 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::{db::{placement, integration, content_type, content, creative, ad_group, campaign, provider, ad_set}, types::UserInfo};
+use crate::{
+    db::{
+        ad_group, ad_set, campaign, content, content_type, creative, integration, placement,
+        provider,
+    },
+    types::UserInfo,
+};
 
-pub const USER_FEATURE_SQL_TEMPLATE: &str = r#"SELECT * FROM "UserFeature" WHERE "cubeHistoryId" = '{}' AND "userId" = '{}'"#;
+pub const USER_FEATURE_SQL_TEMPLATE: &str =
+    r#"SELECT * FROM "UserFeature" WHERE "cubeHistoryId" = '{}' AND "userId" = '{}'"#;
 
 fn json_value_to_string(value: &serde_json::Value) -> Option<String> {
     match value {

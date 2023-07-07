@@ -1,11 +1,10 @@
-
-use std::collections::{HashMap, HashSet};
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rand_distr::{Beta, Distribution};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 
-use crate::db::{content, creative, ad_group, campaign, placement, ad_set};
+use crate::db::{ad_group, ad_set, campaign, content, creative, placement};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct DimValue {
@@ -32,7 +31,6 @@ impl DimValue {
 }
 pub type UserInfo = HashMap<String, HashSet<String>>;
 
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct Stat {
     pub positive_counts: u32,
@@ -40,9 +38,9 @@ pub struct Stat {
 }
 impl Default for Stat {
     fn default() -> Self {
-        Self { 
-            positive_counts: Default::default(), 
-            negative_counts: Default::default() 
+        Self {
+            positive_counts: Default::default(),
+            negative_counts: Default::default(),
         }
     }
 }
@@ -73,26 +71,26 @@ impl Stat {
 
 #[derive(Serialize, Debug)]
 pub struct AdSetWithContent<'a> {
-    pub ad_set: &'a ad_set::Data, 
-    pub content: &'a content::Data
+    pub ad_set: &'a ad_set::Data,
+    pub content: &'a content::Data,
 }
 #[derive(Serialize, Debug)]
 pub struct CreativeWithContent<'a> {
-    pub creative: &'a creative::Data, 
-    pub content: &'a content::Data
+    pub creative: &'a creative::Data,
+    pub content: &'a content::Data,
 }
 #[derive(Serialize, Debug)]
 pub struct AdGroupCreatives<'a> {
-    pub ad_group: &'a ad_group::Data, 
-    pub creatives: Vec<CreativeWithContent<'a>>
+    pub ad_group: &'a ad_group::Data,
+    pub creatives: Vec<CreativeWithContent<'a>>,
 }
 #[derive(Serialize, Debug)]
 pub struct CampaignAdGroups<'a> {
-    pub campaign: &'a campaign::Data, 
-    pub ad_groups: Vec<AdGroupCreatives<'a>>
+    pub campaign: &'a campaign::Data,
+    pub ad_groups: Vec<AdGroupCreatives<'a>>,
 }
 #[derive(Serialize, Debug)]
 pub struct PlacementCampaigns<'a> {
-    pub placement: &'a placement::Data, 
-    pub campaigns: Vec<CampaignAdGroups<'a>>
+    pub placement: &'a placement::Data,
+    pub campaigns: Vec<CampaignAdGroups<'a>>,
 }

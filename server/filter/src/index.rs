@@ -277,8 +277,9 @@ impl FilterIndex {
         union
     }
     pub fn search(&self, user_info: &UserInfo) -> HashSet<&str> {
-        let positive_candidates = 
-            self.search_positive_internal_ids(user_info).unwrap_or(HashSet::default());
+        let positive_candidates = self
+            .search_positive_internal_ids(user_info)
+            .unwrap_or(HashSet::default());
         let negative_candidates = self.search_negative_ids(user_info);
         let ids = &positive_candidates - &negative_candidates;
         let matched_ids = Self::to_ids(&ids);

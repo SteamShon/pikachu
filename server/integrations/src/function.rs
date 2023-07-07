@@ -1,22 +1,36 @@
-use std::sync::Arc;
 use common::db::{self, integration};
+use std::sync::Arc;
 
-
-use crate::{sms_sender::SmsSender, user_feature::UserFeatureDatabase, local_creative_fetcher::LocalCreativeFetcher, integrations::Integrations, thompson_sampling_ranker::ThompsonSamplingRanker, local_ad_set_fetcher::LocalAdSetFetcher, ad_set_thompson_sampling_ranker::AdSetThompsonSamplingRanker};
+use crate::{
+    ad_set_thompson_sampling_ranker::AdSetThompsonSamplingRanker, integrations::Integrations,
+    local_ad_set_fetcher::LocalAdSetFetcher, local_creative_fetcher::LocalCreativeFetcher,
+    sms_sender::SmsSender, thompson_sampling_ranker::ThompsonSamplingRanker,
+    user_feature::UserFeatureDatabase,
+};
 
 #[derive(Debug, Clone)]
 pub enum Function {
-    UserFeature { function: UserFeatureDatabase },
-    SMSSender { function: SmsSender },
-    LocalCreativeFetcher { function: LocalCreativeFetcher },
-    LocalAdSetFetcher { function: LocalAdSetFetcher },
-    ThompsonSamplingRanker { function: ThompsonSamplingRanker },
-    AdSetThompsonSamplingRanker { function: AdSetThompsonSamplingRanker }
+    UserFeature {
+        function: UserFeatureDatabase,
+    },
+    SMSSender {
+        function: SmsSender,
+    },
+    LocalCreativeFetcher {
+        function: LocalCreativeFetcher,
+    },
+    LocalAdSetFetcher {
+        function: LocalAdSetFetcher,
+    },
+    ThompsonSamplingRanker {
+        function: ThompsonSamplingRanker,
+    },
+    AdSetThompsonSamplingRanker {
+        function: AdSetThompsonSamplingRanker,
+    },
 }
 impl Function {
-    pub async fn new(
-        integration: &integration::Data
-    ) -> Option<Self> {
+    pub async fn new(integration: &integration::Data) -> Option<Self> {
         let is_user_feature_integration = Integrations::is_user_feature_integration(integration);
         let is_sms_sender_integration = Integrations::is_sms_sender_integration(integration);
         let is_creative_fetcher = Integrations::is_creative_fetcher(integration);
@@ -75,16 +89,16 @@ impl Function {
         } else if is_creative_fetcher {
             let function = LocalCreativeFetcher {};
 
-            return Some(Function::LocalCreativeFetcher { function })
+            return Some(Function::LocalCreativeFetcher { function });
         } else if is_ranker_integration {
             let function = ThompsonSamplingRanker::default();
-            return Some(Function::ThompsonSamplingRanker { function })
+            return Some(Function::ThompsonSamplingRanker { function });
         } else if is_ad_set_fetcher {
             let function = LocalAdSetFetcher::default();
-            return Some(Function::LocalAdSetFetcher { function })
+            return Some(Function::LocalAdSetFetcher { function });
         } else if is_ad_set_ranker_integration {
             let function = AdSetThompsonSamplingRanker::default();
-            return Some(Function::AdSetThompsonSamplingRanker { function })
+            return Some(Function::AdSetThompsonSamplingRanker { function });
         } else {
             return None;
         }

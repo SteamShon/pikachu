@@ -1,9 +1,9 @@
 use super::*;
+use crate::serde;
 use lazy_static::lazy_static;
 use serde_json::Value;
 use std::collections::HashSet;
 use TargetFilter::*;
-use crate::serde;
 
 lazy_static! {
     static ref FILTER_1: TargetFilter = {

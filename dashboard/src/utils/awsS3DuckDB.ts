@@ -1,14 +1,15 @@
 // Client side
+import type { _Object as S3Object } from "@aws-sdk/client-s3";
+import { ListObjectsCommand, S3Client } from "@aws-sdk/client-s3";
 import type { Prisma } from "@prisma/client";
 import { extractValue } from "./json";
-import S3 from "aws-sdk/clients/s3";
-import type { Buckets, Object as S3Object } from "aws-sdk/clients/s3";
+
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import * as duckdb from "@duckdb/duckdb-wasm";
-import { MyCache } from "./cache";
 import type { RuleGroupType } from "@react-querybuilder/ts";
 import { formatQuery } from "react-querybuilder";
 import type { DatasetSchemaType } from "../components/schema/dataset";
+import { MyCache } from "./cache";
 
 export function extractS3Region(details?: Prisma.JsonValue | null) {
   if (!details) return undefined;
@@ -126,7 +127,9 @@ export function prependS3ConfigsOnQuery({
   ${query}
   `;
 }
-export function loadS3(details?: Prisma.JsonValue | null): S3 | undefined {
+export function loadS3(
+  details?: Prisma.JsonValue | null
+): S3Client | undefined {
   if (!details) return undefined;
 
   const s3Region = extractS3Region(details);
@@ -137,11 +140,12 @@ export function loadS3(details?: Prisma.JsonValue | null): S3 | undefined {
   console.log(s3SecretAccessKey);
   if (!s3Region || !s3AccessKeyId || !s3SecretAccessKey) return undefined;
 
-  return new S3({
+  return new S3Client({
     region: s3Region,
-    accessKeyId: s3AccessKeyId,
-    secretAccessKey: s3SecretAccessKey,
-    signatureVersion: "v4",
+    credentials: {
+      accessKeyId: s3AccessKeyId,
+      secretAccessKey: s3SecretAccessKey,
+    },
   });
 }
 export function buildPath(
@@ -184,33 +188,23 @@ export function objectsToTree({ paths }: { paths: S3Object[] }) {
     return prev;
   }, []);
 }
-export async function listBuckets({
-  s3,
-}: {
-  s3: S3;
-}): Promise<Buckets | undefined> {
-  const buckets = await s3.listBuckets().promise();
-  return buckets.Buckets;
-}
+
 export async function listFoldersRecursively({
   s3,
   bucketName,
   prefix = "",
 }: {
-  s3: S3;
+  s3: S3Client;
   bucketName: string;
   prefix?: string;
 }) {
   let continuationToken: string | undefined;
   const folders: S3Object[] = [];
-
-  const response = await s3
-    .listObjectsV2({
-      Bucket: bucketName,
-      Prefix: prefix,
-      ContinuationToken: continuationToken,
-    })
-    .promise();
+  const command = new ListObjectsCommand({
+    Bucket: bucketName,
+    Prefix: prefix,
+  });
+  const response = await s3.send(command);
   for (const item of response?.Contents || []) {
     if (item.Key && item.Key !== prefix) {
       folders.push(item);
@@ -238,11 +232,11 @@ export async function listFoldersMultiSequential({
   bucket,
   seedPaths,
 }: {
-  s3: S3;
+  s3: S3Client;
   bucket: string;
   seedPaths: string[];
 }) {
-  const allPaths: S3.Object[] = [];
+  const allPaths: S3Object[] = [];
   try {
     for (const seedPath of seedPaths) {
       const { bucket, prefix } = partitionBucketPrefix(seedPath);

@@ -17,6 +17,7 @@ function CubeIntegration({
   provider?: Provider;
   name: string;
 }) {
+  console.log(provider);
   const [activeStep, setActiveStep] = useState(0);
 
   const methods = useFormContext();
@@ -37,7 +38,7 @@ function CubeIntegration({
       component: (
         <>
           <SqlBuilder
-            details={provider?.details}
+            provider={provider}
             initialData={fromSql(getValues(name) as string | undefined)}
             onSubmit={(data: DatasetSchemaType) => {
               setValue(

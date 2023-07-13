@@ -1,10 +1,11 @@
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import { Button } from "@mui/material";
-import type { Prisma } from "@prisma/client";
+import type { Provider } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type { DatasetSchemaType } from "../schema/dataset";
+import AthenaSqlBuilder from "./athenaSqlBuilder";
 import JoinCandidateBuilder from "./joinCandidateBuilder";
 export type TableMetadata = {
   [index: string]: {
@@ -12,14 +13,15 @@ export type TableMetadata = {
   };
 };
 function SqlBuilder({
-  details,
+  provider,
   initialData,
   onSubmit,
 }: {
-  details?: Prisma.JsonValue;
+  provider?: Provider;
   initialData?: DatasetSchemaType;
   onSubmit: (input: DatasetSchemaType) => void;
 }) {
+  console.log(provider);
   const [tableColumns, setTableColumns] = useState<TableMetadata>({});
   const methods = useForm<DatasetSchemaType>({
     defaultValues: initialData,
@@ -35,10 +37,10 @@ function SqlBuilder({
     if (initialData) {
       reset(initialData);
     }
-  }, [details, initialData, reset]);
+  }, [provider, initialData, reset]);
 
   const defaultValue = { files: [], conditions: [] };
-  console.log(initialData);
+
   return (
     <>
       <div className="overflow-hidden bg-white shadow sm:rounded-lg">
@@ -55,8 +57,9 @@ function SqlBuilder({
                   />
                 </h3>
               </div>
+
               <JoinCandidateBuilder
-                details={details}
+                provider={provider}
                 index={index}
                 methods={methods}
                 tableColumns={tableColumns}

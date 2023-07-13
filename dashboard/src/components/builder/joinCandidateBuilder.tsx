@@ -21,24 +21,24 @@ import {
 import type { DatasetSchemaType } from "../schema/dataset";
 import JoinConditionBuilder from "./joinConditionBuilder";
 import type { TableMetadata } from "./sqlBuilder";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, Provider } from "@prisma/client";
 
 function JoinCandidateBuilder({
-  details,
+  provider,
   initialData,
   index,
   methods,
   tableColumns,
   setTableColumns,
 }: {
-  details?: Prisma.JsonValue;
+  provider?: Provider;
   index: number;
   initialData?: DatasetSchemaType;
   methods: UseFormReturn<DatasetSchemaType, unknown>;
   tableColumns: TableMetadata;
   setTableColumns: Dispatch<SetStateAction<TableMetadata>>;
 }) {
-  console.log(details);
+  console.log(provider);
   const [bucket, setBucket] = useState<string | undefined>(undefined);
   const [paths, setPaths] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
@@ -53,7 +53,7 @@ function JoinCandidateBuilder({
   const loadPaths = useMemo(
     () => async (bucketName: string, prefix?: string) => {
       setBucket(bucketName);
-      const s3 = loadS3(details);
+      const s3 = loadS3(provider?.details);
       if (!s3) return;
 
       const folders = await listFoldersRecursively({
@@ -68,12 +68,12 @@ function JoinCandidateBuilder({
 
       setPaths(newPaths);
     },
-    [details]
+    [provider?.details]
   );
   const loadMetadata = useMemo(
     () => async (path: string) => {
       const rows = await fetchParquetSchema({
-        details,
+        details: provider?.details,
         path,
       });
       const columns = rows.map((row) => String(row.name));
@@ -84,7 +84,7 @@ function JoinCandidateBuilder({
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [details]
+    [provider?.details]
   );
 
   const getBucket = () => {
@@ -95,7 +95,7 @@ function JoinCandidateBuilder({
   };
 
   const s3Buckets = () => {
-    return extractS3Buckets(details);
+    return extractS3Buckets(provider?.details);
   };
   const defaultValue = {
     sourceColumn: "",

@@ -514,14 +514,16 @@ export async function listFiles(details?: Prisma.JsonValue | null) {
 }
 
 export function buildJoinSql({
-  details,
   dataset,
+  useAthena,
 }: {
-  details?: Prisma.JsonValue | null;
   dataset: DatasetSchemaType;
+  useAthena: boolean;
 }) {
   const targets = dataset.tables.map((target, index) => {
-    const read = target.files.map((file) => `'${file}'`).join(",");
+    const read = target.files
+      .map((file) => (useAthena ? `${file}` : `'${file}'`))
+      .join(",");
     const conditions = target.conditions.map(
       ({ sourceTable, sourceColumn, targetColumn }) => {
         return `t_${sourceTable}.${sourceColumn} = t_${index}.${targetColumn}`;
@@ -529,7 +531,8 @@ export function buildJoinSql({
     );
     const conditionsClause =
       conditions.length === 0 ? "" : `ON (${conditions.join(" AND ")})`;
-    return `read_parquet([${read}]) AS t_${index} ${conditionsClause}`;
+    const tableClause = useAthena ? `${read}` : `read_parquet([${read}])`;
+    return `${tableClause} AS t_${index} ${conditionsClause}`;
   });
   const from = targets.join(" JOIN ");
   return `

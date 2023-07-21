@@ -3,16 +3,17 @@ import LoadingButton from "@mui/lab/LoadingButton";
 
 import { useState } from "react";
 
-import type { Prisma } from "@prisma/client";
+import type { Provider } from "@prisma/client";
 import { executeQuery } from "../../utils/awsS3DuckDB";
 import QueryResultTable from "../common/QueryResultTable";
+import { runAthenaQuery } from "../../utils/awsAthena";
 
 function SqlPreview({
-  details,
+  provider,
   sql,
   buttonType,
 }: {
-  details?: Prisma.JsonValue;
+  provider?: Provider;
   sql?: string;
   buttonType?: "button" | "reset" | "submit";
 }) {
@@ -24,10 +25,16 @@ function SqlPreview({
 
     setLoading(true);
     const withLimit = `${sql} LIMIT 100`;
-    const result = await executeQuery({
-      details,
-      query: withLimit,
-    });
+    const result =
+      provider?.name === "aws_athena"
+        ? (await runAthenaQuery({
+            details: provider?.details,
+            query: withLimit,
+          })) || []
+        : await executeQuery({
+            details: provider?.details,
+            query: withLimit,
+          });
     setRows(result);
     setLoading(false);
   };

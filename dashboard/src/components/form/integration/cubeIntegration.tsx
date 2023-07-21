@@ -17,7 +17,7 @@ function CubeIntegration({
   provider?: Provider;
   name: string;
 }) {
-  console.log(provider);
+  console.log(initialData);
   const [activeStep, setActiveStep] = useState(0);
 
   const methods = useFormContext();
@@ -41,10 +41,12 @@ function CubeIntegration({
             provider={provider}
             initialData={fromSql(getValues(name) as string | undefined)}
             onSubmit={(data: DatasetSchemaType) => {
-              setValue(
-                name,
-                buildJoinSql({ details: provider?.details, dataset: data })
-              );
+              const sql = buildJoinSql({
+                dataset: data,
+                useAthena: provider?.name === "aws_athena",
+              });
+              console.log(sql);
+              setValue(name, sql);
               setActiveStep((prev) => prev + 1);
             }}
           />
@@ -56,7 +58,7 @@ function CubeIntegration({
       description: `Preview`,
       component: (
         <>
-          <SqlPreview details={provider?.details} sql={getValues(name)} />
+          <SqlPreview provider={provider} sql={getValues(name)} />
         </>
       ),
     },

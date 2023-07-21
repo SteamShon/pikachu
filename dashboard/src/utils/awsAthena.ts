@@ -7,13 +7,26 @@ import {
   StartQueryExecutionCommand,
 } from "@aws-sdk/client-athena";
 import type { Prisma } from "@prisma/client";
-import { extractS3AccessKeyId, extractS3SecretAccessKey } from "./awsS3DuckDB";
-
+import {
+  extractS3AccessKeyId,
+  extractS3Region,
+  extractS3SecretAccessKey,
+} from "./awsS3DuckDB";
+type AWSConfig = {
+  region: string;
+  credentials: AWSCredential;
+};
 type AWSCredential = {
   accessKeyId: string;
   secretAccessKey: string;
 };
+export function parseAWSConfig(details?: Prisma.JsonValue) {
+  const region = extractS3Region(details);
+  const credentials = parseAwsCredential(details);
+  if (!region || !credentials) return undefined;
 
+  return { region, credentials };
+}
 export function parseAwsCredential(details?: Prisma.JsonValue) {
   const accessKeyId = extractS3AccessKeyId(details);
   const secretAccessKey = extractS3SecretAccessKey(details);
@@ -141,8 +154,14 @@ export async function executeAthenaQuery({
       result?.ResultSet?.ResultSetMetadata?.ColumnInfo || []
     ).map(({ Name }) => Name);
     const rows = result?.ResultSet?.Rows?.map(({ Data }) => {
+      const needSplit = (Data?.length || 0) < columns.length;
+      const values = (Data || []).flatMap((datum) => {
+        return datum.VarCharValue?.split("\t") || [];
+      });
+      console.log(values.length === columns.length);
+
       return columns.reduce((prev, column, i) => {
-        const value = Data?.[i]?.VarCharValue;
+        const value = needSplit ? values[i] : Data?.[i]?.VarCharValue;
         if (!column || !value) return prev;
         prev[column] = value;
         return prev;
@@ -157,4 +176,21 @@ export async function executeAthenaQuery({
   } finally {
     // finally.
   }
+}
+
+export async function runAthenaQuery({
+  details,
+  query,
+  database,
+  catalog,
+}: {
+  query: string;
+  details?: Prisma.JsonValue;
+  database?: string;
+  catalog?: string;
+}) {
+  const config = parseAWSConfig(details);
+  if (!config) return undefined;
+
+  return await executeAthenaQuery({ config, query, database, catalog });
 }

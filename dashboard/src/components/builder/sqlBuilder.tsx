@@ -57,15 +57,25 @@ function SqlBuilder({
                   />
                 </h3>
               </div>
-
-              <JoinCandidateBuilder
-                provider={provider}
-                index={index}
-                methods={methods}
-                tableColumns={tableColumns}
-                setTableColumns={setTableColumns}
-                initialData={initialData}
-              />
+              {provider?.name === "aws_athena" ? (
+                <AthenaSqlBuilder
+                  provider={provider}
+                  index={index}
+                  methods={methods}
+                  tableColumns={tableColumns}
+                  setTableColumns={setTableColumns}
+                  initialData={initialData}
+                />
+              ) : (
+                <JoinCandidateBuilder
+                  provider={provider}
+                  index={index}
+                  methods={methods}
+                  tableColumns={tableColumns}
+                  setTableColumns={setTableColumns}
+                  initialData={initialData}
+                />
+              )}
             </div>
           );
         })}
